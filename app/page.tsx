@@ -30,7 +30,7 @@ export default async function Home() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {properties.map(function(prop) {
-            const priceText = prop.price ? '€' + prop.price.toLocaleString('de-AT') : '';
+            const priceText = prop.price ? '€ ' + Math.round(prop.price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'): '';;
             const dateText = new Date(prop.emailReceivedAt).toLocaleDateString('de-AT');
             
             return (
