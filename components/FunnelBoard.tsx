@@ -1,0 +1,169 @@
+'use client';
+
+import { useState } from 'react';
+import Image from 'next/image';
+import { Property } from '@/lib/api';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+const STAGES = [
+  { key: 'maybe',       label: 'Maybe',       color: 'bg-gray-50 border-gray-200',  header: 'bg-slate-500' },
+  { key: 'interested',  label: 'Interested',  color: 'bg-gray-50 border-gray-200',  header: 'bg-slate-600' },
+  { key: 'visited',     label: 'Visited',     color: 'bg-gray-50 border-gray-200',  header: 'bg-slate-600' },
+  { key: 'offer_made',  label: 'Offer Made',  color: 'bg-gray-50 border-gray-200',  header: 'bg-slate-700' },
+  { key: 'won',         label: 'Won',         color: 'bg-gray-50 border-gray-200',  header: 'bg-emerald-700' },
+  { key: 'lost',        label: 'Lost',        color: 'bg-gray-50 border-gray-200',  header: 'bg-rose-800' },
+];
+
+interface FunnelBoardProps {
+  properties: Property[];
+}
+
+export default function FunnelBoard({ properties: initial }: FunnelBoardProps) {
+  const [properties, setProperties] = useState(
+    initial.filter(p => p.status !== 'new')
+  );
+
+  async function moveToStage(propertyId: string, newStatus: string) {
+    try {
+      await fetch(`${API_URL}/properties/${propertyId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      setProperties(prev =>
+        prev.map(p => p.id === propertyId ? { ...p, status: newStatus } : p)
+      );
+    } catch (e) {
+      console.error('Failed to update status', e);
+    }
+  }
+
+  const totalTagged = properties.length;
+
+  return (
+    <div>
+      <p className="text-sm text-gray-500 mb-4">{totalTagged} properties in funnel</p>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {STAGES.map((stage) => {
+          const stageProps = properties.filter(p => p.status === stage.key);
+          return (
+            <div key={stage.key} className="flex-shrink-0 w-64">
+              {/* Column header */}
+              <div className={`${stage.header} text-white rounded-t-lg px-3 py-2 flex items-center justify-between`}>
+                <span className="font-semibold text-sm">{stage.label}</span>
+                <span className="bg-white bg-opacity-30 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {stageProps.length}
+                </span>
+              </div>
+
+              {/* Cards */}
+              <div className={`${stage.color} border border-t-0 rounded-b-lg min-h-32 p-2 space-y-2`}>
+                {stageProps.map((prop) => (
+                  <FunnelCard
+                    key={prop.id}
+                    property={prop}
+                    stages={STAGES}
+                    onMove={moveToStage}
+                  />
+                ))}
+                {stageProps.length === 0 && (
+                  <p className="text-xs text-gray-400 text-center py-4">No properties</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FunnelCard({
+  property,
+  stages,
+  onMove,
+}: {
+  property: Property;
+  stages: typeof STAGES;
+  onMove: (id: string, status: string) => void;
+}) {
+  const [showMenu, setShowMenu] = useState(false);
+
+  const rawPrice = property.price ? parseFloat(String(property.price)) : null;
+  const priceText = rawPrice
+    ? '€ ' + Math.round(rawPrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    : '';
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      {/* Image */}
+      {property.imageUrl && (
+        <div className="relative w-full bg-gray-100" style={{ height: '96px' }}>
+          <Image
+            src={property.imageUrl}
+            alt={property.title}
+            fill
+            className="object-cover"
+          />
+        </div>
+      )}
+
+      <div className="p-2">
+        {/* Title */}
+          <a
+          href={property.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 block mb-1"
+          
+        >
+          {property.title}
+        </a>
+
+        {/* Price + location */}
+        <div className="space-y-0.5 mb-2">
+          {priceText && (
+            <div className="text-sm font-bold text-blue-600">{priceText}</div>
+          )}
+          {property.location && (
+            <div className="text-xs text-gray-500">📍 {property.location}</div>
+          )}
+          <div className="flex gap-2 text-xs text-gray-500">
+            {property.sizeSqm && <span>{property.sizeSqm}m²</span>}
+            {property.rooms && <span>{property.rooms} Zi.</span>}
+          </div>
+        </div>
+
+        {/* Move button */}
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="w-full text-xs text-gray-500 hover:text-gray-900 border border-gray-200 rounded px-2 py-1 hover:bg-gray-50 transition-colors"
+          >
+            Move to stage ▾
+          </button>
+
+          {showMenu && (
+            <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
+              {stages
+                .filter(s => s.key !== property.status)
+                .map(s => (
+                  <button
+                    key={s.key}
+                    onClick={() => {
+                      onMove(property.id, s.key);
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left text-xs px-3 py-2 hover:bg-gray-50 transition-colors"
+                  >
+                    {s.label}
+                  </button>
+                ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
