@@ -26,7 +26,7 @@ export default function FunnelBoard({ properties: initial }: FunnelBoardProps) {
 
   async function moveToStage(propertyId: string, newStatus: string) {
     try {
-      await fetch(`${API_URL}/properties/${propertyId}/status`, {
+      await fetch(`${API_URL}/properties/${propertyId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),

@@ -24,7 +24,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     if (loading) return;
     setLoading(true);
     try {
-      await fetch(`${API_URL}/properties/${property.id}/status`, {
+      await fetch(`${API_URL}/properties/${property.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),

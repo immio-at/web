@@ -14,6 +14,7 @@ export interface Property {
   platform: string;
   emailReceivedAt: string;
   createdAt: string;
+notes: string | null;
 }
 
 export async function getProperties(): Promise<Property[]> {

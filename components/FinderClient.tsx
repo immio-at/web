@@ -23,7 +23,7 @@ export default function FinderClient({ properties }: FinderClientProps) {
 
   async function updateStatus(id: string, status: string) {
     try {
-      await fetch(`${API_URL}/properties/${id}/status`, {
+      await fetch(`${API_URL}/properties/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
