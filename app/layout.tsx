@@ -17,6 +17,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="de">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#1a202c" />
+      </head>
       <body className={geist.className}>
         <div className="min-h-screen bg-gray-50">
           <NavBar />
