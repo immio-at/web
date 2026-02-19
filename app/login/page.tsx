@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-production-e03a.up.railway.app';
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -16,7 +18,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:3001/auth/login', {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -44,9 +46,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-sm border p-8 w-full max-w-md">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          <h1 className="text-3xl font-bold text-gray-900">
-            IM<span className="text-4xl">M</span>IO
-          </h1>
+          IM<span className="text-4xl">M</span>IO
         </h1>
         <p className="text-gray-600 mb-8">Sign in to your account</p>
 
