@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getProperties, Property } from '@/lib/api';
 import FinderClient from '@/components/FinderClient';
 import Link from 'next/link';

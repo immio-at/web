@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getProperties, Property } from '@/lib/api';
 import FunnelBoard from '@/components/FunnelBoard';
 

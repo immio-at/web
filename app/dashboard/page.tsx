@@ -1,0 +1,45 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { getProperties, Property } from '@/lib/api';
+import DashboardClient from '@/components/DashboardClient';
+
+export default function DashboardPage() {
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchProperties() {
+      try {
+        const data = await getProperties();
+        setProperties(data);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load properties');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProperties();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <p className="text-gray-600">Loading properties...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-red-800">⚠️ {error}</p>
+        </div>
+      )}
+      <DashboardClient properties={properties} />
+    </div>
+  );
+}

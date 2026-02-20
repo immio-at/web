@@ -1,24 +1,25 @@
-import { getProperties, Property } from '@/lib/api';
-import DashboardClient from '@/components/DashboardClient';
+'use client';
 
-export default async function Home() {
-  let properties: Property[] = [];
-  let error: string | null = null;
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-  try {
-    properties = await getProperties();
-  } catch (e) {
-    error = e instanceof Error ? e.message : 'Failed to load properties';
-  }
+export default function HomePage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('accessToken');
+    
+    if (token) {
+      router.push('/dashboard');
+    } else {
+      router.push('/login');
+    }
+  }, [router]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-red-800">⚠️ {error}</p>
-        </div>
-      )}
-      <DashboardClient properties={properties} />
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-gray-600">Redirecting...</p>
     </div>
   );
 }
