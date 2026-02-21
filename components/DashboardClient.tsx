@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Image from 'next/image';
 import { Property } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -304,7 +303,15 @@ function TileCard({ property, onUpdate }: {
       <a href={property.sourceUrl} target="_blank" rel="noopener noreferrer">
         <div className="relative overflow-hidden bg-gray-200 rounded-t-lg" style={{ height: '192px' }}>
           {property.imageUrl ? (
-            <Image src={property.imageUrl} alt={property.title} fill className="object-cover hover:scale-105 transition-transform duration-300" />
+            <img
+              src={property.imageUrl}
+              alt={property.title}
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center h-full"><span class="text-4xl text-gray-400">🏠</span></div>';
+              }}
+            />
           ) : (
             <div className="flex items-center justify-center h-full">
               <span className="text-4xl text-gray-400">🏠</span>
@@ -397,7 +404,14 @@ function TableView({ properties, onUpdate }: {
                   <td className="px-4 py-2">
                     <div className="relative rounded overflow-hidden bg-gray-100" style={{ width: '48px', height: '48px' }}>
                       {prop.imageUrl ? (
-                        <Image src={prop.imageUrl} alt={prop.title} fill className="object-cover" />
+                        <img
+                          src={prop.imageUrl}
+                          alt={prop.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
                       ) : (
                         <span className="text-xl flex items-center justify-center h-full">🏠</span>
                       )}
