@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import Image from 'next/image';
-import { Property } from '@/lib/api';
+import { updateProperty } from '@/lib/api';
+import { useProperties } from '@/hooks/useProperties';
+import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-interface FinderClientProps {
-  properties: Property[];
-}
+export default function FinderClient() {
+  const { properties: all, loading } = useProperties();
+  const properties = all.filter(p => p.status === 'new');
 
-export default function FinderClient({ properties }: FinderClientProps) {
   const [current, setCurrent] = useState(0);
   const [dragX, setDragX] = useState(0);
   const [dragY, setDragY] = useState(0);
@@ -21,22 +21,10 @@ export default function FinderClient({ properties }: FinderClientProps) {
   const property = properties[current];
   const total = properties.length;
 
-  async function updateStatus(id: string, status: string) {
-    try {
-      await fetch(`${API_URL}/properties/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-    } catch (e) {
-      console.error('Failed to update status', e);
-    }
-  }
-
   async function handleAction(status: string) {
     if (!property) return;
     setLastAction(status);
-    await updateStatus(property.id, status);
+    await updateProperty(property.id, { status });
     setTimeout(() => {
       setCurrent(c => c + 1);
       setLastAction(null);
@@ -72,6 +60,7 @@ export default function FinderClient({ properties }: FinderClientProps) {
       setDragY(0);
     }
     dragStart.current = null;
+    setIsDragging(false);
   }
 
   const overlayColor =
@@ -89,6 +78,12 @@ export default function FinderClient({ properties }: FinderClientProps) {
     0.85
   );
 
+  if (loading) return (
+    <div className="flex-1 flex items-center justify-center">
+      <div className="text-gray-400 text-lg">Loading properties...</div>
+    </div>
+  );
+
   if (current >= total) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -96,12 +91,12 @@ export default function FinderClient({ properties }: FinderClientProps) {
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-3xl font-bold mb-2">All caught up!</h2>
           <p className="text-gray-400 mb-8">You've reviewed all {total} properties</p>
-          <a
+          <Link
             href="/"
             className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors"
           >
             View Your Lists
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -163,11 +158,11 @@ export default function FinderClient({ properties }: FinderClientProps) {
           {/* Image */}
           <div className="relative w-full bg-gray-200" style={{ height: '288px' }}>
             {property.imageUrl ? (
-              <Image
+              <img
                 src={property.imageUrl}
                 alt={property.title}
-                fill
-                className="object-cover pointer-events-none"
+                className="w-full h-full object-cover pointer-events-none"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             ) : (
               <div className="h-full flex items-center justify-center">
@@ -197,7 +192,7 @@ export default function FinderClient({ properties }: FinderClientProps) {
 
       {/* Hint */}
       <p className="text-gray-600 text-xs mt-4 mb-6">
-        Drag ← ❌ · → ✅ · ↑ 🔗 Open listing · ↓ 🤷‍♀️ Maybe . or use buttons below
+        Drag ← ❌ · → ✅ · ↑ 🔗 Open listing · ↓ 🤷‍♀️ Maybe · or use buttons below
       </p>
 
       {/* Buttons */}

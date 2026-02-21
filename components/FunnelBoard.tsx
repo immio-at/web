@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
-import { Property } from '@/lib/api';
+import { Property, updateProperty } from '@/lib/api';
+import { useProperties } from '@/hooks/useProperties';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -15,29 +15,25 @@ const STAGES = [
   { key: 'lost',        label: 'Lost',        color: 'bg-gray-50 border-gray-200',  header: 'bg-rose-800' },
 ];
 
-interface FunnelBoardProps {
-  properties: Property[];
-}
+export default function FunnelBoard() {
+  const { properties: all, loading, error } = useProperties();
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
 
-export default function FunnelBoard({ properties: initial }: FunnelBoardProps) {
-  const [properties, setProperties] = useState(
-    initial.filter(p => p.status !== 'new')
-  );
+  const properties = all
+    .filter(p => p.status !== 'new' && p.status !== 'not_relevant')
+    .map(p => overrides[p.id] ? { ...p, status: overrides[p.id] } : p);
 
   async function moveToStage(propertyId: string, newStatus: string) {
     try {
-      await fetch(`${API_URL}/properties/${propertyId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      setProperties(prev =>
-        prev.map(p => p.id === propertyId ? { ...p, status: newStatus } : p)
-      );
+      await updateProperty(propertyId, { status: newStatus });
+      setOverrides(prev => ({ ...prev, [propertyId]: newStatus }));
     } catch (e) {
       console.error('Failed to update status', e);
     }
   }
+
+  if (loading) return <div className="text-gray-500 py-12 text-center">Loading funnel...</div>;
+  if (error) return <div className="text-red-500 py-12 text-center">{error}</div>;
 
   const totalTagged = properties.length;
 
@@ -49,15 +45,12 @@ export default function FunnelBoard({ properties: initial }: FunnelBoardProps) {
           const stageProps = properties.filter(p => p.status === stage.key);
           return (
             <div key={stage.key} className="flex-shrink-0 w-64">
-              {/* Column header */}
               <div className={`${stage.header} text-white rounded-t-lg px-3 py-2 flex items-center justify-between`}>
                 <span className="font-semibold text-sm">{stage.label}</span>
                 <span className="bg-white bg-opacity-30 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   {stageProps.length}
                 </span>
               </div>
-
-              {/* Cards */}
               <div className={`${stage.color} border border-t-0 rounded-b-lg min-h-32 p-2 space-y-2`}>
                 {stageProps.map((prop) => (
                   <FunnelCard
@@ -97,31 +90,25 @@ function FunnelCard({
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      {/* Image */}
       {property.imageUrl && (
-        <div className="relative w-full bg-gray-100" style={{ height: '96px' }}>
-          <Image
+        <div className="w-full bg-gray-100 overflow-hidden" style={{ height: '96px' }}>
+          <img
             src={property.imageUrl}
             alt={property.title}
-            fill
-            className="object-cover"
+            className="w-full h-full object-cover"
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
           />
         </div>
       )}
-
       <div className="p-2">
-        {/* Title */}
-          <a
+        
           href={property.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 block mb-1"
-          
-        >
+        <a>
           {property.title}
         </a>
-
-        {/* Price + location */}
         <div className="space-y-0.5 mb-2">
           {priceText && (
             <div className="text-sm font-bold text-blue-600">{priceText}</div>
@@ -134,8 +121,6 @@ function FunnelCard({
             {property.rooms && <span>{property.rooms} Zi.</span>}
           </div>
         </div>
-
-        {/* Move button */}
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
@@ -143,7 +128,6 @@ function FunnelCard({
           >
             Move to stage ▾
           </button>
-
           {showMenu && (
             <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
               {stages
