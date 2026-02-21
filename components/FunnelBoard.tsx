@@ -101,13 +101,12 @@ function FunnelCard({
         </div>
       )}
       <div className="p-2">
-        
-          href={property.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 block mb-1"
-        <a>
-          {property.title}
+        <a href={property.sourceUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 block mb-1"
+        >
+        {property.title}
         </a>
         <div className="space-y-0.5 mb-2">
           {priceText && (
