@@ -1,9 +1,18 @@
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
+import { DM_Sans, DM_Mono } from 'next/font/google';
 import './globals.css';
 import NavBar from '@/components/NavBar';
 
-const geist = Geist({ subsets: ['latin'] });
+const dmSans = DM_Sans({ 
+  subsets: ['latin'],
+  variable: '--font-dm-sans',
+});
+
+const dmMono = DM_Mono({ 
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-dm-mono',
+});
 
 export const metadata: Metadata = {
   title: 'IMMIO',
@@ -16,12 +25,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="de">
+    <html lang="de" className={`${dmSans.variable} ${dmMono.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#1a202c" />
+        <meta name="theme-color" content="#0F1F3D" />
       </head>
-      <body className={geist.className}>
+      <body className={`${dmSans.variable} ${dmMono.variable} font-sans`}>
         <div className="min-h-screen bg-gray-50">
           <NavBar />
           <main>{children}</main>
