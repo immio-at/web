@@ -1,17 +1,12 @@
 import FinderClient from '@/components/FinderClient';
-import Link from 'next/link';
 
 export default function FinderPage() {
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4">
-        <h1 className="text-2xl font-bold text-white">
-          IM<span className="text-3xl">M</span>IO <span className="text-gray-400 text-lg font-normal">Finder</span>
-        </h1>
-        <Link href="/" className="text-gray-400 hover:text-white text-sm transition-colors">
-          ← Back to list
-        </Link>
-      </header>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Finder</h2>
+        <p className="text-gray-600 mt-1">Swipe through new properties</p>
+      </div>
       <FinderClient />
     </div>
   );

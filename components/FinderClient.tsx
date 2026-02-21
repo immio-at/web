@@ -87,10 +87,10 @@ export default function FinderClient() {
   if (current >= total) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-center text-white px-8">
+        <div className="text-center text-gray-900 px-8">
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-3xl font-bold mb-2">All caught up!</h2>
-          <p className="text-gray-400 mb-8">You've reviewed all {total} properties</p>
+          <p className="text-gray-500 mb-8">You've reviewed all {total} properties</p>
           <Link
             href="/"
             className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors"
@@ -110,8 +110,8 @@ export default function FinderClient() {
   return (
     <div className="flex-1 flex flex-col items-center justify-start pt-4 px-4 pb-8 w-full">
       {/* Progress */}
-      <div className="text-gray-400 text-sm mb-2">{current} of {total} reviewed</div>
-      <div className="w-full max-w-sm bg-gray-700 rounded-full h-1 mb-6">
+      <div className="text-gray-500 text-sm mb-2">{current} of {total} reviewed</div>
+      <div className="w-full max-w-sm bg-gray-200 rounded-full h-1 mb-6">
         <div
           className="bg-blue-500 h-1 rounded-full transition-all"
           style={{ width: `${(current / total) * 100}%` }}
@@ -191,7 +191,7 @@ export default function FinderClient() {
       </div>
 
       {/* Hint */}
-      <p className="text-gray-600 text-xs mt-4 mb-6">
+      <p className="text-gray-400 text-xs mt-4 mb-6">
         Drag ← ❌ · → ✅ · ↑ 🔗 Open listing · ↓ 🤷‍♀️ Maybe · or use buttons below
       </p>
 
@@ -199,19 +199,19 @@ export default function FinderClient() {
       <div className="flex gap-6">
         <button
           onClick={() => handleAction('not_relevant')}
-          className="w-16 h-16 rounded-full bg-gray-800 border-2 border-red-500 text-2xl hover:bg-red-500 transition-colors flex items-center justify-center"
+          className="w-16 h-16 rounded-full bg-white border-2 border-red-500 text-2xl hover:bg-red-500 transition-colors flex items-center justify-center"
         >
           ❌
         </button>
         <button
           onClick={() => handleAction('maybe')}
-          className="w-16 h-16 rounded-full bg-gray-800 border-2 border-yellow-400 text-2xl hover:bg-yellow-400 transition-colors flex items-center justify-center"
+          className="w-16 h-16 rounded-full bg-white border-2 border-yellow-400 text-2xl hover:bg-yellow-400 transition-colors flex items-center justify-center"
         >
           🤷‍♀️
         </button>
         <button
           onClick={() => handleAction('interested')}
-          className="w-16 h-16 rounded-full bg-gray-800 border-2 border-green-500 text-2xl hover:bg-green-500 transition-colors flex items-center justify-center"
+          className="w-16 h-16 rounded-full bg-white border-2 border-green-500 text-2xl hover:bg-green-500 transition-colors flex items-center justify-center"
         >
           ✅
         </button>
