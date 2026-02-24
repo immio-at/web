@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Property } from '@/lib/api';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { Property, updateProperty as apiUpdateProperty } from '@/lib/api';
 
 type ViewMode = 'tiles' | 'table' | 'map';
 
@@ -14,6 +12,7 @@ interface Filters {
   sizeMin: string;
   sizeMax: string;
   postcode: string;
+  showHidden: boolean;
 }
 
 const defaultFilters: Filters = {
@@ -23,6 +22,7 @@ const defaultFilters: Filters = {
   sizeMin: '',
   sizeMax: '',
   postcode: '',
+  showHidden: false,
 };
 
 export default function DashboardClient({ properties: initial }: { properties: Property[] }) {
@@ -32,17 +32,13 @@ export default function DashboardClient({ properties: initial }: { properties: P
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [properties, setProperties] = useState(initial);
 
-  function updateFilter(key: keyof Filters, value: string) {
+  function updateFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
     setFilters(prev => ({ ...prev, [key]: value }));
   }
 
   async function updateProperty(id: string, data: { status?: string; notes?: string }) {
     try {
-      await fetch(`${API_URL}/properties/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      await apiUpdateProperty(id, data);
       setProperties(prev =>
         prev.map(p => p.id === id ? { ...p, ...data } : p)
       );
@@ -53,6 +49,9 @@ export default function DashboardClient({ properties: initial }: { properties: P
 
   const filtered = useMemo(() => {
     return properties.filter(p => {
+      // Hide not_relevant unless showHidden is toggled on
+      if (p.status === 'not_relevant' && !filters.showHidden) return false;
+
       const price = p.price ? parseFloat(String(p.price)) : null;
       const size = p.sizeSqm ?? null;
 
@@ -84,13 +83,15 @@ export default function DashboardClient({ properties: initial }: { properties: P
     });
   }, [properties, filters, sortBy]);
 
-  const activeFilterCount = Object.values(filters).filter(v => v !== '').length;
+  // Count active filters — exclude showHidden and search from the badge count
+  const activeFilterCount = ['priceMin', 'priceMax', 'sizeMin', 'sizeMax', 'postcode']
+    .filter(k => filters[k as keyof Filters] !== '').length
+    + (filters.showHidden ? 1 : 0);
 
   return (
     <div>
       {/* Sub-nav + search bar */}
       <div className="flex flex-col gap-3 mb-6">
-        {/* Sub-nav */}
         <div className="flex items-center justify-between">
           <div className="flex gap-1">
             {(['tiles', 'table', 'map'] as ViewMode[]).map(v => (
@@ -157,7 +158,7 @@ export default function DashboardClient({ properties: initial }: { properties: P
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-900">Filters</h3>
               <button
-                onClick={() => { setFilters(defaultFilters); }}
+                onClick={() => setFilters(defaultFilters)}
                 className="text-xs text-gray-500 hover:text-gray-900"
               >
                 Clear all
@@ -208,11 +209,22 @@ export default function DashboardClient({ properties: initial }: { properties: P
                 <label className="block text-xs font-medium text-gray-700 mb-1">Postcode</label>
                 <input
                   type="text"
-                  placeholder="e.g. 1100"
+                  placeholder="e.g. 1010"
                   value={filters.postcode}
                   onChange={e => updateFilter('postcode', e.target.value)}
                   className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
                 />
+              </div>
+              <div className="flex items-end pb-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={filters.showHidden}
+                    onChange={e => updateFilter('showHidden', e.target.checked)}
+                    className="rounded border-gray-300 text-slate-700 focus:ring-slate-300"
+                  />
+                  <span className="text-xs font-medium text-gray-700">Show hidden properties</span>
+                </label>
               </div>
             </div>
           </div>
@@ -227,10 +239,8 @@ export default function DashboardClient({ properties: initial }: { properties: P
         <TableView properties={filtered} onUpdate={updateProperty} />
       )}
       {view === 'map' && (
-        <div className="text-center py-24 bg-white rounded-lg border border-gray-200">
-          <div className="text-4xl mb-3">🗺</div>
-          <h3 className="text-lg font-semibold text-gray-900">Map View Coming Soon</h3>
-          <p className="text-gray-500 mt-1">We're working on an interactive map view</p>
+        <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
+          <p className="text-gray-500">Map view coming soon</p>
         </div>
       )}
     </div>
