@@ -5,12 +5,12 @@ import { Property, updateProperty } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 
 const STAGES = [
-  { key: 'maybe',        label: 'Maybe',        color: 'bg-gray-50 border-gray-200', header: 'bg-slate-500' },
-  { key: 'interested',   label: 'Interested',   color: 'bg-gray-50 border-gray-200', header: 'bg-slate-600' },
-  { key: 'visited',      label: 'Visited',      color: 'bg-gray-50 border-gray-200', header: 'bg-slate-600' },
-  { key: 'offer_made',   label: 'Offer Made',   color: 'bg-gray-50 border-gray-200', header: 'bg-slate-700' },
-  { key: 'won',          label: 'Won',          color: 'bg-gray-50 border-gray-200', header: 'bg-emerald-700' },
-  { key: 'lost',         label: 'Lost',         color: 'bg-gray-50 border-gray-200', header: 'bg-rose-800' },
+  { key: 'investigating', label: 'Investigating', color: 'bg-gray-50 border-gray-200', header: 'bg-slate-500' },
+  { key: 'interested',    label: 'Interested',    color: 'bg-gray-50 border-gray-200', header: 'bg-slate-600' },
+  { key: 'visited',       label: 'Visited',       color: 'bg-gray-50 border-gray-200', header: 'bg-slate-600' },
+  { key: 'offer_made',    label: 'Offer Made',    color: 'bg-gray-50 border-gray-200', header: 'bg-slate-700' },
+  { key: 'won',           label: 'Won',           color: 'bg-gray-50 border-gray-200', header: 'bg-emerald-700' },
+  { key: 'parked',        label: 'Parked',        color: 'bg-gray-50 border-gray-200', header: 'bg-amber-700' },
 ];
 
 // Not shown as a column but available as a move destination
