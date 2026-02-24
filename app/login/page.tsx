@@ -1,45 +1,43 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-production-e03a.up.railway.app';
+import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    // Show message if redirected here due to session expiry
+    if (searchParams.get('reason') === 'session_expired') {
+      setError('Your session expired. Please sign in again.');
+    }
+  }, [searchParams]);
+
   async function handleLogin() {
     setLoading(true);
     setError('');
 
-    try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || 'Login failed');
-        return;
-      }
-
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('userId', data.userId);
-      router.push('/');
-
-    } catch (e) {
-      setError('Could not connect to server');
-    } finally {
+    if (error) {
+      setError(error.message);
       setLoading(false);
+      return;
     }
+
+    // Supabase handles token storage automatically
+    // AuthContext will detect the new session via onAuthStateChange
+    router.push('/dashboard');
   }
 
   return (

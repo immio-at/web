@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { AuthProvider } from '@/context/AuthContext';
 import { DM_Sans, DM_Mono } from 'next/font/google';
 import './globals.css';
 import NavBar from '@/components/NavBar';
@@ -31,10 +32,12 @@ export default function RootLayout({
         <meta name="theme-color" content="#0F1F3D" />
       </head>
       <body className={`${dmSans.variable} ${dmMono.variable} font-sans`}>
-        <div className="min-h-screen bg-gray-50">
-          <NavBar />
-          <main>{children}</main>
-        </div>
+        <AuthProvider>
+          <div className="min-h-screen bg-gray-50">
+            <NavBar />
+            <main>{children}</main>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );
