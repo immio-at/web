@@ -3,7 +3,53 @@
 import { useState, useMemo } from 'react';
 import { Property, updateProperty as apiUpdateProperty } from '@/lib/api';
 
-type ViewMode = 'tiles' | 'table' | 'map';
+type ViewMode = 'tiles' | 'table';
+
+// Single source of truth for funnel stages — must match FunnelBoard.tsx
+const FUNNEL_STAGES = [
+  { value: 'new',          label: 'New' },
+  { value: 'investigating', label: 'Investigating' },
+  { value: 'interested',   label: 'Interested' },
+  { value: 'visited',      label: 'Visited' },
+  { value: 'offer_made',   label: 'Offer Made' },
+  { value: 'parked',       label: 'Parked' },
+  { value: 'won',          label: 'Won' },
+  { value: 'not_relevant', label: 'Not Relevant' },
+];
+
+// Left-border accent colour per stage for tile cards
+const STATUS_BORDER: Record<string, string> = {
+  investigating: 'border-l-4 border-l-slate-400',
+  interested:    'border-l-4 border-l-emerald-600',
+  visited:       'border-l-4 border-l-blue-500',
+  offer_made:    'border-l-4 border-l-purple-500',
+  parked:        'border-l-4 border-l-amber-600',
+  won:           'border-l-4 border-l-emerald-700',
+  not_relevant:  'border-l-4 border-l-rose-400 opacity-50',
+};
+
+// Dot colour in the tile card status strip
+const STATUS_DOT: Record<string, string> = {
+  investigating: 'bg-slate-400',
+  interested:    'bg-emerald-600',
+  visited:       'bg-blue-500',
+  offer_made:    'bg-purple-500',
+  parked:        'bg-amber-600',
+  won:           'bg-emerald-700',
+  not_relevant:  'bg-rose-400',
+};
+
+// Badge colour in the table view
+const STATUS_BADGE: Record<string, string> = {
+  new:           'bg-gray-100 text-gray-600',
+  investigating: 'bg-slate-100 text-slate-600',
+  interested:    'bg-emerald-100 text-emerald-700',
+  visited:       'bg-blue-100 text-blue-700',
+  offer_made:    'bg-purple-100 text-purple-700',
+  parked:        'bg-amber-100 text-amber-700',
+  won:           'bg-emerald-200 text-emerald-800',
+  not_relevant:  'bg-red-100 text-red-700',
+};
 
 interface Filters {
   search: string;
@@ -49,7 +95,6 @@ export default function DashboardClient({ properties: initial }: { properties: P
 
   const filtered = useMemo(() => {
     return properties.filter(p => {
-      // Hide not_relevant unless showHidden is toggled on
       if (p.status === 'not_relevant' && !filters.showHidden) return false;
 
       const price = p.price ? parseFloat(String(p.price)) : null;
@@ -72,29 +117,28 @@ export default function DashboardClient({ properties: initial }: { properties: P
       const aSize = a.sizeSqm ?? 0;
       const bSize = b.sizeSqm ?? 0;
       switch (sortBy) {
-        case 'status': return (a.status || '').localeCompare(b.status || '');
-        case 'price_asc': return aPrice - bPrice;
+        case 'status':     return (a.status || '').localeCompare(b.status || '');
+        case 'price_asc':  return aPrice - bPrice;
         case 'price_desc': return bPrice - aPrice;
-        case 'size_asc': return aSize - bSize;
-        case 'size_desc': return bSize - aSize;
-        case 'oldest': return new Date(a.emailReceivedAt).getTime() - new Date(b.emailReceivedAt).getTime();
-        default: return new Date(b.emailReceivedAt).getTime() - new Date(a.emailReceivedAt).getTime();
+        case 'size_asc':   return aSize - bSize;
+        case 'size_desc':  return bSize - aSize;
+        case 'oldest':     return new Date(a.emailReceivedAt).getTime() - new Date(b.emailReceivedAt).getTime();
+        default:           return new Date(b.emailReceivedAt).getTime() - new Date(a.emailReceivedAt).getTime();
       }
     });
   }, [properties, filters, sortBy]);
 
-  // Count active filters — exclude showHidden and search from the badge count
   const activeFilterCount = ['priceMin', 'priceMax', 'sizeMin', 'sizeMax', 'postcode']
     .filter(k => filters[k as keyof Filters] !== '').length
     + (filters.showHidden ? 1 : 0);
 
   return (
     <div>
-      {/* Sub-nav + search bar */}
+      {/* Sub-nav */}
       <div className="flex flex-col gap-3 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex gap-1">
-            {(['tiles', 'table', 'map'] as ViewMode[]).map(v => (
+            {(['tiles', 'table'] as ViewMode[]).map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
@@ -104,7 +148,7 @@ export default function DashboardClient({ properties: initial }: { properties: P
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                {v === 'tiles' ? '⊞ Tiles' : v === 'table' ? '☰ Table' : '🗺 Map'}
+                {v === 'tiles' ? '⊞ Tiles' : '☰ Table'}
               </button>
             ))}
           </div>
@@ -114,9 +158,9 @@ export default function DashboardClient({ properties: initial }: { properties: P
               onChange={e => setSortBy(e.target.value)}
               className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white"
             >
-              <option value="status">Status</option>
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
+              <option value="status">Status</option>
               <option value="price_asc">Price: Low to High</option>
               <option value="price_desc">Price: High to Low</option>
               <option value="size_asc">Size: Small to Large</option>
@@ -126,7 +170,7 @@ export default function DashboardClient({ properties: initial }: { properties: P
           </div>
         </div>
 
-        {/* Search + filter */}
+        {/* Search + filter toggle */}
         <div className="flex gap-2">
           <input
             type="text"
@@ -152,7 +196,7 @@ export default function DashboardClient({ properties: initial }: { properties: P
           </button>
         </div>
 
-        {/* Filter popup */}
+        {/* Filter panel */}
         {showFilters && (
           <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-lg">
             <div className="flex items-center justify-between mb-4">
@@ -167,62 +211,39 @@ export default function DashboardClient({ properties: initial }: { properties: P
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Min Price (€)</label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={filters.priceMin}
+                <input type="number" placeholder="0" value={filters.priceMin}
                   onChange={e => updateFilter('priceMin', e.target.value)}
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
-                />
+                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Max Price (€)</label>
-                <input
-                  type="number"
-                  placeholder="Any"
-                  value={filters.priceMax}
+                <input type="number" placeholder="Any" value={filters.priceMax}
                   onChange={e => updateFilter('priceMax', e.target.value)}
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
-                />
+                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Min Size (m²)</label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={filters.sizeMin}
+                <input type="number" placeholder="0" value={filters.sizeMin}
                   onChange={e => updateFilter('sizeMin', e.target.value)}
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
-                />
+                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Max Size (m²)</label>
-                <input
-                  type="number"
-                  placeholder="Any"
-                  value={filters.sizeMax}
+                <input type="number" placeholder="Any" value={filters.sizeMax}
                   onChange={e => updateFilter('sizeMax', e.target.value)}
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
-                />
+                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Postcode</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 1010"
-                  value={filters.postcode}
+                <input type="text" placeholder="e.g. 1010" value={filters.postcode}
                   onChange={e => updateFilter('postcode', e.target.value)}
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
-                />
+                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" />
               </div>
               <div className="flex items-end pb-1">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={filters.showHidden}
+                  <input type="checkbox" checked={filters.showHidden}
                     onChange={e => updateFilter('showHidden', e.target.checked)}
-                    className="rounded border-gray-300 text-slate-700 focus:ring-slate-300"
-                  />
+                    className="rounded border-gray-300 text-slate-700 focus:ring-slate-300" />
                   <span className="text-xs font-medium text-gray-700">Show hidden properties</span>
                 </label>
               </div>
@@ -232,20 +253,13 @@ export default function DashboardClient({ properties: initial }: { properties: P
       </div>
 
       {/* Views */}
-      {view === 'tiles' && (
-        <TilesView properties={filtered} onUpdate={updateProperty} />
-      )}
-      {view === 'table' && (
-        <TableView properties={filtered} onUpdate={updateProperty} />
-      )}
-      {view === 'map' && (
-        <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
-          <p className="text-gray-500">Map view coming soon</p>
-        </div>
-      )}
+      {view === 'tiles' && <TilesView properties={filtered} onUpdate={updateProperty} />}
+      {view === 'table' && <TableView properties={filtered} onUpdate={updateProperty} />}
     </div>
   );
 }
+
+// ─── Tile card grid ───────────────────────────────────────────────────────────
 
 function TilesView({ properties, onUpdate }: {
   properties: Property[];
@@ -269,7 +283,7 @@ function TileCard({ property, onUpdate }: {
   property: Property;
   onUpdate: (id: string, data: any) => void;
 }) {
-  const [status, setStatus] = useState(property.status);
+  const [status, setStatus] = useState(property.status || 'new');
   const [loading, setLoading] = useState(false);
 
   const rawPrice = property.price ? parseFloat(String(property.price)) : null;
@@ -277,13 +291,9 @@ function TileCard({ property, onUpdate }: {
     ? '€ ' + Math.round(rawPrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
     : '';
 
-  const borderColor = {
-    interested: 'border-green-400',
-    maybe: 'border-yellow-400',
-    not_relevant: 'border-red-400',
-  }[status] || 'border-transparent';
+  const stageLabel = FUNNEL_STAGES.find(s => s.value === status)?.label ?? 'New';
 
-  async function handleStatus(newStatus: string) {
+  async function handleStatusChange(newStatus: string) {
     setLoading(true);
     await onUpdate(property.id, { status: newStatus });
     setStatus(newStatus);
@@ -291,35 +301,27 @@ function TileCard({ property, onUpdate }: {
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-300 ${
-      status === 'interested' ? 'border-l-4 border-l-emerald-600' :
-      status === 'maybe' ? 'border-l-4 border-l-amber-500' :
-      status === 'not_relevant' ? 'border-l-4 border-l-rose-400 opacity-50' :
-      ''
-    }`}>
+    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-300 ${STATUS_BORDER[status] ?? ''}`}>
+      {/* Status strip — hidden when new */}
       {status !== 'new' && (
         <div className="px-3 py-1.5 border-b border-gray-100 flex items-center gap-1.5">
-          <div className={`w-2 h-2 rounded-full ${
-            status === 'interested' ? 'bg-emerald-600' :
-            status === 'maybe' ? 'bg-amber-500' :
-            'bg-rose-400'
-          }`} />
-          <span className="text-xs text-gray-500 font-medium">
-            {status === 'interested' ? 'Interested' :
-             status === 'maybe' ? 'Maybe' : 'Not Relevant'}
-          </span>
+          <div className={`w-2 h-2 rounded-full ${STATUS_DOT[status] ?? 'bg-gray-400'}`} />
+          <span className="text-xs text-gray-500 font-medium">{stageLabel}</span>
         </div>
       )}
+
+      {/* Image */}
       <a href={property.sourceUrl} target="_blank" rel="noopener noreferrer">
         <div className="relative overflow-hidden bg-gray-200 rounded-t-lg" style={{ height: '192px' }}>
           {property.imageUrl ? (
             <img
               src={property.imageUrl}
-              alt={property.title}
+              alt={property.title ?? ''}
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center h-full"><span class="text-4xl text-gray-400">🏠</span></div>';
+                e.currentTarget.parentElement!.innerHTML =
+                  '<div class="flex items-center justify-center h-full"><span class="text-4xl text-gray-400">🏠</span></div>';
               }}
             />
           ) : (
@@ -329,6 +331,8 @@ function TileCard({ property, onUpdate }: {
           )}
         </div>
       </a>
+
+      {/* Details */}
       <div className="p-4">
         <a href={property.sourceUrl} target="_blank" rel="noopener noreferrer">
           <h3 className="font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors line-clamp-2">
@@ -343,28 +347,37 @@ function TileCard({ property, onUpdate }: {
             {property.rooms && <span>🏠 {property.rooms} Zi.</span>}
           </div>
         </div>
-        <div className="flex gap-2">
-          {['interested', 'maybe', 'not_relevant'].map(s => (
-            <button
-              key={s}
-              onClick={() => handleStatus(s)}
-              disabled={loading}
-              className={`flex-1 py-2 rounded-lg text-sm transition-colors ${
-                status === s
-                  ? s === 'interested' ? 'bg-green-500 text-white'
-                    : s === 'maybe' ? 'bg-yellow-400 text-white'
-                    : 'bg-red-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {s === 'interested' ? '✅' : s === 'maybe' ? '🤷‍♀️' : '❌'}
-            </button>
-          ))}
+
+        {/* Funnel stage dropdown + dismiss */}
+        <div className="flex gap-2 items-center">
+          <select
+            value={status}
+            disabled={loading}
+            onChange={e => handleStatusChange(e.target.value)}
+            className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white disabled:opacity-50"
+          >
+            {FUNNEL_STAGES.filter(s => s.value !== 'not_relevant').map(stage => (
+              <option key={stage.value} value={stage.value}>
+                {stage.label}
+              </option>
+            ))}
+          </select>
+          {/* Dismiss — sets not_relevant, hiding the card from default view */}
+          <button
+            onClick={() => handleStatusChange('not_relevant')}
+            disabled={loading || status === 'not_relevant'}
+            title="Dismiss — hide this property"
+            className="p-2 rounded-lg border border-gray-200 text-gray-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors disabled:opacity-30"
+          >
+            ✕
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
+// ─── Table view ───────────────────────────────────────────────────────────────
 
 function TableView({ properties, onUpdate }: {
   properties: Property[];
@@ -408,20 +421,16 @@ function TableView({ properties, onUpdate }: {
                 ? '€ ' + Math.round(rawPrice / prop.sizeSqm).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
                 : '—';
               const dateText = new Date(prop.emailReceivedAt).toLocaleDateString('de-AT');
+              const stageLabel = FUNNEL_STAGES.find(s => s.value === prop.status)?.label ?? 'New';
 
               return (
                 <tr key={prop.id} className={`border-b border-gray-100 hover:bg-gray-50 ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
                   <td className="px-4 py-2">
                     <div className="relative rounded overflow-hidden bg-gray-100" style={{ width: '48px', height: '48px' }}>
                       {prop.imageUrl ? (
-                        <img
-                          src={prop.imageUrl}
-                          alt={prop.title}
+                        <img src={prop.imageUrl} alt={prop.title ?? ''}
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                       ) : (
                         <span className="text-xl flex items-center justify-center h-full">🏠</span>
                       )}
@@ -439,13 +448,8 @@ function TableView({ properties, onUpdate }: {
                   <td className="px-4 py-2 whitespace-nowrap">{prop.location || '—'}</td>
                   <td className="px-4 py-2 whitespace-nowrap text-gray-500">{pricePerSqm}</td>
                   <td className="px-4 py-2">
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      prop.status === 'interested' ? 'bg-green-100 text-green-700' :
-                      prop.status === 'maybe' ? 'bg-yellow-100 text-yellow-700' :
-                      prop.status === 'not_relevant' ? 'bg-red-100 text-red-700' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>
-                      {prop.status || 'new'}
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${STATUS_BADGE[prop.status ?? ''] ?? 'bg-gray-100 text-gray-600'}`}>
+                      {stageLabel}
                     </span>
                   </td>
                   <td className="px-4 py-2 text-gray-500 whitespace-nowrap">{dateText}</td>
@@ -456,28 +460,19 @@ function TableView({ properties, onUpdate }: {
                           value={noteValues[prop.id]}
                           onChange={e => setNoteValues(prev => ({ ...prev, [prop.id]: e.target.value }))}
                           className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-slate-300 resize-none"
-                          rows={3}
-                          autoFocus
+                          rows={3} autoFocus
                         />
                         <div className="flex gap-1">
                           <button onClick={() => saveNotes(prop.id)}
-                            className="flex-1 bg-slate-700 text-white text-xs py-1 rounded hover:bg-slate-800">
-                            Save
-                          </button>
+                            className="flex-1 bg-slate-700 text-white text-xs py-1 rounded hover:bg-slate-800">Save</button>
                           <button onClick={() => setEditingNotes(null)}
-                            className="flex-1 bg-gray-100 text-gray-600 text-xs py-1 rounded hover:bg-gray-200">
-                            Cancel
-                          </button>
+                            className="flex-1 bg-gray-100 text-gray-600 text-xs py-1 rounded hover:bg-gray-200">Cancel</button>
                         </div>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setEditingNotes(prop.id)}
-                        className="w-full text-left text-xs text-gray-500 hover:text-gray-900 min-h-8"
-                      >
-                        {noteValues[prop.id] || (
-                          <span className="text-gray-300 italic">Add note...</span>
-                        )}
+                      <button onClick={() => setEditingNotes(prop.id)}
+                        className="w-full text-left text-xs text-gray-500 hover:text-gray-900 min-h-8">
+                        {noteValues[prop.id] || <span className="text-gray-300 italic">Add note...</span>}
                       </button>
                     )}
                   </td>
