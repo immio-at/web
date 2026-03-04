@@ -173,8 +173,8 @@ export default function FunnelBoard() {
           const avg = prices.length > 0 ? total / prices.length : 0;
           const hasPrice = prices.length > 0;
 
-          // Light backgrounds (parked, teal-200, teal-300) need dark text
-          const isLight      = stage.parked || stage.key === 'visited' || stage.key === 'offer_made';
+          // Light backgrounds need dark text; all others are dark enough for white
+          const isLight      = stage.parked || stage.key === 'investigating' || stage.key === 'interested';
           const labelStyle   = isLight ? 'text-slate-600 font-semibold text-sm' : 'text-white font-semibold text-sm';
           const summaryStyle = isLight ? 'text-slate-500' : 'text-white opacity-80';
 
@@ -326,6 +326,14 @@ function FunnelCard({
             {property.rooms && <span>{property.rooms} Zi.</span>}
           </div>
         </div>
+
+        {/* Analyse button — placeholder for property detail view */}
+        <button
+          className="w-full text-xs text-slate-600 font-medium border border-slate-300 rounded px-2 py-1 hover:bg-slate-50 transition-colors mb-1.5"
+          title="Property detail view — coming soon"
+        >
+          🔍 Analyse
+        </button>
 
         {/* Move to stage dropdown */}
         <div className="relative">
