@@ -12,13 +12,13 @@ import { useProperties } from '@/hooks/useProperties';
 // Investigating  Interested  Visit Booked  Visited  Offer Made   Won
 
 const STAGES = [
-  { key: 'investigating', label: 'Investigating', header: 'bg-slate-400', parked: false },
-  { key: 'interested',    label: 'Interested',    header: 'bg-slate-450',  parked: false },
+  { key: 'investigating', label: 'Investigating', header: 'bg-slate-300', parked: false },
+  { key: 'interested',    label: 'Interested',    header: 'bg-slate-400',  parked: false },
   { key: 'visit_booked',  label: 'Visit Booked',  header: 'bg-slate-500',  parked: false },
-  { key: 'visited',       label: 'Visited',       header: 'bg-slate-550',  parked: false },
-  { key: 'offer_made',    label: 'Offer Made',    header: 'bg-slate-6000',  parked: false },
+  { key: 'visited',       label: 'Visited',       header: 'bg-slate-600',  parked: false },
+  { key: 'offer_made',    label: 'Offer Made',    header: 'bg-teal-500',  parked: false },
+  { key: 'won',           label: 'Won',           header: 'bg-teal-600',  parked: false },
   { key: 'parked',        label: 'Parked',        header: 'bg-slate-200',  parked: true  },
-  { key: 'won',           label: 'Won',           header: 'bg-teal-500',  parked: false },
 ];
 
 const NOT_RELEVANT = { key: 'not_relevant', label: 'Not Relevant' };
