@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +22,7 @@ export default function RegisterPage() {
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, inviteCode }),
       });
 
       const data = await response.json();
@@ -31,6 +32,8 @@ export default function RegisterPage() {
         return;
       }
 
+      // Registration with a valid invite code auto-approves the user,
+      // so redirect straight to login rather than a pending page
       router.push('/login?registered=true');
 
     } catch (e) {
@@ -76,10 +79,26 @@ export default function RegisterPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
               className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="••••••••"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Invite Code
+            </label>
+            <input
+              type="text"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
+              className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono tracking-widest"
+              placeholder="IMMIO-XXXX-XXX"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              IMMIO is currently invite-only. Contact us to request access.
+            </p>
           </div>
 
           <button

@@ -3,7 +3,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 function LoginForm() {
   const router = useRouter();
@@ -11,9 +12,13 @@ function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (searchParams.get('registered') === 'true') {
+      setSuccess('Account created! Please check your email to confirm, then sign in.');
+    }
     if (searchParams.get('reason') === 'session_expired') {
       setError('Your session expired. Please sign in again.');
     }
@@ -23,18 +28,38 @@ function LoginForm() {
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (error) {
-      setError(error.message);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Login failed');
+        return;
+      }
+
+      // Store token and user info for use across the app
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('userEmail', data.email);
+      localStorage.setItem('immioEmail', data.immioEmail);
+
+      // Gate on approval status before allowing access to the app
+      if (!data.approved) {
+        router.push('/pending');
+        return;
+      }
+
+      router.push('/dashboard');
+
+    } catch (e) {
+      setError('Could not connect to server');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    router.push('/dashboard');
   }
 
   return (
@@ -43,6 +68,12 @@ function LoginForm() {
         IM<span className="text-4xl">M</span>IO
       </h1>
       <p className="text-gray-600 mb-8">Sign in to your account</p>
+
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded p-3 mb-4">
+          <p className="text-green-800 text-sm">{success}</p>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded p-3 mb-4">
