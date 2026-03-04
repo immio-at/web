@@ -17,6 +17,7 @@ export interface Property {
   emailReceivedAt: string;
   createdAt: string;
   notes: string | null;
+  movedToStageAt: string | null;
 }
 
 async function getAuthToken(): Promise<string> {
@@ -59,7 +60,7 @@ export async function getProperties(): Promise<Property[]> {
   return handleResponse(response);
 }
 
-export async function updateProperty(id: string, data: { status?: string; notes?: string }) {
+export async function updateProperty(id: string, data: { status?: string; notes?: string; movedToStageAt?: string }) {
   const token = await getAuthToken();
 
   const response = await fetch(`${API_URL}/properties/${id}`, {
