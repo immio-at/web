@@ -5,29 +5,28 @@ import { Property, updateProperty } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 
 // ─── Stage definitions ────────────────────────────────────────────────────────
-// Colour progression: slate-400 → slate-500 → teal-600 → teal-700 → emerald-600
-// Parked sits outside the gradient as a neutral light grey.
+// Subtle 6-step progression from neutral grey through to muted teal-green.
+// Parked sits entirely outside the gradient as a light neutral.
+//
+// slate-400 → slate-500 → slate-600 → teal-400 → teal-500 → teal-600
+// Investigating  Interested  Visit Booked  Visited  Offer Made   Won
 
 const STAGES = [
-  { key: 'investigating', label: 'Investigating', header: 'bg-slate-400',   parked: false },
-  { key: 'interested',    label: 'Interested',    header: 'bg-slate-500',   parked: false },
-  { key: 'visit_booked',  label: 'Visit Booked',  header: 'bg-slate-500',   parked: false },
-  { key: 'visited',       label: 'Visited',       header: 'bg-teal-600',    parked: false },
-  { key: 'offer_made',    label: 'Offer Made',    header: 'bg-teal-700',    parked: false },
-  { key: 'parked',        label: 'Parked',        header: 'bg-slate-200',   parked: true  },
-  { key: 'won',           label: 'Won',           header: 'bg-emerald-600', parked: false },
+  { key: 'investigating', label: 'Investigating', header: 'bg-slate-400', parked: false },
+  { key: 'interested',    label: 'Interested',    header: 'bg-slate-500',  parked: false },
+  { key: 'visit_booked',  label: 'Visit Booked',  header: 'bg-slate-600',  parked: false },
+  { key: 'visited',       label: 'Visited',       header: 'bg-teal-200',  parked: false },
+  { key: 'offer_made',    label: 'Offer Made',    header: 'bg-teal-300',  parked: false },
+  { key: 'parked',        label: 'Parked',        header: 'bg-slate-200',  parked: true  },
+  { key: 'won',           label: 'Won',           header: 'bg-teal-400',  parked: false },
 ];
 
 const NOT_RELEVANT = { key: 'not_relevant', label: 'Not Relevant' };
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PendingMove {
   propertyId: string;
   propertyTitle: string;
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatPrice(n: number): string {
   return '€' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -176,12 +175,10 @@ export default function FunnelBoard() {
           const avg = prices.length > 0 ? total / prices.length : 0;
           const hasPrice = prices.length > 0;
 
-          // Parked uses light background — needs dark text
-          const headerText   = stage.parked ? 'text-slate-600' : 'text-white';
-          const badgeStyle   = stage.parked
-            ? 'bg-slate-400 bg-opacity-30 text-slate-600'
-            : 'bg-white bg-opacity-30 text-white';
-          const summaryStyle = stage.parked ? 'text-slate-400' : 'text-white opacity-75';
+          // Light backgrounds (parked, teal-200, teal-300) need dark text
+          const isLight      = stage.parked || stage.key === 'visited' || stage.key === 'offer_made';
+          const labelStyle   = isLight ? 'text-slate-600 font-semibold text-sm' : 'text-white font-semibold text-sm';
+          const summaryStyle = isLight ? 'text-slate-500' : 'text-white opacity-80';
 
           return (
             <div
@@ -193,13 +190,13 @@ export default function FunnelBoard() {
             >
               {/* Column header */}
               <div className={`${stage.header} rounded-t-lg px-3 pt-2 pb-2`}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`font-semibold text-sm ${headerText}`}>{stage.label}</span>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeStyle}`}>
-                    {stageProps.length}
-                  </span>
-                </div>
-                <div className={`flex gap-2 text-xs ${summaryStyle}`}>
+                {/* Stage name — full width, no badge */}
+                <span className={labelStyle}>{stage.label}</span>
+
+                {/* Count + price summary on one line */}
+                <div className={`flex gap-2 text-xs mt-1 ${summaryStyle}`}>
+                  <span className="font-medium">#{stageProps.length}</span>
+                  <span className="opacity-40">·</span>
                   <span>Ø {hasPrice ? formatPrice(avg) : '—'}</span>
                   <span className="opacity-40">·</span>
                   <span>Σ {hasPrice ? formatPrice(total) : '—'}</span>
