@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Property, updateProperty } from '@/lib/api';
+import { Property } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 
 // ─── Stage definitions ────────────────────────────────────────────────────────
@@ -17,8 +17,8 @@ const STAGES = [
   { key: 'visit_booked',  label: 'Visit Booked',  header: 'bg-slate-500',  parked: false },
   { key: 'visited',       label: 'Visited',       header: 'bg-slate-600',  parked: false },
   { key: 'offer_made',    label: 'Offer Made',    header: 'bg-teal-500',  parked: false },
-  { key: 'won',           label: 'Won',           header: 'bg-teal-600',  parked: false },
   { key: 'parked',        label: 'Parked',        header: 'bg-slate-200',  parked: true  },
+  { key: 'won',           label: 'Won',           header: 'bg-teal-600',  parked: false },
 ];
 
 const NOT_RELEVANT = { key: 'not_relevant', label: 'Not Relevant' };
@@ -82,23 +82,21 @@ function ConfirmModal({
 // ─── Main board ───────────────────────────────────────────────────────────────
 
 export default function FunnelBoard() {
-  const { properties: all, loading, error } = useProperties();
-  const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const { properties: all, loading, error, update } = useProperties();
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const draggedId = useRef<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
   const properties = all
     .filter(p => p.status !== 'new' && p.status !== 'not_relevant')
-    .map(p => overrides[p.id] ? { ...p, status: overrides[p.id] } : p);
+;
 
   async function moveToStage(propertyId: string, newStatus: string) {
     try {
-      await updateProperty(propertyId, {
+      await update(propertyId, {
         status: newStatus,
         movedToStageAt: new Date().toISOString(),
       });
-      setOverrides(prev => ({ ...prev, [propertyId]: newStatus }));
     } catch (e) {
       console.error('Failed to update status', e);
     }

@@ -1,54 +1,58 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Property, updateProperty as apiUpdateProperty } from '@/lib/api';
+import { Property } from '@/lib/api';
 
 type ViewMode = 'tiles' | 'table';
 
 // Single source of truth for funnel stages — must match FunnelBoard.tsx
 const FUNNEL_STAGES = [
-  { value: 'new',          label: 'New' },
+  { value: 'new',           label: 'New' },
   { value: 'investigating', label: 'Investigating' },
-  { value: 'interested',   label: 'Interested' },
-  { value: 'visited',      label: 'Visited' },
-  { value: 'offer_made',   label: 'Offer Made' },
-  { value: 'parked',       label: 'Parked' },
-  { value: 'won',          label: 'Won' },
-  { value: 'not_relevant', label: 'Not Relevant' },
+  { value: 'interested',    label: 'Interested' },
+  { value: 'visit_booked',  label: 'Visit Booked' },  // ← added
+  { value: 'visited',       label: 'Visited' },
+  { value: 'offer_made',    label: 'Offer Made' },
+  { value: 'parked',        label: 'Parked' },
+  { value: 'won',           label: 'Won' },
+  { value: 'not_relevant',  label: 'Not Relevant' },
 ];
 
 // Left-border accent colour per stage for tile cards
 const STATUS_BORDER: Record<string, string> = {
   investigating: 'border-l-4 border-l-slate-400',
-  interested:    'border-l-4 border-l-emerald-600',
-  visited:       'border-l-4 border-l-blue-500',
-  offer_made:    'border-l-4 border-l-purple-500',
-  parked:        'border-l-4 border-l-amber-600',
-  won:           'border-l-4 border-l-emerald-700',
-  not_relevant:  'border-l-4 border-l-rose-400 opacity-50',
+  interested:    'border-l-4 border-l-slate-500',
+  visit_booked:  'border-l-4 border-l-slate-600',
+  visited:       'border-l-4 border-l-slate-600',
+  offer_made:    'border-l-4 border-l-teal-500',
+  parked:        'border-l-4 border-l-slate-300',
+  won:           'border-l-4 border-l-teal-600',
+  not_relevant:  'border-l-4 border-l-rose-300 opacity-50',
 };
 
 // Dot colour in the tile card status strip
 const STATUS_DOT: Record<string, string> = {
   investigating: 'bg-slate-400',
-  interested:    'bg-emerald-600',
-  visited:       'bg-blue-500',
-  offer_made:    'bg-purple-500',
-  parked:        'bg-amber-600',
-  won:           'bg-emerald-700',
-  not_relevant:  'bg-rose-400',
+  interested:    'bg-slate-500',
+  visit_booked:  'bg-slate-600',
+  visited:       'bg-slate-600',
+  offer_made:    'bg-teal-500',
+  parked:        'bg-slate-300',
+  won:           'bg-teal-600',
+  not_relevant:  'bg-rose-300',
 };
 
 // Badge colour in the table view
 const STATUS_BADGE: Record<string, string> = {
   new:           'bg-gray-100 text-gray-600',
   investigating: 'bg-slate-100 text-slate-600',
-  interested:    'bg-emerald-100 text-emerald-700',
-  visited:       'bg-blue-100 text-blue-700',
-  offer_made:    'bg-purple-100 text-purple-700',
-  parked:        'bg-amber-100 text-amber-700',
-  won:           'bg-emerald-200 text-emerald-800',
-  not_relevant:  'bg-red-100 text-red-700',
+  interested:    'bg-slate-200 text-slate-700',
+  visit_booked:  'bg-slate-300 text-slate-700',
+  visited:       'bg-slate-300 text-slate-700',
+  offer_made:    'bg-teal-100 text-teal-700',
+  parked:        'bg-gray-100 text-gray-500',
+  won:           'bg-teal-200 text-teal-800',
+  not_relevant:  'bg-rose-100 text-rose-700',
 };
 
 interface Filters {
@@ -71,26 +75,26 @@ const defaultFilters: Filters = {
   showHidden: false,
 };
 
-export default function DashboardClient({ properties: initial }: { properties: Property[] }) {
+// ─── onUpdate type matches useProperties.update signature ────────────────────
+type UpdateFn = (id: string, data: { status?: string; notes?: string; movedToStageAt?: string }) => Promise<void>;
+
+export default function DashboardClient({
+  properties,
+  onUpdate,
+}: {
+  properties: Property[];
+  onUpdate: UpdateFn;
+}) {
   const [view, setView] = useState<ViewMode>('tiles');
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [filters, setFilters] = useState<Filters>(defaultFilters);
-  const [properties, setProperties] = useState(initial);
+
+  // No local properties state — properties come from the shared cache via page.tsx
+  // Updates call onUpdate which writes through to the cache immediately
 
   function updateFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
     setFilters(prev => ({ ...prev, [key]: value }));
-  }
-
-  async function updateProperty(id: string, data: { status?: string; notes?: string }) {
-    try {
-      await apiUpdateProperty(id, data);
-      setProperties(prev =>
-        prev.map(p => p.id === id ? { ...p, ...data } : p)
-      );
-    } catch (e) {
-      console.error('Failed to update property', e);
-    }
   }
 
   const filtered = useMemo(() => {
@@ -253,8 +257,8 @@ export default function DashboardClient({ properties: initial }: { properties: P
       </div>
 
       {/* Views */}
-      {view === 'tiles' && <TilesView properties={filtered} onUpdate={updateProperty} />}
-      {view === 'table' && <TableView properties={filtered} onUpdate={updateProperty} />}
+      {view === 'tiles' && <TilesView properties={filtered} onUpdate={onUpdate} />}
+      {view === 'table' && <TableView properties={filtered} onUpdate={onUpdate} />}
     </div>
   );
 }
@@ -263,7 +267,7 @@ export default function DashboardClient({ properties: initial }: { properties: P
 
 function TilesView({ properties, onUpdate }: {
   properties: Property[];
-  onUpdate: (id: string, data: any) => void;
+  onUpdate: UpdateFn;
 }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -281,10 +285,13 @@ function TilesView({ properties, onUpdate }: {
 
 function TileCard({ property, onUpdate }: {
   property: Property;
-  onUpdate: (id: string, data: any) => void;
+  onUpdate: UpdateFn;
 }) {
-  const [status, setStatus] = useState(property.status || 'new');
   const [loading, setLoading] = useState(false);
+
+  // Derive status from prop directly — no local state needed since
+  // updates flow through the shared cache back into this component via props
+  const status = property.status || 'new';
 
   const rawPrice = property.price ? parseFloat(String(property.price)) : null;
   const priceText = rawPrice
@@ -295,8 +302,10 @@ function TileCard({ property, onUpdate }: {
 
   async function handleStatusChange(newStatus: string) {
     setLoading(true);
-    await onUpdate(property.id, { status: newStatus });
-    setStatus(newStatus);
+    await onUpdate(property.id, {
+      status: newStatus,
+      movedToStageAt: new Date().toISOString(),
+    });
     setLoading(false);
   }
 
@@ -362,7 +371,6 @@ function TileCard({ property, onUpdate }: {
               </option>
             ))}
           </select>
-          {/* Dismiss — sets not_relevant, hiding the card from default view */}
           <button
             onClick={() => handleStatusChange('not_relevant')}
             disabled={loading || status === 'not_relevant'}
@@ -381,7 +389,7 @@ function TileCard({ property, onUpdate }: {
 
 function TableView({ properties, onUpdate }: {
   properties: Property[];
-  onUpdate: (id: string, data: any) => void;
+  onUpdate: UpdateFn;
 }) {
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [noteValues, setNoteValues] = useState<Record<string, string>>(
