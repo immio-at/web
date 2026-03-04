@@ -5,17 +5,17 @@ import { Property, updateProperty } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 
 // ─── Stage definitions ────────────────────────────────────────────────────────
-// Order matters — this is the canonical funnel sequence.
-// visit_booked sits between interested and visited.
+// Colour progression: slate-400 → slate-500 → teal-600 → teal-700 → emerald-600
+// Parked sits outside the gradient as a neutral light grey.
 
 const STAGES = [
-  { key: 'investigating',  label: 'Investigating',  header: 'bg-slate-500' },
-  { key: 'interested',     label: 'Interested',     header: 'bg-slate-600' },
-  { key: 'visit_booked',   label: 'Visit Booked',   header: 'bg-blue-600'  },
-  { key: 'visited',        label: 'Visited',        header: 'bg-slate-600' },
-  { key: 'offer_made',     label: 'Offer Made',     header: 'bg-slate-700' },
-  { key: 'parked',         label: 'Parked',         header: 'bg-amber-700' },
-  { key: 'won',            label: 'Won',            header: 'bg-emerald-700' },
+  { key: 'investigating', label: 'Investigating', header: 'bg-slate-400',   parked: false },
+  { key: 'interested',    label: 'Interested',    header: 'bg-slate-500',   parked: false },
+  { key: 'visit_booked',  label: 'Visit Booked',  header: 'bg-slate-500',   parked: false },
+  { key: 'visited',       label: 'Visited',       header: 'bg-teal-600',    parked: false },
+  { key: 'offer_made',    label: 'Offer Made',    header: 'bg-teal-700',    parked: false },
+  { key: 'parked',        label: 'Parked',        header: 'bg-slate-200',   parked: true  },
+  { key: 'won',           label: 'Won',           header: 'bg-emerald-600', parked: false },
 ];
 
 const NOT_RELEVANT = { key: 'not_relevant', label: 'Not Relevant' };
@@ -27,7 +27,13 @@ interface PendingMove {
   propertyTitle: string;
 }
 
-// ─── Confirm modal (not_relevant only) ───────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatPrice(n: number): string {
+  return '€' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// ─── Confirm modal ────────────────────────────────────────────────────────────
 
 function ConfirmModal({
   propertyTitle,
@@ -64,7 +70,7 @@ function ConfirmModal({
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors"
+            className="flex-1 px-4 py-2 rounded-lg bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors"
           >
             Yes, hide it
           </button>
@@ -80,17 +86,12 @@ export default function FunnelBoard() {
   const { properties: all, loading, error } = useProperties();
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
-
-  // draggedId tracks which card is currently being dragged
   const draggedId = useRef<string | null>(null);
-  // dragOverStage tracks which column the card is hovering over
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
   const properties = all
     .filter(p => p.status !== 'new' && p.status !== 'not_relevant')
     .map(p => overrides[p.id] ? { ...p, status: overrides[p.id] } : p);
-
-  // ── Move logic ──────────────────────────────────────────────────────────────
 
   async function moveToStage(propertyId: string, newStatus: string) {
     try {
@@ -118,14 +119,12 @@ export default function FunnelBoard() {
     setPendingMove(null);
   }
 
-  // ── Drag handlers ───────────────────────────────────────────────────────────
-
   function handleDragStart(propertyId: string) {
     draggedId.current = propertyId;
   }
 
   function handleDragOver(e: React.DragEvent, stageKey: string) {
-    e.preventDefault(); // required to allow drop
+    e.preventDefault();
     setDragOverStage(stageKey);
   }
 
@@ -136,17 +135,11 @@ export default function FunnelBoard() {
   function handleDrop(e: React.DragEvent, stageKey: string) {
     e.preventDefault();
     setDragOverStage(null);
-
     const id = draggedId.current;
     if (!id) return;
     draggedId.current = null;
-
     const property = properties.find(p => p.id === id);
-    if (!property) return;
-
-    // No-op if dropped on the same stage
-    if (property.status === stageKey) return;
-
+    if (!property || property.status === stageKey) return;
     requestMove(id, property.title ?? '', stageKey);
   }
 
@@ -154,8 +147,6 @@ export default function FunnelBoard() {
     draggedId.current = null;
     setDragOverStage(null);
   }
-
-  // ── Render ──────────────────────────────────────────────────────────────────
 
   if (loading) return <div className="text-gray-500 py-12 text-center">Loading funnel...</div>;
   if (error)   return <div className="text-red-500 py-12 text-center">{error}</div>;
@@ -177,6 +168,21 @@ export default function FunnelBoard() {
           const stageProps = properties.filter(p => p.status === stage.key);
           const isOver = dragOverStage === stage.key;
 
+          // Price calculations
+          const prices = stageProps
+            .map(p => p.price ? parseFloat(String(p.price)) : null)
+            .filter((p): p is number => p !== null);
+          const total = prices.reduce((sum, p) => sum + p, 0);
+          const avg = prices.length > 0 ? total / prices.length : 0;
+          const hasPrice = prices.length > 0;
+
+          // Parked uses light background — needs dark text
+          const headerText   = stage.parked ? 'text-slate-600' : 'text-white';
+          const badgeStyle   = stage.parked
+            ? 'bg-slate-400 bg-opacity-30 text-slate-600'
+            : 'bg-white bg-opacity-30 text-white';
+          const summaryStyle = stage.parked ? 'text-slate-400' : 'text-white opacity-75';
+
           return (
             <div
               key={stage.key}
@@ -186,14 +192,21 @@ export default function FunnelBoard() {
               onDrop={(e) => handleDrop(e, stage.key)}
             >
               {/* Column header */}
-              <div className={`${stage.header} text-white rounded-t-lg px-3 py-2 flex items-center justify-between`}>
-                <span className="font-semibold text-sm">{stage.label}</span>
-                <span className="bg-white bg-opacity-30 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {stageProps.length}
-                </span>
+              <div className={`${stage.header} rounded-t-lg px-3 pt-2 pb-2`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`font-semibold text-sm ${headerText}`}>{stage.label}</span>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeStyle}`}>
+                    {stageProps.length}
+                  </span>
+                </div>
+                <div className={`flex gap-2 text-xs ${summaryStyle}`}>
+                  <span>Ø {hasPrice ? formatPrice(avg) : '—'}</span>
+                  <span className="opacity-40">·</span>
+                  <span>Σ {hasPrice ? formatPrice(total) : '—'}</span>
+                </div>
               </div>
 
-              {/* Column body — highlights when a card is dragged over it */}
+              {/* Column body */}
               <div
                 className={`border border-t-0 rounded-b-lg min-h-32 p-2 space-y-2 transition-colors duration-150 ${
                   isOver
@@ -246,9 +259,7 @@ function FunnelCard({
   const [isDragging, setIsDragging] = useState(false);
 
   const rawPrice = property.price ? parseFloat(String(property.price)) : null;
-  const priceText = rawPrice
-    ? '€ ' + Math.round(rawPrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-    : '';
+  const priceText = rawPrice ? formatPrice(rawPrice) : '';
 
   const moveOptions = [
     ...stages.filter(s => s.key !== property.status),
@@ -256,7 +267,6 @@ function FunnelCard({
   ];
 
   function handleDragStart(e: React.DragEvent) {
-    // Required: set drag data (content doesn't matter, we use the ref)
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', property.id);
     setIsDragging(true);
@@ -285,7 +295,7 @@ function FunnelCard({
           rel="noopener noreferrer"
           className="block w-full bg-gray-100 overflow-hidden"
           style={{ height: '96px' }}
-          draggable={false} // prevent image drag interfering with card drag
+          draggable={false}
         >
           <img
             src={property.imageUrl}
@@ -341,11 +351,11 @@ function FunnelCard({
                   }}
                   className={`w-full text-left text-xs px-3 py-2 hover:bg-gray-50 transition-colors ${
                     s.key === 'not_relevant'
-                      ? 'text-red-500 border-t border-gray-100 font-medium'
+                      ? 'text-rose-500 border-t border-gray-100 font-medium'
                       : 'text-gray-700'
                   } ${i === moveOptions.length - 2 ? 'border-b border-gray-100' : ''}`}
                 >
-                  {s.key === 'not_relevant' ? '❌ Not Relevant' : s.label}
+                  {s.key === 'not_relevant' ? '✕ Not Relevant' : s.label}
                 </button>
               ))}
             </div>
