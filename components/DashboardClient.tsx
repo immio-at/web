@@ -429,7 +429,6 @@ function TableView({ properties, onUpdate }: {
                 ? '€ ' + Math.round(rawPrice / prop.sizeSqm).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
                 : '—';
               const dateText = new Date(prop.emailReceivedAt).toLocaleDateString('de-AT');
-              const stageLabel = FUNNEL_STAGES.find(s => s.value === prop.status)?.label ?? 'New';
 
               return (
                 <tr key={prop.id} className={`border-b border-gray-100 hover:bg-gray-50 ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
@@ -456,9 +455,25 @@ function TableView({ properties, onUpdate }: {
                   <td className="px-4 py-2 whitespace-nowrap">{prop.location || '—'}</td>
                   <td className="px-4 py-2 whitespace-nowrap text-gray-500">{pricePerSqm}</td>
                   <td className="px-4 py-2">
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${STATUS_BADGE[prop.status ?? ''] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {stageLabel}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <select
+                        defaultValue={prop.status ?? 'new'}
+                        onChange={e => onUpdate(prop.id, { status: e.target.value, movedToStageAt: new Date().toISOString() })}
+                        className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-300 ${STATUS_BADGE[prop.status ?? ''] ?? 'bg-gray-100 text-gray-600'}`}
+                      >
+                        {FUNNEL_STAGES.filter(s => s.value !== 'not_relevant').map(stage => (
+                          <option key={stage.value} value={stage.value}>{stage.label}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => onUpdate(prop.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() })}
+                        disabled={prop.status === 'not_relevant'}
+                        title="Dismiss — hide this property"
+                        className="text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded px-1 py-0.5 text-xs font-bold leading-none transition-colors disabled:opacity-20"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </td>
                   <td className="px-4 py-2 text-gray-500 whitespace-nowrap">{dateText}</td>
                   <td className="px-4 py-2">

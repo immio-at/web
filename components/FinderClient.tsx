@@ -151,6 +151,7 @@ export default function FinderClient() {
         style={{
           transform: `translateX(${dragX}px) translateY(${dragY}px) rotate(${dragX * 0.04}deg)`,
           transition: isDragging ? 'none' : 'transform 0.3s ease',
+          touchAction: 'none',
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
