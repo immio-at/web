@@ -433,15 +433,17 @@ function TableView({ properties, onUpdate }: {
               return (
                 <tr key={prop.id} className={`border-b border-gray-100 hover:bg-gray-50 ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
                   <td className="px-4 py-2">
-                    <div className="relative rounded overflow-hidden bg-gray-100" style={{ width: '48px', height: '48px' }}>
-                      {prop.imageUrl ? (
-                        <img src={prop.imageUrl} alt={prop.title ?? ''}
-                          className="w-full h-full object-cover"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                      ) : (
-                        <span className="text-xl flex items-center justify-center h-full">🏠</span>
-                      )}
-                    </div>
+                    <a href={prop.sourceUrl} target="_blank" rel="noopener noreferrer">
+                      <div className="relative rounded overflow-hidden bg-gray-100 hover:opacity-80 transition-opacity cursor-pointer" style={{ width: '48px', height: '48px' }}>
+                        {prop.imageUrl ? (
+                          <img src={prop.imageUrl} alt={prop.title ?? ''}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                        ) : (
+                          <span className="text-xl flex items-center justify-center h-full">🏠</span>
+                        )}
+                      </div>
+                    </a>
                   </td>
                   <td className="px-4 py-2 max-w-xs">
                     <a href={prop.sourceUrl} target="_blank" rel="noopener noreferrer"

@@ -136,13 +136,12 @@ export default function FinderClient() {
   return (
     <div className="flex-1 flex flex-col items-center justify-start pt-4 px-4 pb-8 w-full">
 
-      {/* Progress */}
-      <div className="text-gray-400 text-sm mb-2">{current} of {total} reviewed</div>
-      <div className="w-full max-w-sm bg-gray-200 rounded-full h-1 mb-6">
-        <div
-          className="bg-slate-700 h-1 rounded-full transition-all"
-          style={{ width: `${(current / total) * 100}%` }}
-        />
+      {/* Directions — single line at top */}
+      <div className="flex gap-6 text-xs text-gray-400 text-center mb-4">
+        <span>← Not Relevant</span>
+        <span>↑ Open</span>
+        <span>↓ Note</span>
+        <span>→ Interested</span>
       </div>
 
       {/* Card */}
@@ -213,16 +212,8 @@ export default function FinderClient() {
         </div>
       </div>
 
-      {/* Swipe hint */}
-      <div className="mt-5 mb-6 grid grid-cols-2 gap-x-8 gap-y-1 text-xs text-gray-400 text-center">
-        <span>← Not Relevant</span>
-        <span>→ Interested</span>
-        <span>↑ Open Listing</span>
-        <span>↓ Add Note</span>
-      </div>
-
       {/* Buttons */}
-      <div className="flex gap-4">
+      <div className="flex gap-4 mt-5">
         <button
           onClick={() => handleAction('not_relevant')}
           title="Not Relevant"
@@ -252,6 +243,9 @@ export default function FinderClient() {
           ✓
         </button>
       </div>
+
+      {/* Progress count */}
+      <div className="text-gray-400 text-xs mt-4">{current} of {total} reviewed</div>
 
       {/* Note dialog */}
       {showNoteDialog && property && (
