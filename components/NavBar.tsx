@@ -65,7 +65,7 @@ export default function NavBar() {
             <Link
               href="/settings"
               title="Settings"
-              className={`text-lg border border-gray-200 rounded-lg px-3 py-1.5 transition-colors ${
+              className={`text-sm border border-gray-200 rounded-lg px-3 py-1.5 transition-colors ${
                 pathname === '/settings'
                   ? 'bg-blue-50 text-blue-600 border-blue-200'
                   : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
