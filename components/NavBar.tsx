@@ -61,12 +61,25 @@ export default function NavBar() {
           </div>
 
           {/* User actions */}
-          <button
-            onClick={handleLogout}
-            className="text-sm text-gray-500 hover:text-gray-900 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
-          >
-            Sign Out
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/settings"
+              title="Settings"
+              className={`text-lg border border-gray-200 rounded-lg px-3 py-1.5 transition-colors ${
+                pathname === '/settings'
+                  ? 'bg-blue-50 text-blue-600 border-blue-200'
+                  : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              ⚙
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="text-sm text-gray-500 hover:text-gray-900 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
 
         {/* Mobile nav - bottom of navbar */}
