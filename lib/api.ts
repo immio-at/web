@@ -1,5 +1,3 @@
-import { supabase } from '@/lib/supabase';
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-production-e03a.up.railway.app';
 
 export interface Property {
@@ -20,35 +18,37 @@ export interface Property {
   movedToStageAt: string | null;
 }
 
-async function getAuthToken(): Promise<string> {
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  if (!session?.access_token) {
-    // No valid session — redirect to login
+function getAuthToken(): string {
+  const token = localStorage.getItem('accessToken');
+
+  if (!token) {
     window.location.href = '/login';
     throw new Error('No active session');
   }
-  
-  return session.access_token;
+
+  return token;
 }
 
 async function handleResponse(response: Response) {
   if (response.status === 401) {
     // Token rejected by backend — clear session and redirect
-    await supabase.auth.signOut();
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('immioEmail');
+    localStorage.removeItem('approved');
     window.location.href = '/login?reason=session_expired';
     throw new Error('Session expired');
   }
-  
+
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
   }
-  
+
   return response.json();
 }
 
 export async function getProperties(): Promise<Property[]> {
-  const token = await getAuthToken();
+  const token = getAuthToken();
 
   const response = await fetch(`${API_URL}/properties`, {
     headers: {
@@ -61,7 +61,7 @@ export async function getProperties(): Promise<Property[]> {
 }
 
 export async function updateProperty(id: string, data: { status?: string; notes?: string; movedToStageAt?: string }) {
-  const token = await getAuthToken();
+  const token = getAuthToken();
 
   const response = await fetch(`${API_URL}/properties/${id}`, {
     method: 'PATCH',
