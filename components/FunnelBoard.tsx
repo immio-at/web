@@ -1,24 +1,21 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Property } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
+import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 
 // ─── Stage definitions ────────────────────────────────────────────────────────
-// Subtle 6-step progression from neutral grey through to muted teal-green.
-// Parked sits entirely outside the gradient as a light neutral.
-//
-// slate-400 → slate-500 → slate-600 → teal-400 → teal-500 → teal-600
-// Investigating  Interested  Visit Booked  Visited  Offer Made   Won
 
 const STAGES = [
   { key: 'investigating', label: 'Investigating', header: 'bg-slate-300', parked: false },
   { key: 'interested',    label: 'Interested',    header: 'bg-slate-400',  parked: false },
   { key: 'visit_booked',  label: 'Visit Booked',  header: 'bg-slate-500',  parked: false },
   { key: 'visited',       label: 'Visited',       header: 'bg-slate-600',  parked: false },
-  { key: 'offer_made',    label: 'Offer Made',    header: 'bg-teal-500',  parked: false },
+  { key: 'offer_made',    label: 'Offer Made',    header: 'bg-teal-500',   parked: false },
   { key: 'parked',        label: 'Parked',        header: 'bg-slate-200',  parked: true  },
-  { key: 'won',           label: 'Won',           header: 'bg-teal-600',  parked: false },
+  { key: 'won',           label: 'Won',           header: 'bg-teal-600',   parked: false },
 ];
 
 const NOT_RELEVANT = { key: 'not_relevant', label: 'Not Relevant' };
@@ -30,6 +27,62 @@ interface PendingMove {
 
 function formatPrice(n: number): string {
   return '€' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// ─── Portal dropdown ──────────────────────────────────────────────────────────
+// Renders into document.body so it is never clipped by a parent overflow:hidden
+
+interface DropdownPortalProps {
+  anchorRect: DOMRect;
+  options: { key: string; label: string }[];
+  onSelect: (key: string) => void;
+  onClose: () => void;
+}
+
+function DropdownPortal({ anchorRect, options, onSelect, onClose }: DropdownPortalProps) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener('mousedown', handle, true);
+    return () => document.removeEventListener('mousedown', handle, true);
+  }, [onClose]);
+
+  const top  = anchorRect.bottom + window.scrollY + 4;
+  const left = anchorRect.left   + window.scrollX;
+  const minW = Math.max(anchorRect.width, 180);
+
+  return createPortal(
+    <div
+      ref={ref}
+      style={{ position: 'absolute', top, left, minWidth: minW, zIndex: 9999 }}
+      className="bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden"
+    >
+      {options.map((s, i) => (
+        <button
+          key={s.key}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            onSelect(s.key);
+          }}
+          className={[
+            'w-full text-left text-xs px-3 py-2 hover:bg-gray-50 transition-colors',
+            s.key === 'not_relevant'
+              ? 'text-rose-500 border-t border-gray-100 font-medium'
+              : 'text-gray-700',
+            i === options.length - 2 ? 'border-b border-gray-100' : '',
+          ].join(' ')}
+        >
+          {s.key === 'not_relevant' ? '✕ Not Relevant' : s.label}
+        </button>
+      ))}
+    </div>,
+    document.body
+  );
 }
 
 // ─── Confirm modal ────────────────────────────────────────────────────────────
@@ -58,7 +111,7 @@ function ConfirmModal({
           {propertyTitle}
         </p>
         <p className="text-xs text-gray-400 mb-5">
-          You can still find it later via the "Show hidden properties" filter on the Dashboard.
+          You can still find it later via the Show hidden properties filter on the Dashboard.
         </p>
         <div className="flex gap-3">
           <button
@@ -84,12 +137,11 @@ function ConfirmModal({
 export default function FunnelBoard() {
   const { properties: all, loading, error, update } = useProperties();
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
+  const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
   const draggedId = useRef<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
-  const properties = all
-    .filter(p => p.status !== 'new' && p.status !== 'not_relevant')
-;
+  const properties = all.filter(p => p.status !== 'new' && p.status !== 'not_relevant');
 
   async function moveToStage(propertyId: string, newStatus: string) {
     try {
@@ -158,6 +210,13 @@ export default function FunnelBoard() {
         />
       )}
 
+      {analyseProperty && (
+        <PropertyAnalysisModal
+          property={analyseProperty}
+          onClose={() => setAnalyseProperty(null)}
+        />
+      )}
+
       <p className="text-sm text-gray-500 mb-4">{properties.length} properties in funnel</p>
 
       <div className="flex gap-4 overflow-x-auto pb-4">
@@ -165,7 +224,6 @@ export default function FunnelBoard() {
           const stageProps = properties.filter(p => p.status === stage.key);
           const isOver = dragOverStage === stage.key;
 
-          // Price calculations
           const prices = stageProps
             .map(p => p.price ? parseFloat(String(p.price)) : null)
             .filter((p): p is number => p !== null);
@@ -173,25 +231,20 @@ export default function FunnelBoard() {
           const avg = prices.length > 0 ? total / prices.length : 0;
           const hasPrice = prices.length > 0;
 
-          // Light backgrounds need dark text; all others are dark enough for white
-          const isLight      = stage.parked || stage.key === 'investigating' || stage.key === 'interested';
-          const labelStyle   = isLight ? 'text-slate-600 font-semibold text-sm' : 'text-white font-semibold text-sm';
+          const isLight    = stage.parked || stage.key === 'investigating' || stage.key === 'interested';
+          const labelStyle = isLight ? 'text-slate-600 font-semibold text-sm' : 'text-white font-semibold text-sm';
           const summaryStyle = isLight ? 'text-slate-500' : 'text-white opacity-80';
 
           return (
             <div
               key={stage.key}
-              className="flex-shrink-0 w-64"
+              className="flex-shrink-0 w-60"
               onDragOver={(e) => handleDragOver(e, stage.key)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, stage.key)}
             >
-              {/* Column header */}
               <div className={`${stage.header} rounded-t-lg px-3 pt-2 pb-2`}>
-                {/* Stage name — full width, no badge */}
                 <span className={labelStyle}>{stage.label}</span>
-
-                {/* Count + price summary on one line */}
                 <div className={`flex gap-2 text-xs mt-1 ${summaryStyle}`}>
                   <span className="font-medium">#{stageProps.length}</span>
                   <span className="opacity-40">·</span>
@@ -201,7 +254,6 @@ export default function FunnelBoard() {
                 </div>
               </div>
 
-              {/* Column body */}
               <div
                 className={`border border-t-0 rounded-b-lg min-h-32 p-2 space-y-2 transition-colors duration-150 ${
                   isOver
@@ -215,6 +267,7 @@ export default function FunnelBoard() {
                     property={prop}
                     stages={STAGES}
                     onMove={requestMove}
+                    onAnalyse={setAnalyseProperty}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                   />
@@ -241,25 +294,40 @@ function FunnelCard({
   property,
   stages,
   onMove,
+  onAnalyse,
   onDragStart,
   onDragEnd,
 }: {
   property: Property;
   stages: typeof STAGES;
   onMove: (id: string, title: string, status: string) => void;
+  onAnalyse: (p: Property) => void;
   onDragStart: (id: string) => void;
   onDragEnd: () => void;
 }) {
-  const [showMenu, setShowMenu] = useState(false);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   const rawPrice = property.price ? parseFloat(String(property.price)) : null;
-  const priceText = rawPrice ? formatPrice(rawPrice) : '';
+  const priceText = rawPrice ? formatPrice(rawPrice) : null;
 
   const moveOptions = [
     ...stages.filter(s => s.key !== property.status),
     NOT_RELEVANT,
   ];
+
+  const closeMenu = useCallback(() => setAnchorRect(null), []);
+
+  function openMenu() {
+    if (!btnRef.current) return;
+    setAnchorRect(btnRef.current.getBoundingClientRect());
+  }
+
+  function handleSelect(key: string) {
+    closeMenu();
+    onMove(property.id, property.title ?? '', key);
+  }
 
   function handleDragStart(e: React.DragEvent) {
     e.dataTransfer.effectAllowed = 'move';
@@ -278,93 +346,83 @@ function FunnelCard({
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden cursor-grab active:cursor-grabbing transition-opacity duration-150 ${
-        isDragging ? 'opacity-40' : 'opacity-100'
-      }`}
+      className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden cursor-grab active:cursor-grabbing transition-opacity duration-150 ${isDragging ? 'opacity-40' : 'opacity-100'}`}
     >
-      {/* Image — clicking opens original listing */}
-      {property.imageUrl && (
+      {/* Image + key info */}
+      <div className="flex gap-2 p-2">
         <a
           href={property.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="block w-full bg-gray-100 overflow-hidden"
-          style={{ height: '96px' }}
+          className="flex-shrink-0 rounded overflow-hidden bg-gray-100"
+          style={{ width: '64px', height: '64px' }}
           draggable={false}
         >
-          <img
-            src={property.imageUrl}
-            alt={property.title ?? ''}
-            className="w-full h-full object-cover hover:opacity-90 transition-opacity"
-            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            draggable={false}
-          />
+          {property.imageUrl ? (
+            <img
+              src={property.imageUrl}
+              alt={property.title ?? ''}
+              className="w-full h-full object-cover hover:opacity-90 transition-opacity"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              draggable={false}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-2xl text-gray-300">🏠</div>
+          )}
         </a>
-      )}
 
-      <div className="p-2">
-        {/* Title — clicking opens original listing */}
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
+          {priceText && <div className="text-sm font-bold text-[#0F1F3D]">{priceText}</div>}
+          {property.location && <div className="text-xs text-gray-500 truncate">{property.location}</div>}
+          <div className="flex gap-2 text-xs text-gray-400 mt-0.5">
+            {property.sizeSqm && <span>{property.sizeSqm}m²</span>}
+            {property.sizeSqm && property.rooms && <span>.</span>}
+            {property.rooms && <span>{String(property.rooms)} Zi.</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Title */}
+      <div className="px-2 pb-2">
         <a
           href={property.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 block mb-1"
+          className="text-xs font-medium text-gray-700 hover:text-[#0F1F3D] line-clamp-2 block"
           draggable={false}
         >
           {property.title}
         </a>
+      </div>
 
-        <div className="space-y-0.5 mb-2">
-          {priceText && (
-            <div className="text-sm font-bold text-blue-600">{priceText}</div>
-          )}
-          {property.location && (
-            <div className="text-xs text-gray-500">📍 {property.location}</div>
-          )}
-          <div className="flex gap-2 text-xs text-gray-500">
-            {property.sizeSqm && <span>{property.sizeSqm}m²</span>}
-            {property.rooms && <span>{property.rooms} Zi.</span>}
-          </div>
-        </div>
-
-        {/* Analyse button — placeholder for property detail view */}
+      {/* Action bar */}
+      <div className="flex items-center gap-1 px-2 pb-2 border-t border-gray-100 pt-2">
         <button
-          className="w-full text-xs text-slate-600 font-medium border border-slate-300 rounded px-2 py-1 hover:bg-slate-50 transition-colors mb-1.5"
-          title="Property detail view — coming soon"
+          ref={btnRef}
+          onClick={openMenu}
+          className="flex-1 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded px-2 py-1 hover:bg-gray-50 transition-colors text-left"
         >
-          🔍 Analyse
+          Move ▾
         </button>
 
-        {/* Move to stage dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="w-full text-xs text-gray-500 hover:text-gray-900 border border-gray-200 rounded px-2 py-1 hover:bg-gray-50 transition-colors"
-          >
-            Move to stage ▾
-          </button>
-          {showMenu && (
-            <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
-              {moveOptions.map((s, i) => (
-                <button
-                  key={s.key}
-                  onClick={() => {
-                    onMove(property.id, property.title ?? '', s.key);
-                    setShowMenu(false);
-                  }}
-                  className={`w-full text-left text-xs px-3 py-2 hover:bg-gray-50 transition-colors ${
-                    s.key === 'not_relevant'
-                      ? 'text-rose-500 border-t border-gray-100 font-medium'
-                      : 'text-gray-700'
-                  } ${i === moveOptions.length - 2 ? 'border-b border-gray-100' : ''}`}
-                >
-                  {s.key === 'not_relevant' ? '✕ Not Relevant' : s.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <button
+          onClick={() => onAnalyse(property)}
+          title="Analyse this property"
+          className="p-1.5 rounded border border-gray-200 text-gray-400 hover:text-amber-500 hover:border-amber-200 hover:bg-amber-50 transition-colors text-sm leading-none"
+        >
+          🔍
+        </button>
       </div>
+
+      {/* Portal dropdown — rendered on document.body, never clipped by card overflow */}
+      {anchorRect && (
+        <DropdownPortal
+          anchorRect={anchorRect}
+          options={moveOptions}
+          onSelect={handleSelect}
+          onClose={closeMenu}
+        />
+      )}
     </div>
   );
 }

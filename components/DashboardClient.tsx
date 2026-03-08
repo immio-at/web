@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Property } from '@/lib/api';
+import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 
 type ViewMode = 'tiles' | 'table';
 
@@ -10,7 +11,7 @@ const FUNNEL_STAGES = [
   { value: 'new',           label: 'New' },
   { value: 'investigating', label: 'Investigating' },
   { value: 'interested',    label: 'Interested' },
-  { value: 'visit_booked',  label: 'Visit Booked' },  // ← added
+  { value: 'visit_booked',  label: 'Visit Booked' },
   { value: 'visited',       label: 'Visited' },
   { value: 'offer_made',    label: 'Offer Made' },
   { value: 'parked',        label: 'Parked' },
@@ -90,8 +91,8 @@ export default function DashboardClient({
   const [sortBy, setSortBy] = useState('newest');
   const [filters, setFilters] = useState<Filters>(defaultFilters);
 
-  // No local properties state — properties come from the shared cache via page.tsx
-  // Updates call onUpdate which writes through to the cache immediately
+  // ── Analysis modal state — lifted here so both TilesView and TableView can use it
+  const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
 
   function updateFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -257,22 +258,31 @@ export default function DashboardClient({
       </div>
 
       {/* Views */}
-      {view === 'tiles' && <TilesView properties={filtered} onUpdate={onUpdate} />}
-      {view === 'table' && <TableView properties={filtered} onUpdate={onUpdate} />}
+      {view === 'tiles' && <TilesView properties={filtered} onUpdate={onUpdate} onAnalyse={setAnalyseProperty} />}
+      {view === 'table' && <TableView properties={filtered} onUpdate={onUpdate} onAnalyse={setAnalyseProperty} />}
+
+      {/* Analysis modal */}
+      {analyseProperty && (
+        <PropertyAnalysisModal
+          property={analyseProperty}
+          onClose={() => setAnalyseProperty(null)}
+        />
+      )}
     </div>
   );
 }
 
 // ─── Tile card grid ───────────────────────────────────────────────────────────
 
-function TilesView({ properties, onUpdate }: {
+function TilesView({ properties, onUpdate, onAnalyse }: {
   properties: Property[];
   onUpdate: UpdateFn;
+  onAnalyse: (p: Property) => void;
 }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {properties.map(prop => (
-        <TileCard key={prop.id} property={prop} onUpdate={onUpdate} />
+        <TileCard key={prop.id} property={prop} onUpdate={onUpdate} onAnalyse={onAnalyse} />
       ))}
       {properties.length === 0 && (
         <div className="col-span-3 text-center py-12 text-gray-500">
@@ -283,14 +293,13 @@ function TilesView({ properties, onUpdate }: {
   );
 }
 
-function TileCard({ property, onUpdate }: {
+function TileCard({ property, onUpdate, onAnalyse }: {
   property: Property;
   onUpdate: UpdateFn;
+  onAnalyse: (p: Property) => void;
 }) {
   const [loading, setLoading] = useState(false);
 
-  // Derive status from prop directly — no local state needed since
-  // updates flow through the shared cache back into this component via props
   const status = property.status || 'new';
 
   const rawPrice = property.price ? parseFloat(String(property.price)) : null;
@@ -357,7 +366,7 @@ function TileCard({ property, onUpdate }: {
           </div>
         </div>
 
-        {/* Funnel stage dropdown + dismiss */}
+        {/* Funnel stage dropdown + dismiss + analyse */}
         <div className="flex gap-2 items-center">
           <select
             value={status}
@@ -371,6 +380,13 @@ function TileCard({ property, onUpdate }: {
               </option>
             ))}
           </select>
+          <button
+            onClick={() => onAnalyse(property)}
+            title="Analyse this property"
+            className="p-2 rounded-lg border border-gray-200 text-gray-400 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-colors"
+          >
+            🔍
+          </button>
           <button
             onClick={() => handleStatusChange('not_relevant')}
             disabled={loading || status === 'not_relevant'}
@@ -387,9 +403,10 @@ function TileCard({ property, onUpdate }: {
 
 // ─── Table view ───────────────────────────────────────────────────────────────
 
-function TableView({ properties, onUpdate }: {
+function TableView({ properties, onUpdate, onAnalyse }: {
   properties: Property[];
   onUpdate: UpdateFn;
+  onAnalyse: (p: Property) => void;
 }) {
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [noteValues, setNoteValues] = useState<Record<string, string>>(
@@ -417,6 +434,7 @@ function TableView({ properties, onUpdate }: {
               <th className="text-left px-4 py-3 font-medium text-gray-700">Status</th>
               <th className="text-left px-4 py-3 font-medium text-gray-700">Date</th>
               <th className="text-left px-4 py-3 font-medium text-gray-700 w-48">Notes</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700 w-16"></th>
             </tr>
           </thead>
           <tbody>
@@ -470,7 +488,7 @@ function TableView({ properties, onUpdate }: {
                       <button
                         onClick={() => onUpdate(prop.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() })}
                         disabled={prop.status === 'not_relevant'}
-                        title="Dismiss — hide this property"
+                        title="Dismiss"
                         className="text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded px-1 py-0.5 text-xs font-bold leading-none transition-colors disabled:opacity-20"
                       >
                         ✕
@@ -500,6 +518,15 @@ function TableView({ properties, onUpdate }: {
                         {noteValues[prop.id] || <span className="text-gray-300 italic">Add note...</span>}
                       </button>
                     )}
+                  </td>
+                  <td className="px-4 py-2">
+                    <button
+                      onClick={() => onAnalyse(prop)}
+                      title="Analyse this property"
+                      className="text-gray-300 hover:text-amber-500 hover:bg-amber-50 rounded p-1 transition-colors"
+                    >
+                      🔍
+                    </button>
                   </td>
                 </tr>
               );

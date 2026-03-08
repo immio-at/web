@@ -46,6 +46,7 @@ function LoginForm() {
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('userEmail', data.email);
       localStorage.setItem('immioEmail', data.immioEmail);
+      localStorage.setItem('approved', String(data.approved));
 
       // Gate on approval status before allowing access to the app
       if (!data.approved) {

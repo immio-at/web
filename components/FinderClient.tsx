@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { updateProperty } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 import Link from 'next/link';
+import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 
 export default function FinderClient() {
   const { properties: all, loading } = useProperties();
@@ -14,9 +15,7 @@ export default function FinderClient() {
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [lastAction, setLastAction] = useState<string | null>(null);
-  const [showNoteDialog, setShowNoteDialog] = useState(false);
-  const [note, setNote] = useState('');
-  const [savingNote, setSavingNote] = useState(false);
+  const [showAnalyseModal, setShowAnalyseModal] = useState(false);
   const dragStart = useRef<{ x: number; y: number } | null>(null);
 
   const property = properties[current];
@@ -32,9 +31,8 @@ export default function FinderClient() {
       return;
     }
 
-    if (action === 'note') {
-      setNote(property.notes || '');
-      setShowNoteDialog(true);
+    if (action === 'analyse') {
+      setShowAnalyseModal(true);
       setDragX(0);
       setDragY(0);
       return;
@@ -50,13 +48,6 @@ export default function FinderClient() {
     }, 300);
   }
 
-  async function saveNote() {
-    if (!property) return;
-    setSavingNote(true);
-    await updateProperty(property.id, { notes: note });
-    setSavingNote(false);
-    setShowNoteDialog(false);
-  }
 
   function onPointerDown(e: React.PointerEvent) {
     dragStart.current = { x: e.clientX, y: e.clientY };
@@ -81,7 +72,7 @@ export default function FinderClient() {
     } else {
       // Vertical swipe dominates
       if (dragY < -100) await handleAction('open');
-      else if (dragY > 100) await handleAction('note');
+      else if (dragY > 100) await handleAction('analyse');
       else { setDragX(0); setDragY(0); }
     }
 
@@ -93,13 +84,13 @@ export default function FinderClient() {
   const swipeIntent =
     Math.abs(dragX) > Math.abs(dragY)
       ? dragX > 50 ? 'interested' : dragX < -50 ? 'not_relevant' : null
-      : dragY < -50 ? 'open' : dragY > 50 ? 'note' : null;
+      : dragY < -50 ? 'open' : dragY > 50 ? 'analyse' : null;
 
   const overlayConfig: Record<string, { bg: string; label: string }> = {
     interested:   { bg: 'bg-emerald-500', label: 'Interested' },
     not_relevant: { bg: 'bg-rose-500',    label: 'Not Relevant' },
     open:         { bg: 'bg-blue-500',    label: 'Open Listing' },
-    note:         { bg: 'bg-amber-500',   label: 'Add Note' },
+    analyse:      { bg: 'bg-amber-500',   label: 'Analyse' },
   };
 
   const overlayOpacity = Math.min(
@@ -140,7 +131,7 @@ export default function FinderClient() {
       <div className="flex gap-6 text-xs text-gray-400 text-center mb-4">
         <span>← Not Relevant</span>
         <span>↑ Open</span>
-        <span>↓ Note</span>
+        <span>↓ Analyse</span>
         <span>→ Interested</span>
       </div>
 
@@ -222,11 +213,11 @@ export default function FinderClient() {
           ✕
         </button>
         <button
-          onClick={() => handleAction('note')}
-          title="Add Note"
+          onClick={() => handleAction('analyse')}
+          title="Analyse Property"
           className="w-14 h-14 rounded-full bg-white border border-gray-200 text-amber-500 font-bold text-lg hover:bg-amber-50 hover:border-amber-300 transition-colors shadow-sm flex items-center justify-center"
         >
-          ✎
+          🔍
         </button>
         <button
           onClick={() => handleAction('open')}
@@ -247,43 +238,12 @@ export default function FinderClient() {
       {/* Progress count */}
       <div className="text-gray-400 text-xs mt-4">{current} of {total} reviewed</div>
 
-      {/* Note dialog */}
-      {showNoteDialog && property && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="font-bold text-gray-900 text-lg mb-1">Add Note</h3>
-            <p className="text-sm text-gray-500 mb-4 line-clamp-1">{property.title}</p>
-
-            <textarea
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              placeholder="Your notes, observations, or calculations..."
-              rows={5}
-              autoFocus
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-slate-300 resize-none mb-4"
-            />
-
-            <p className="text-xs text-gray-400 mb-4">
-              ROI calculator coming soon — for now use this space to record your thoughts.
-            </p>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowNoteDialog(false)}
-                className="flex-1 border border-gray-200 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveNote}
-                disabled={savingNote}
-                className="flex-1 bg-slate-700 text-white py-2 rounded-lg text-sm hover:bg-slate-800 transition-colors disabled:opacity-50"
-              >
-                {savingNote ? 'Saving...' : 'Save Note'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Analyse modal */}
+      {showAnalyseModal && property && (
+        <PropertyAnalysisModal
+          property={property}
+          onClose={() => setShowAnalyseModal(false)}
+        />
       )}
     </div>
   );
