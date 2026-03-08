@@ -43,8 +43,8 @@ function LoginForm() {
       }
 
       // Store token and user info for use across the app
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('userEmail', data.email);
+      localStorage.setItem('accessToken', data.session.access_token);
+      localStorage.setItem('userEmail', data.user.email);
       localStorage.setItem('immioEmail', data.immioEmail);
 
       // Gate on approval status before allowing access to the app
