@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { updateProperty } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 import Link from 'next/link';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 
 export default function FinderClient() {
-  const { properties: all, loading } = useProperties();
+  const { properties: all, loading, update } = useProperties();
   const properties = all.filter(p => p.status === 'new');
 
   const [current, setCurrent] = useState(0);
@@ -39,13 +38,16 @@ export default function FinderClient() {
     }
 
     setLastAction(action);
-    await updateProperty(property.id, { status: action });
-    setTimeout(() => {
-      setCurrent(c => c + 1);
-      setLastAction(null);
-      setDragX(0);
-      setDragY(0);
-    }, 300);
+    setCurrent(c => c + 1);
+    setDragX(0);
+    setDragY(0);
+    setTimeout(() => setLastAction(null), 300);
+
+    // Persist in the background
+    update(property.id, {
+      status: action === 'interested' ? 'investigating' : action,
+      movedToStageAt: new Date().toISOString(),
+    });
   }
 
 
@@ -66,7 +68,7 @@ export default function FinderClient() {
 
     if (absX > absY) {
       // Horizontal swipe dominates
-      if (dragX > 100) await handleAction('interested');
+      if (dragX > 100) await handleAction('investigating');
       else if (dragX < -100) await handleAction('not_relevant');
       else { setDragX(0); setDragY(0); }
     } else {
@@ -83,14 +85,14 @@ export default function FinderClient() {
   // Overlay feedback during drag
   const swipeIntent =
     Math.abs(dragX) > Math.abs(dragY)
-      ? dragX > 50 ? 'interested' : dragX < -50 ? 'not_relevant' : null
+      ? dragX > 50 ? 'investigating' : dragX < -50 ? 'not_relevant' : null
       : dragY < -50 ? 'open' : dragY > 50 ? 'analyse' : null;
 
   const overlayConfig: Record<string, { bg: string; label: string }> = {
-    interested:   { bg: 'bg-emerald-500', label: 'Interested' },
-    not_relevant: { bg: 'bg-rose-500',    label: 'Not Relevant' },
-    open:         { bg: 'bg-blue-500',    label: 'Open Listing' },
-    analyse:      { bg: 'bg-amber-500',   label: 'Analyse' },
+    investigating:  { bg: 'bg-emerald-500', label: 'Investigating' },
+    not_relevant:   { bg: 'bg-rose-500',    label: 'Not Relevant' },
+    open:           { bg: 'bg-blue-500',    label: 'Open Listing' },
+    analyse:        { bg: 'bg-amber-500',   label: 'Analyse' },
   };
 
   const overlayOpacity = Math.min(
@@ -132,7 +134,7 @@ export default function FinderClient() {
         <span>← Not Relevant</span>
         <span>↑ Open</span>
         <span>↓ Analyse</span>
-        <span>→ Interested</span>
+        <span>→ Investigating</span>
       </div>
 
       {/* Card */}
@@ -227,8 +229,8 @@ export default function FinderClient() {
           ↗
         </button>
         <button
-          onClick={() => handleAction('interested')}
-          title="Interested"
+          onClick={() => handleAction('investigating')}
+          title="Investigating"
           className="w-14 h-14 rounded-full bg-white border border-gray-200 text-emerald-600 font-bold text-lg hover:bg-emerald-50 hover:border-emerald-300 transition-colors shadow-sm flex items-center justify-center"
         >
           ✓
