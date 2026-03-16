@@ -508,8 +508,8 @@ export default function LandingPage() {
       {/* NAV */}
       <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="text-[22px] font-semibold text-primary tracking-tight">
-            iM<span className="font-light">M</span>io
+          <Link href="/" className="text-2xl text-gray-900 flex-shrink-0">
+            IM<span className="text-3xl">M</span>IO
           </Link>
           <div className="hidden md:flex items-center gap-8">
             <a href="#how" className="text-sm text-gray-500 hover:text-primary transition-colors">{t.navHow}</a>
@@ -741,8 +741,8 @@ export default function LandingPage() {
       {/* FOOTER */}
       <footer className="bg-white border-t border-gray-200 py-8 px-6">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <Link href="/" className="text-lg font-semibold text-primary tracking-tight">
-            iM<span className="font-light">M</span>io
+          <Link href="/" className="text-2xl text-gray-900 flex-shrink-0">
+            IM<span className="text-3xl">M</span>IO
           </Link>
           <ul className="flex gap-6">
             <li><Link href="/datenschutz" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">{t.footerPrivacy}</Link></li>

@@ -25,7 +25,7 @@ export default function NavBar() {
   function handleLogout() {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userId');
-    router.push('/login');
+    router.push('/');
   }
 
   return (
