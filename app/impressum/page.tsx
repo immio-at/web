@@ -17,8 +17,8 @@ export default function ImpressumPage() {
 
       {/* Minimal nav */}
       <nav className="bg-white border-b border-gray-200 px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="text-[20px] font-semibold text-primary tracking-tight">
-          iM<span className="font-light">M</span>io
+        <Link href="/" className="text-2xl text-gray-900 flex-shrink-0">
+          IM<span className="text-3xl">M</span>IO
         </Link>
         <Link href="/" className="text-sm text-gray-500 hover:text-primary transition-colors">
           ← Zurück

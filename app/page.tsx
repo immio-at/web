@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -133,6 +133,18 @@ const copy = {
     modalNoAccount: 'Noch kein Konto?',
     modalRegister: 'Registrieren',
     modalSessionExpired: 'Deine Sitzung ist abgelaufen. Bitte erneut anmelden.',
+    // Register modal
+    regTitle: 'Zugang beantragen',
+    regSub: 'Erstelle dein IMMIO-Konto',
+    regEmail: 'Email',
+    regPassword: 'Passwort',
+    regInvite: 'Einladungscode (optional)',
+    regInvitePlaceholder: 'IMMIO-XXXX-XXX',
+    regInviteHint: 'Mit Einladungscode wirst du sofort freigeschaltet.',
+    regSubmit: 'Konto erstellen',
+    regSubmitting: 'Wird erstellt…',
+    regHaveAccount: 'Bereits ein Konto?',
+    regSignIn: 'Anmelden',
   },
   en: {
     navHow: 'How it works',
@@ -258,6 +270,18 @@ const copy = {
     modalNoAccount: "Don't have an account?",
     modalRegister: 'Register',
     modalSessionExpired: 'Your session expired. Please sign in again.',
+    // Register modal
+    regTitle: 'Request access',
+    regSub: 'Create your IMMIO account',
+    regEmail: 'Email',
+    regPassword: 'Password',
+    regInvite: 'Invite code (optional)',
+    regInvitePlaceholder: 'IMMIO-XXXX-XXX',
+    regInviteHint: 'With an invite code your account is approved instantly.',
+    regSubmit: 'Create account',
+    regSubmitting: 'Creating…',
+    regHaveAccount: 'Already have an account?',
+    regSignIn: 'Sign in',
   },
 } as const;
 
@@ -427,6 +451,157 @@ function SignInModal({
   );
 }
 
+
+// ─── Register Modal ───────────────────────────────────────────────────────────
+
+function RegisterModal({
+  open,
+  onClose,
+  initialEmail,
+  lang,
+  onSwitchToSignIn,
+}: {
+  open: boolean;
+  onClose: () => void;
+  initialEmail: string;
+  lang: Lang;
+  onSwitchToSignIn: () => void;
+}) {
+  const t = copy[lang];
+  const router = useRouter();
+  const [email, setEmail] = useState(initialEmail);
+  const [password, setPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); },
+    [onClose],
+  );
+  useEffect(() => {
+    if (open) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [open, handleKeyDown]);
+
+  // Sync initialEmail when it changes (e.g. passed from hero form)
+  useEffect(() => {
+    if (open) { setEmail(initialEmail); setPassword(''); setInviteCode(''); setError(''); }
+  }, [open, initialEmail]);
+
+  async function handleRegister() {
+    if (!email || !password) { setError('Bitte Email und Passwort eingeben.'); return; }
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, inviteCode: inviteCode || undefined }),
+      });
+      const data = await response.json();
+      if (!response.ok) { setError(data.message || 'Registrierung fehlgeschlagen'); return; }
+      // Invite code = auto-approved → open sign-in modal
+      // No invite code = pending approval → redirect to /pending
+      if (inviteCode) {
+        onClose();
+        onSwitchToSignIn();
+      } else {
+        router.push('/pending');
+      }
+    } catch {
+      setError('Verbindung zum Server fehlgeschlagen.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(15, 31, 61, 0.5)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-300 hover:text-gray-500 transition-colors text-xl leading-none"
+          aria-label="Schließen"
+        >
+          ✕
+        </button>
+        <div className="mb-6">
+          <p className="text-[11px] font-mono uppercase tracking-widest text-teal-600 mb-1">IMMIO</p>
+          <h2 className="text-xl font-semibold text-primary">{t.regTitle}</h2>
+          <p className="text-sm text-gray-500 font-light mt-1">{t.regSub}</p>
+        </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-5">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">{t.regEmail}</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoFocus
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">{t.regPassword}</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">{t.regInvite}</label>
+            <input
+              type="text"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
+              placeholder={t.regInvitePlaceholder}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all font-mono tracking-widest"
+            />
+            <p className="text-xs text-gray-400 mt-1.5 font-light">{t.regInviteHint}</p>
+          </div>
+          <button
+            onClick={handleRegister}
+            disabled={loading}
+            className="w-full bg-accent hover:bg-accent-light disabled:opacity-50 text-primary font-semibold text-sm py-2.5 rounded-lg transition-colors mt-2"
+          >
+            {loading ? t.regSubmitting : t.regSubmit}
+          </button>
+        </div>
+        <p className="text-center text-xs text-gray-400 mt-6">
+          {t.regHaveAccount}{' '}
+          <button onClick={() => { onClose(); onSwitchToSignIn(); }} className="text-teal-600 hover:underline font-medium">
+            {t.regSignIn}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function LabelTag({ children }: { children: React.ReactNode }) {
@@ -459,24 +634,31 @@ function FeatureRow({ included, text }: { included: boolean; text: string }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function LandingPage() {
+function LandingPageInner() {
   const [lang, setLang] = useState<Lang>('de');
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [signInOpen, setSignInOpen] = useState(false);
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [heroEmail, setHeroEmail] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = copy[lang];
 
   // Redirect logged-in users to dashboard; show landing page to everyone else.
+  // Also auto-open sign-in modal if redirected here with ?signin=true
+  // (e.g. after successful registration without invite code lands on /pending,
+  // or after session expiry redirects back here).
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       router.push('/dashboard');
     } else {
       setAuthChecked(true);
+      if (searchParams.get('signin') === 'true') setSignInOpen(true);
     }
-  }, [router]);
+  }, [router, searchParams]);
 
   if (!authChecked) {
     return (
@@ -492,7 +674,8 @@ export default function LandingPage() {
       setTimeout(() => setEmailError(false), 2000);
       return;
     }
-    router.push(`/register?email=${encodeURIComponent(email)}`);
+    setHeroEmail(email);
+    setRegisterOpen(true);
   }
 
   return (
@@ -500,9 +683,18 @@ export default function LandingPage() {
 
       {/* Sign In Modal */}
       <SignInModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={signInOpen}
+        onClose={() => setSignInOpen(false)}
         lang={lang}
+      />
+
+      {/* Register Modal */}
+      <RegisterModal
+        open={registerOpen}
+        onClose={() => setRegisterOpen(false)}
+        initialEmail={heroEmail}
+        lang={lang}
+        onSwitchToSignIn={() => setSignInOpen(true)}
       />
 
       {/* NAV */}
@@ -524,7 +716,7 @@ export default function LandingPage() {
               {t.langToggle}
             </button>
             <button
-              onClick={() => setModalOpen(true)}
+              onClick={() => setSignInOpen(true)}
               className="text-sm text-gray-600 hover:text-primary font-medium transition-colors px-3 py-2"
             >
               {t.navSignIn}
@@ -694,9 +886,9 @@ export default function LandingPage() {
               <ul className="flex-1 mb-6">
                 {t.tier1Features.map((f) => <FeatureRow key={f.text} {...f} />)}
               </ul>
-              <Link href="/register" className="block text-center py-2.5 rounded-lg text-sm font-medium border border-gray-300 text-gray-500 hover:border-primary hover:text-primary transition-colors">
+              <button onClick={() => setRegisterOpen(true)} className="block w-full text-center py-2.5 rounded-lg text-sm font-medium border border-gray-300 text-gray-500 hover:border-primary hover:text-primary transition-colors">
                 {t.tier1Cta}
-              </Link>
+              </button>
             </div>
 
             {/* Light — featured */}
@@ -713,9 +905,9 @@ export default function LandingPage() {
               <ul className="flex-1 mb-6">
                 {t.tier2Features.map((f) => <FeatureRow key={f.text} {...f} />)}
               </ul>
-              <Link href="/register" className="block text-center py-2.5 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary-light transition-colors">
+              <button onClick={() => setRegisterOpen(true)} className="block w-full text-center py-2.5 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary-light transition-colors">
                 {t.tier2Cta}
-              </Link>
+              </button>
             </div>
 
             {/* Pro */}
@@ -729,9 +921,9 @@ export default function LandingPage() {
               <ul className="flex-1 mb-6">
                 {t.tier3Features.map((f) => <FeatureRow key={f.text} {...f} />)}
               </ul>
-              <Link href="/register" className="block text-center py-2.5 rounded-lg text-sm font-medium border border-gray-300 text-gray-500 hover:border-primary hover:text-primary transition-colors">
+              <button onClick={() => setRegisterOpen(true)} className="block w-full text-center py-2.5 rounded-lg text-sm font-medium border border-gray-300 text-gray-500 hover:border-primary hover:text-primary transition-colors">
                 {t.tier3Cta}
-              </Link>
+              </button>
             </div>
 
           </div>
@@ -754,5 +946,14 @@ export default function LandingPage() {
       </footer>
 
     </div>
+  );
+}
+
+// useSearchParams requires Suspense boundary in Next.js App Router
+export default function LandingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><p className="text-gray-400 text-sm">Laden…</p></div>}>
+      <LandingPageInner />
+    </Suspense>
   );
 }

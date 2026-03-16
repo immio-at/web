@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { AuthProvider } from '@/context/AuthContext';
 import { DM_Sans, DM_Mono } from 'next/font/google';
 import './globals.css';
+import KeepAlive from '@/components/KeepAlive';
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -32,6 +33,10 @@ export default function RootLayout({
       </head>
       <body className={`${dmSans.variable} ${dmMono.variable} font-sans`}>
         <AuthProvider>
+          {/* KeepAlive pings Railway every 4 minutes to prevent cold starts.
+              Placed here so it runs for ALL visitors — not just logged-in users.
+              Previously this lived inside NavBar and only fired for authenticated pages. */}
+          <KeepAlive />
           {children}
         </AuthProvider>
       </body>

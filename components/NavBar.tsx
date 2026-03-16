@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useKeepAlive } from '@/hooks/useKeepAlive';
 import { usePathname, useRouter } from 'next/navigation';
 
 const navItems = [
@@ -18,8 +17,6 @@ export default function NavBar() {
 
   const isLoginPage = pathname === '/login' || pathname === '/register';
 
-  // Keep Railway container warm — prevents 15-30s cold start on first load
-  useKeepAlive();
   if (isLoginPage) return null;
 
   function handleLogout() {
