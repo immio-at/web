@@ -5,18 +5,7 @@ import { createPortal } from 'react-dom';
 import { Property } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
-
-// ─── Stage definitions ────────────────────────────────────────────────────────
-
-const STAGES = [
-  { key: 'investigating', label: 'Investigating', header: 'bg-slate-300', parked: false },
-  { key: 'interested',    label: 'Interested',    header: 'bg-slate-400',  parked: false },
-  { key: 'visit_booked',  label: 'Visit Booked',  header: 'bg-slate-500',  parked: false },
-  { key: 'visited',       label: 'Visited',       header: 'bg-slate-600',  parked: false },
-  { key: 'offer_made',    label: 'Offer Made',    header: 'bg-teal-500',   parked: false },
-  { key: 'parked',        label: 'Parked',        header: 'bg-slate-200',  parked: true  },
-  { key: 'won',           label: 'Won',           header: 'bg-teal-600',   parked: false },
-];
+import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
 
 const NOT_RELEVANT = { key: 'not_relevant', label: 'Not Relevant' };
 
@@ -220,7 +209,7 @@ export default function FunnelBoard() {
       <p className="text-sm text-gray-500 mb-4">{properties.length} properties in funnel</p>
 
       <div className="flex gap-4 overflow-x-auto pb-4">
-        {STAGES.map((stage) => {
+        {FUNNEL_STAGES_DISPLAY.map((stage) => {
           const stageProps = properties.filter(p => p.status === stage.key);
           const isOver = dragOverStage === stage.key;
 
@@ -265,7 +254,7 @@ export default function FunnelBoard() {
                   <FunnelCard
                     key={prop.id}
                     property={prop}
-                    stages={STAGES}
+                    stages={FUNNEL_STAGES_DISPLAY}
                     onMove={requestMove}
                     onAnalyse={setAnalyseProperty}
                     onDragStart={handleDragStart}
@@ -299,7 +288,7 @@ function FunnelCard({
   onDragEnd,
 }: {
   property: Property;
-  stages: typeof STAGES;
+  stages: typeof FUNNEL_STAGES_DISPLAY;
   onMove: (id: string, title: string, status: string) => void;
   onAnalyse: (p: Property) => void;
   onDragStart: (id: string) => void;

@@ -3,21 +3,10 @@
 import { useState, useMemo } from 'react';
 import { Property } from '@/lib/api';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
+import { FUNNEL_STAGES } from '@/lib/constants';
 
 type ViewMode = 'tiles' | 'table';
 
-// Single source of truth for funnel stages — must match FunnelBoard.tsx
-const FUNNEL_STAGES = [
-  { value: 'new',           label: 'New' },
-  { value: 'investigating', label: 'Investigating' },
-  { value: 'interested',    label: 'Interested' },
-  { value: 'visit_booked',  label: 'Visit Booked' },
-  { value: 'visited',       label: 'Visited' },
-  { value: 'offer_made',    label: 'Offer Made' },
-  { value: 'parked',        label: 'Parked' },
-  { value: 'won',           label: 'Won' },
-  { value: 'not_relevant',  label: 'Not Relevant' },
-];
 
 // Left-border accent colour per stage for tile cards
 const STATUS_BORDER: Record<string, string> = {
@@ -307,7 +296,7 @@ function TileCard({ property, onUpdate, onAnalyse }: {
     ? '€ ' + Math.round(rawPrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
     : '';
 
-  const stageLabel = FUNNEL_STAGES.find(s => s.value === status)?.label ?? 'New';
+  const stageLabel = FUNNEL_STAGES.find(s => s.key === status)?.label ?? 'New';
 
   async function handleStatusChange(newStatus: string) {
     setLoading(true);
@@ -374,8 +363,8 @@ function TileCard({ property, onUpdate, onAnalyse }: {
             onChange={e => handleStatusChange(e.target.value)}
             className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white disabled:opacity-50"
           >
-            {FUNNEL_STAGES.filter(s => s.value !== 'not_relevant').map(stage => (
-              <option key={stage.value} value={stage.value}>
+            {FUNNEL_STAGES.filter(s => s.key !== 'not_relevant').map(stage => (
+              <option key={stage.key} value={stage.key}>
                 {stage.label}
               </option>
             ))}
@@ -408,15 +397,7 @@ function TableView({ properties, onUpdate, onAnalyse }: {
   onUpdate: UpdateFn;
   onAnalyse: (p: Property) => void;
 }) {
-  const [editingNotes, setEditingNotes] = useState<string | null>(null);
-  const [noteValues, setNoteValues] = useState<Record<string, string>>(
-    Object.fromEntries(properties.map(p => [p.id, p.notes || '']))
-  );
-
-  async function saveNotes(id: string) {
-    await onUpdate(id, { notes: noteValues[id] });
-    setEditingNotes(null);
-  }
+  
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -433,7 +414,6 @@ function TableView({ properties, onUpdate, onAnalyse }: {
               <th className="text-left px-4 py-3 font-medium text-gray-700">€/m²</th>
               <th className="text-left px-4 py-3 font-medium text-gray-700">Status</th>
               <th className="text-left px-4 py-3 font-medium text-gray-700">Date</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700 w-48">Notes</th>
               <th className="text-left px-4 py-3 font-medium text-gray-700 w-16"></th>
             </tr>
           </thead>
@@ -481,8 +461,8 @@ function TableView({ properties, onUpdate, onAnalyse }: {
                         onChange={e => onUpdate(prop.id, { status: e.target.value, movedToStageAt: new Date().toISOString() })}
                         className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-300 ${STATUS_BADGE[prop.status ?? ''] ?? 'bg-gray-100 text-gray-600'}`}
                       >
-                        {FUNNEL_STAGES.filter(s => s.value !== 'not_relevant').map(stage => (
-                          <option key={stage.value} value={stage.value}>{stage.label}</option>
+                        {FUNNEL_STAGES.filter(s => s.key !== 'not_relevant').map(stage => (
+                          <option key={stage.key} value={stage.key}>{stage.label}</option>
                         ))}
                       </select>
                       <button
@@ -495,30 +475,7 @@ function TableView({ properties, onUpdate, onAnalyse }: {
                       </button>
                     </div>
                   </td>
-                  <td className="px-4 py-2 text-gray-500 whitespace-nowrap">{dateText}</td>
-                  <td className="px-4 py-2">
-                    {editingNotes === prop.id ? (
-                      <div className="flex flex-col gap-1">
-                        <textarea
-                          value={noteValues[prop.id]}
-                          onChange={e => setNoteValues(prev => ({ ...prev, [prop.id]: e.target.value }))}
-                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-slate-300 resize-none"
-                          rows={3} autoFocus
-                        />
-                        <div className="flex gap-1">
-                          <button onClick={() => saveNotes(prop.id)}
-                            className="flex-1 bg-slate-700 text-white text-xs py-1 rounded hover:bg-slate-800">Save</button>
-                          <button onClick={() => setEditingNotes(null)}
-                            className="flex-1 bg-gray-100 text-gray-600 text-xs py-1 rounded hover:bg-gray-200">Cancel</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button onClick={() => setEditingNotes(prop.id)}
-                        className="w-full text-left text-xs text-gray-500 hover:text-gray-900 min-h-8">
-                        {noteValues[prop.id] || <span className="text-gray-300 italic">Add note...</span>}
-                      </button>
-                    )}
-                  </td>
+                  <td className="px-4 py-2 text-gray-500 whitespace-nowrap">{dateText}</td>                  
                   <td className="px-4 py-2">
                     <button
                       onClick={() => onAnalyse(prop)}
