@@ -2,14 +2,13 @@ import type { Metadata } from 'next';
 import { AuthProvider } from '@/context/AuthContext';
 import { DM_Sans, DM_Mono } from 'next/font/google';
 import './globals.css';
-import NavBar from '@/components/NavBar';
 
-const dmSans = DM_Sans({ 
+const dmSans = DM_Sans({
   subsets: ['latin'],
   variable: '--font-dm-sans',
 });
 
-const dmMono = DM_Mono({ 
+const dmMono = DM_Mono({
   subsets: ['latin'],
   weight: ['400', '500'],
   variable: '--font-dm-mono',
@@ -33,10 +32,7 @@ export default function RootLayout({
       </head>
       <body className={`${dmSans.variable} ${dmMono.variable} font-sans`}>
         <AuthProvider>
-          <div className="min-h-screen bg-gray-50">
-            <NavBar />
-            <main>{children}</main>
-          </div>
+          {children}
         </AuthProvider>
       </body>
     </html>

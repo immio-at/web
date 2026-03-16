@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-// ─── i18n ────────────────────────────────────────────────────────────────────
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+// ─── i18n ─────────────────────────────────────────────────────────────────────
 
 const copy = {
   de: {
     navHow: 'So funktioniert es',
     navFeatures: 'Funktionen',
     navPricing: 'Preise',
+    navSignIn: 'Anmelden',
     navCta: 'Frühen Zugang beantragen',
     badge: 'Früher Zugang — jetzt beantragen',
     h1Line1: 'Jede Immobilie.',
@@ -118,11 +121,24 @@ const copy = {
     footerContact: 'Kontakt',
     footerCopy: '© 2026 IMMIO GmbH (in Gründung)',
     langToggle: 'EN',
+    // Modal
+    modalTitle: 'Willkommen zurück',
+    modalSub: 'Mit deinem IMMIO-Konto anmelden',
+    modalEmail: 'Email',
+    modalPassword: 'Passwort',
+    modalEmailPlaceholder: 'deine@email.at',
+    modalPasswordPlaceholder: '••••••••',
+    modalSubmit: 'Anmelden',
+    modalSubmitting: 'Wird angemeldet…',
+    modalNoAccount: 'Noch kein Konto?',
+    modalRegister: 'Registrieren',
+    modalSessionExpired: 'Deine Sitzung ist abgelaufen. Bitte erneut anmelden.',
   },
   en: {
     navHow: 'How it works',
     navFeatures: 'Features',
     navPricing: 'Pricing',
+    navSignIn: 'Sign in',
     navCta: 'Request early access',
     badge: 'Early access — apply now',
     h1Line1: 'Every property.',
@@ -230,10 +246,186 @@ const copy = {
     footerContact: 'Contact',
     footerCopy: '© 2026 IMMIO GmbH (in formation)',
     langToggle: 'DE',
+    // Modal
+    modalTitle: 'Welcome back',
+    modalSub: 'Sign in to your IMMIO account',
+    modalEmail: 'Email',
+    modalPassword: 'Password',
+    modalEmailPlaceholder: 'your@email.at',
+    modalPasswordPlaceholder: '••••••••',
+    modalSubmit: 'Sign in',
+    modalSubmitting: 'Signing in…',
+    modalNoAccount: "Don't have an account?",
+    modalRegister: 'Register',
+    modalSessionExpired: 'Your session expired. Please sign in again.',
   },
 } as const;
 
 type Lang = keyof typeof copy;
+
+// ─── Sign In Modal ────────────────────────────────────────────────────────────
+
+function SignInModal({
+  open,
+  onClose,
+  lang,
+}: {
+  open: boolean;
+  onClose: () => void;
+  lang: Lang;
+}) {
+  const t = copy[lang];
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Close on Escape key
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); },
+    [onClose],
+  );
+  useEffect(() => {
+    if (open) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [open, handleKeyDown]);
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (open) { setEmail(''); setPassword(''); setError(''); setLoading(false); }
+  }, [open]);
+
+  async function handleLogin() {
+    if (!email || !password) { setError('Bitte Email und Passwort eingeben.'); return; }
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Login fehlgeschlagen');
+        return;
+      }
+
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('userEmail', data.email);
+      localStorage.setItem('immioEmail', data.immioEmail);
+      localStorage.setItem('approved', String(data.approved));
+
+      if (!data.approved) {
+        router.push('/pending');
+        return;
+      }
+
+      router.push('/dashboard');
+
+    } catch {
+      setError('Verbindung zum Server fehlgeschlagen.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!open) return null;
+
+  return (
+    // Backdrop
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(15, 31, 61, 0.5)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}
+    >
+      {/* Panel — stop propagation so clicks inside don't close */}
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-300 hover:text-gray-500 transition-colors text-xl leading-none"
+          aria-label="Schließen"
+        >
+          ✕
+        </button>
+
+        {/* Header */}
+        <div className="mb-6">
+          <p className="text-[11px] font-mono uppercase tracking-widest text-teal-600 mb-1">IMMIO</p>
+          <h2 className="text-xl font-semibold text-primary">{t.modalTitle}</h2>
+          <p className="text-sm text-gray-500 font-light mt-1">{t.modalSub}</p>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-5">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Fields */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+              {t.modalEmail}
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t.modalEmailPlaceholder}
+              autoFocus
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+              {t.modalPassword}
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+              placeholder={t.modalPasswordPlaceholder}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all"
+            />
+          </div>
+
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            className="w-full bg-primary hover:bg-primary-light disabled:opacity-50 text-white font-medium text-sm py-2.5 rounded-lg transition-colors mt-2"
+          >
+            {loading ? t.modalSubmitting : t.modalSubmit}
+          </button>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-xs text-gray-400 mt-6">
+          {t.modalNoAccount}{' '}
+          <Link href="/register" className="text-teal-600 hover:underline font-medium">
+            {t.modalRegister}
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -272,11 +464,11 @@ export default function LandingPage() {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const router = useRouter();
   const t = copy[lang];
 
-  // Redirect logged-in users straight to the dashboard.
-  // Logged-out visitors stay here and see the landing page.
+  // Redirect logged-in users to dashboard; show landing page to everyone else.
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (token) {
@@ -286,8 +478,6 @@ export default function LandingPage() {
     }
   }, [router]);
 
-  // Render nothing while the auth check runs to avoid a flash of the
-  // landing page for users who are already logged in.
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -306,10 +496,17 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-primary">
+    <div className="min-h-screen bg-gray-50 font-sans">
+
+      {/* Sign In Modal */}
+      <SignInModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        lang={lang}
+      />
 
       {/* NAV */}
-      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+      <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="text-[22px] font-semibold text-primary tracking-tight">
             iM<span className="font-light">M</span>io
@@ -326,6 +523,12 @@ export default function LandingPage() {
             >
               {t.langToggle}
             </button>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="text-sm text-gray-600 hover:text-primary font-medium transition-colors px-3 py-2"
+            >
+              {t.navSignIn}
+            </button>
             <Link
               href="/register"
               className="bg-primary text-white text-[13px] font-medium px-4 py-2 rounded-lg hover:bg-primary-light transition-colors"
@@ -340,28 +543,24 @@ export default function LandingPage() {
       <section className="bg-white border-b border-gray-200 px-6 py-20 text-center relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(245,166,35,0.06),transparent)] pointer-events-none" />
         <div className="relative max-w-3xl mx-auto">
-          {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-4 py-1.5 text-xs font-medium text-amber-800 mb-8">
             <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
             {t.badge}
           </div>
-          {/* Headline */}
           <h1 className="text-4xl md:text-6xl font-light leading-[1.1] tracking-tight text-primary mb-5">
             {t.h1Line1}<br />
-            <em className="not-italic text-amber-500 font-semibold">{t.h1Line2}</em><br />
+            <em className="not-italic text-accent font-semibold">{t.h1Line2}</em><br />
             {t.h1Line3}
           </h1>
-          {/* Subheadline */}
           <p className="text-lg text-gray-500 font-light leading-relaxed mb-10 max-w-xl mx-auto">
             {t.sub}
           </p>
-          {/* Email form */}
           <div className="flex gap-2 max-w-md mx-auto">
             <input
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleRegister()}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
               placeholder={t.heroPlaceholder}
               className={`flex-1 border rounded-lg px-4 py-3 text-sm text-primary bg-white outline-none transition-all
                 ${emailError
@@ -371,7 +570,7 @@ export default function LandingPage() {
             />
             <button
               onClick={handleRegister}
-              className="bg-amber-400 hover:bg-amber-300 active:scale-95 text-primary font-semibold text-sm px-5 py-3 rounded-lg whitespace-nowrap transition-all shadow-[0_2px_8px_rgba(245,166,35,0.35)]"
+              className="bg-accent hover:bg-accent-light active:scale-95 text-primary font-semibold text-sm px-5 py-3 rounded-lg whitespace-nowrap transition-all shadow-[0_2px_8px_rgba(245,166,35,0.35)]"
             >
               {t.heroCta}
             </button>
@@ -383,7 +582,7 @@ export default function LandingPage() {
       {/* MARKET BANNER */}
       <div className="bg-primary px-6 py-4 flex flex-wrap items-center justify-center gap-2 text-center">
         <span className="text-sm text-white/60 font-light">{t.marketPrefix}</span>
-        <span className="font-mono text-base font-medium text-amber-400">{t.marketNumber}</span>
+        <span className="font-mono text-base font-medium text-accent">{t.marketNumber}</span>
         <span className="text-sm text-white/60 font-light">{t.marketSuffix}</span>
         <span className="text-white/20 text-lg mx-1">·</span>
         <span className="text-sm text-white/60 font-light">{t.marketClaim}</span>
@@ -395,7 +594,7 @@ export default function LandingPage() {
           <LabelTag>{t.probLabel}</LabelTag>
           <h2 className="text-4xl font-light tracking-tight text-primary leading-tight mb-4">
             {t.probH2a}<br />
-            <em className="not-italic text-amber-500 font-semibold">{t.probH2b}</em>
+            <em className="not-italic text-accent font-semibold">{t.probH2b}</em>
           </h2>
           <p className="text-gray-500 font-light leading-relaxed mb-10 max-w-lg">{t.probSub}</p>
           <div className="grid md:grid-cols-3 gap-4">
@@ -420,7 +619,7 @@ export default function LandingPage() {
           <LabelTag>{t.hiwLabel}</LabelTag>
           <h2 className="text-4xl font-light tracking-tight text-primary leading-tight mb-4">
             {t.hiwH2a}<br />
-            <em className="not-italic text-amber-500 font-semibold">{t.hiwH2b}</em>
+            <em className="not-italic text-accent font-semibold">{t.hiwH2b}</em>
           </h2>
           <p className="text-gray-500 font-light leading-relaxed mb-10 max-w-lg">{t.hiwSub}</p>
           <div className="grid md:grid-cols-3 gap-4">
@@ -448,7 +647,7 @@ export default function LandingPage() {
           <LabelTag>{t.featLabel}</LabelTag>
           <h2 className="text-4xl font-light tracking-tight text-primary leading-tight mb-4">
             {t.featH2a}<br />
-            <em className="not-italic text-amber-500 font-semibold">{t.featH2b}</em>
+            <em className="not-italic text-accent font-semibold">{t.featH2b}</em>
           </h2>
           <p className="text-gray-500 font-light leading-relaxed mb-10 max-w-lg">{t.featSub}</p>
           <div className="grid md:grid-cols-2 gap-4">
@@ -480,7 +679,7 @@ export default function LandingPage() {
           <LabelTag>{t.priceLabel}</LabelTag>
           <h2 className="text-4xl font-light tracking-tight text-primary leading-tight mb-4">
             {t.priceH2a}<br />
-            <em className="not-italic text-amber-500 font-semibold">{t.priceH2b}</em>
+            <em className="not-italic text-accent font-semibold">{t.priceH2b}</em>
           </h2>
           <p className="text-gray-500 font-light leading-relaxed mb-10 max-w-lg">{t.priceSub}</p>
           <div className="grid md:grid-cols-3 gap-4">
