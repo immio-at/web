@@ -36,24 +36,8 @@ export default function SettingsPage() {
   const [pwSuccess, setPwSuccess] = useState(false);
 
   useEffect(() => {
-    async function loadUser() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-
-      setUserEmail(session.user.email ?? null);
-
-      // Fetch immioEmail from backend
-      const token = session.access_token;
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-production-e03a.up.railway.app';
-      const res = await fetch(`${API_URL}/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setImmioEmail(data.immioEmail ?? null);
-      }
-    }
-    loadUser();
+    setUserEmail(localStorage.getItem('userEmail'));
+    setImmioEmail(localStorage.getItem('immioEmail'));
   }, []);
 
   async function copyImmioEmail() {
