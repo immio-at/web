@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -67,6 +68,7 @@ export default function SignInModal({ open, onClose, t }: SignInModalProps) {
     setError('');
 
     try {
+      // 1. Call our backend login endpoint
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,11 +81,18 @@ export default function SignInModal({ open, onClose, t }: SignInModalProps) {
         return;
       }
 
-      // Populate AuthContext with app-specific fields from the login response.
+      // 2. Hand the session to the frontend Supabase client.
+      // This is the critical step — without it, the Supabase client has no
+      // session and cannot refresh the access token automatically.
+      // The backend authenticated server-side; we now sync that session to
+      // the client so onAuthStateChange fires and AuthContext picks it up.
+      await supabase.auth.setSession({
+        access_token: data.accessToken,
+        refresh_token: data.refreshToken,
+      });
+
+      // 3. Populate AuthContext with app-specific fields from the login response.
       // AuthContext handles writing these to localStorage for persistence.
-      // The Supabase session (for token refresh) is managed separately by
-      // AuthContext's onAuthStateChange listener — it picks up the session
-      // automatically when Supabase's signInWithPassword is called server-side.
       setAppData({
         immioEmail: data.immioEmail,
         isAdmin: data.isAdmin ?? false,
@@ -91,10 +100,7 @@ export default function SignInModal({ open, onClose, t }: SignInModalProps) {
         userEmail: data.email,
       });
 
-      // Also store accessToken for legacy fallback during transition period
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('userId', data.userId);
-
+      // 4. Redirect based on approval status
       if (!data.approved) {
         router.push('/pending');
         return;
