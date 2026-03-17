@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getProperties, Property, updateProperty } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 // ─── Module-level cache ───────────────────────────────────────────────────────
 // Stored outside the hook so it persists across page navigations.
@@ -26,9 +27,11 @@ function notifyListeners(properties: Property[]) {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useProperties() {
+  const { session, loading: authLoading } = useAuth();
+
   // Initialise with cache immediately — no loading flash if cache is warm
   const [properties, setProperties] = useState<Property[]>(cache ?? []);
-  const [loading, setLoading] = useState(cache === null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchFromServer = useCallback(async (showLoading: boolean) => {
@@ -56,6 +59,19 @@ export function useProperties() {
     // Register this component as a listener so cache updates from
     // other components (e.g. a background refresh) propagate here too
     listeners.add(setProperties);
+    return () => { listeners.delete(setProperties); };
+  }, []);
+
+  useEffect(() => {
+    // Wait for AuthContext to finish loading before attempting any fetch.
+    // On page refresh, Supabase needs a moment to restore the session from
+    // storage. Firing getProperties() before the session is ready causes
+    // getAuthToken() to redirect to /?signin=true — which is what was
+    // causing the Funnel and Finder to redirect to dashboard on refresh.
+    if (authLoading) return;
+
+    // No session means the user isn't logged in — don't fetch
+    if (!session) return;
 
     const cacheAge = Date.now() - cacheTimestamp;
     const cacheIsStale = cacheAge > CACHE_TTL_MS;
@@ -73,11 +89,7 @@ export function useProperties() {
       setProperties(cache);
       setLoading(false);
     }
-
-    return () => {
-      listeners.delete(setProperties);
-    };
-  }, [fetchFromServer]);
+  }, [authLoading, session, fetchFromServer]);
 
   // ── Optimistic update ───────────────────────────────────────────────────────
   // Components can call this instead of updateProperty directly.
