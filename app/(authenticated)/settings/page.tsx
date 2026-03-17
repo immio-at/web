@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -24,8 +25,7 @@ function PlaceholderSection({ title, description }: { title: string; description
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
-  const [immioEmail, setImmioEmail] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const { immioEmail, userEmail } = useAuth();
   const [copied, setCopied] = useState(false);
 
   // Password change state
@@ -34,11 +34,6 @@ export default function SettingsPage() {
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwSuccess, setPwSuccess] = useState(false);
-
-  useEffect(() => {
-    setUserEmail(localStorage.getItem('userEmail'));
-    setImmioEmail(localStorage.getItem('immioEmail'));
-  }, []);
 
   async function copyImmioEmail() {
     if (!immioEmail) return;
@@ -128,12 +123,8 @@ export default function SettingsPage() {
             />
           </div>
 
-          {pwError && (
-            <p className="text-xs text-rose-600">{pwError}</p>
-          )}
-          {pwSuccess && (
-            <p className="text-xs text-emerald-600">Password updated successfully.</p>
-          )}
+          {pwError && <p className="text-xs text-rose-600">{pwError}</p>}
+          {pwSuccess && <p className="text-xs text-emerald-600">Password updated successfully.</p>}
 
           <button
             onClick={handlePasswordChange}
@@ -150,12 +141,10 @@ export default function SettingsPage() {
         title="Subscription"
         description="Subscription management coming soon — upgrade, downgrade, and billing will be available here."
       />
-
       <PlaceholderSection
         title="Notifications"
         description="Notification preferences coming soon — configure push notifications and email digests here."
       />
-
       <PlaceholderSection
         title="GDPR & Privacy"
         description="Data export, right to erasure, and privacy controls coming soon."

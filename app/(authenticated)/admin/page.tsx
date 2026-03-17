@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -25,17 +26,6 @@ interface InviteCode {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getToken() {
-  return localStorage.getItem('accessToken') ?? '';
-}
-
-function authHeaders() {
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${getToken()}`,
-  };
-}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('de-AT', {
@@ -68,6 +58,7 @@ function StatusBadge({ approved }: { approved: boolean }) {
 
 export default function AdminPage() {
   const router = useRouter();
+  const { isAdmin, loading: authLoading, session } = useAuth();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,16 +67,26 @@ export default function AdminPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // ── Guard: redirect non-admins ─────────────────────────────────────────────
+  // Wait for AuthContext to finish loading before checking — avoids false
+  // redirects while the context is still seeding from localStorage on mount.
   useEffect(() => {
-    const isAdmin = localStorage.getItem('isAdmin') === 'true';
-    const token = localStorage.getItem('accessToken');
-    if (!token || !isAdmin) {
+    if (authLoading) return;
+    if (!session || !isAdmin) {
       router.push('/dashboard');
     }
-  }, [router]);
+  }, [authLoading, session, isAdmin, router]);
+
+  // ── Auth headers using live Supabase session token ─────────────────────────
+  function authHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token ?? ''}`,
+    };
+  }
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
+    if (!session) return;
     setLoading(true);
     setError('');
     try {
@@ -106,7 +107,7 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -155,11 +156,10 @@ export default function AdminPage() {
 
   // ── Derived data ───────────────────────────────────────────────────────────
   const pending = users.filter(u => !u.approved);
-  const active = users.filter(u => u.approved);
   const unusedCodes = inviteCodes.filter(c => !c.usedAt);
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-sm text-gray-400 font-mono">Laden…</p>

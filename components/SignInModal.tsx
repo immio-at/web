@@ -3,12 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // ─── Copy type ────────────────────────────────────────────────────────────────
-// Only the keys this modal actually uses — keeps the component self-contained
-// and avoids importing the entire landing page copy object.
 
 export interface SignInModalCopy {
   modalTitle: string;
@@ -35,6 +34,7 @@ interface SignInModalProps {
 
 export default function SignInModal({ open, onClose, t }: SignInModalProps) {
   const router = useRouter();
+  const { setAppData } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -79,15 +79,21 @@ export default function SignInModal({ open, onClose, t }: SignInModalProps) {
         return;
       }
 
-      // Store all auth state in localStorage.
-      // These keys are read by: NavBar (isAdmin), api.ts (accessToken),
-      // settings page (immioEmail), and admin page guard (isAdmin).
+      // Populate AuthContext with app-specific fields from the login response.
+      // AuthContext handles writing these to localStorage for persistence.
+      // The Supabase session (for token refresh) is managed separately by
+      // AuthContext's onAuthStateChange listener — it picks up the session
+      // automatically when Supabase's signInWithPassword is called server-side.
+      setAppData({
+        immioEmail: data.immioEmail,
+        isAdmin: data.isAdmin ?? false,
+        approved: data.approved,
+        userEmail: data.email,
+      });
+
+      // Also store accessToken for legacy fallback during transition period
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('userId', data.userId);
-      localStorage.setItem('userEmail', data.email);
-      localStorage.setItem('immioEmail', data.immioEmail);
-      localStorage.setItem('approved', String(data.approved));
-      localStorage.setItem('isAdmin', String(data.isAdmin ?? false));
 
       if (!data.approved) {
         router.push('/pending');

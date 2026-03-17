@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
@@ -14,20 +15,10 @@ const navItems = [
 export default function NavBar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { isAdmin, signOut } = useAuth();
 
-  // Read isAdmin from localStorage — set on login alongside accessToken.
-  // Cast to string comparison because localStorage only stores strings.
-  const isAdmin = typeof window !== 'undefined'
-    ? localStorage.getItem('isAdmin') === 'true'
-    : false;
-
-  function handleLogout() {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('immioEmail');
-    localStorage.removeItem('approved');
-    localStorage.removeItem('isAdmin');
+  async function handleLogout() {
+    await signOut();
     router.push('/');
   }
 
