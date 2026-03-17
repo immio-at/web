@@ -15,13 +15,19 @@ export default function NavBar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const isLoginPage = pathname === '/login' || pathname === '/register';
-
-  if (isLoginPage) return null;
+  // Read isAdmin from localStorage — set on login alongside accessToken.
+  // Cast to string comparison because localStorage only stores strings.
+  const isAdmin = typeof window !== 'undefined'
+    ? localStorage.getItem('isAdmin') === 'true'
+    : false;
 
   function handleLogout() {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userId');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('immioEmail');
+    localStorage.removeItem('approved');
+    localStorage.removeItem('isAdmin');
     router.push('/');
   }
 
@@ -31,13 +37,11 @@ export default function NavBar() {
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link href="/" className="flex-shrink-0">
-            <span className="text-2xl font-bold text-gray-900">
-              IM<span className="text-3xl">M</span>IO
-            </span>
+          <Link href="/" className="text-2xl text-gray-900 flex-shrink-0">
+            IM<span className="text-3xl">M</span>IO
           </Link>
 
-          {/* Nav tabs - desktop */}
+          {/* Nav tabs — desktop */}
           <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
@@ -57,8 +61,9 @@ export default function NavBar() {
             })}
           </div>
 
-          {/* User actions */}
+          {/* Utility area — settings, admin (if applicable), sign out */}
           <div className="flex items-center gap-2">
+
             <Link
               href="/settings"
               title="Settings"
@@ -70,16 +75,32 @@ export default function NavBar() {
             >
               ⚙
             </Link>
+
+            {/* Admin link — only rendered for admin users */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className={`text-sm border rounded-lg px-3 py-1.5 font-medium transition-colors ${
+                  pathname === '/admin'
+                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                    : 'text-gray-400 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200 border-gray-200'
+                }`}
+              >
+                Admin
+              </Link>
+            )}
+
             <button
               onClick={handleLogout}
               className="text-sm text-gray-500 hover:text-gray-900 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
             >
               Sign Out
             </button>
+
           </div>
         </div>
 
-        {/* Mobile nav - bottom of navbar */}
+        {/* Mobile nav */}
         <div className="md:hidden flex gap-1 pb-2 overflow-x-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
@@ -97,7 +118,16 @@ export default function NavBar() {
               </Link>
             );
           })}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors"
+            >
+              ⚡ Admin
+            </Link>
+          )}
         </div>
+
       </div>
     </nav>
   );

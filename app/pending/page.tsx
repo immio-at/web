@@ -9,7 +9,7 @@ export default function PendingPage() {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('immioEmail');
-    router.push('/login');
+    router.push('/');
   }
 
   return (

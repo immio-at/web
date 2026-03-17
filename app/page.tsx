@@ -348,6 +348,7 @@ function SignInModal({
       localStorage.setItem('userEmail', data.email);
       localStorage.setItem('immioEmail', data.immioEmail);
       localStorage.setItem('approved', String(data.approved));
+      localStorage.setItem('isAdmin', String(data.isAdmin ?? false));
 
       if (!data.approved) {
         router.push('/pending');

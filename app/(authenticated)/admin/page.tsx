@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-interface User {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface AppUser {
   id: string;
   email: string;
   immioEmail: string;
@@ -17,105 +19,129 @@ interface User {
 interface InviteCode {
   id: string;
   code: string;
-  createdAt: string;
   usedAt: string | null;
   usedBy: string | null;
+  createdAt: string;
 }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getToken() {
+  return localStorage.getItem('accessToken') ?? '';
+}
+
+function authHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${getToken()}`,
+  };
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('de-AT', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+  });
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function SectionHeader({ title, count }: { title: string; count?: number }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <h2 className="text-sm font-mono uppercase tracking-widest text-gray-400">{title}</h2>
+      {count !== undefined && (
+        <span className="text-xs font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+          {count}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function StatusBadge({ approved }: { approved: boolean }) {
+  return approved
+    ? <span className="text-xs font-mono bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full">Aktiv</span>
+    : <span className="text-xs font-mono bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">Ausstehend</span>;
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AppUser[]>([]);
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [newCode, setNewCode] = useState('');
-  const [creating, setCreating] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  function getToken(): string | null {
-    return localStorage.getItem('accessToken');
-  }
-
-  async function fetchData() {
-    const token = getToken();
-    if (!token) {
-      router.push('/login');
-      return;
+  // ── Guard: redirect non-admins ─────────────────────────────────────────────
+  useEffect(() => {
+    const isAdmin = localStorage.getItem('isAdmin') === 'true';
+    const token = localStorage.getItem('accessToken');
+    if (!token || !isAdmin) {
+      router.push('/dashboard');
     }
+  }, [router]);
 
+  // ── Data fetching ──────────────────────────────────────────────────────────
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
       const [usersRes, codesRes] = await Promise.all([
-        fetch(`${API_URL}/admin/users`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_URL}/admin/invite-codes`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        fetch(`${API_URL}/admin/users`, { headers: authHeaders() }),
+        fetch(`${API_URL}/admin/invite-codes`, { headers: authHeaders() }),
       ]);
 
-      // 403 means logged in but not admin — redirect away
-      if (usersRes.status === 403) {
-        router.push('/dashboard');
-        return;
-      }
-
       if (!usersRes.ok || !codesRes.ok) {
-        setError('Failed to load admin data');
+        setError('Fehler beim Laden der Daten.');
         return;
       }
 
       setUsers(await usersRes.json());
       setInviteCodes(await codesRes.json());
-    } catch (e) {
-      setError('Could not connect to server');
+    } catch {
+      setError('Verbindung zum Server fehlgeschlagen.');
     } finally {
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    fetchData();
   }, []);
 
-  async function handleApprove(userId: string) {
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+  async function approveUser(userId: string) {
     setActionLoading(userId);
-    const token = getToken();
     try {
       await fetch(`${API_URL}/admin/users/${userId}/approve`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
+        method: 'PATCH', headers: authHeaders(),
       });
-      await fetchData();
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, approved: true } : u));
     } finally {
       setActionLoading(null);
     }
   }
 
-  async function handleRevoke(userId: string) {
+  async function revokeUser(userId: string) {
     setActionLoading(userId);
-    const token = getToken();
     try {
       await fetch(`${API_URL}/admin/users/${userId}/revoke`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
+        method: 'PATCH', headers: authHeaders(),
       });
-      await fetchData();
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, approved: false } : u));
     } finally {
       setActionLoading(null);
     }
   }
 
-  async function handleCreateCode() {
+  async function createInviteCode() {
     if (!newCode.trim()) return;
-    setCreating(true);
-    const token = getToken();
+    setActionLoading('invite');
     try {
       const res = await fetch(`${API_URL}/admin/invite-codes`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders(),
         body: JSON.stringify({ code: newCode.trim().toUpperCase() }),
       });
       if (res.ok) {
@@ -123,71 +149,76 @@ export default function AdminPage() {
         await fetchData();
       }
     } finally {
-      setCreating(false);
+      setActionLoading(null);
     }
   }
 
+  // ── Derived data ───────────────────────────────────────────────────────────
+  const pending = users.filter(u => !u.approved);
+  const active = users.filter(u => u.approved);
+  const unusedCodes = inviteCodes.filter(c => !c.usedAt);
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-sm text-gray-400 font-mono">Laden…</p>
       </div>
     );
   }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-red-600">{error}</p>
-      </div>
-    );
-  }
-
-  const pendingUsers = users.filter((u) => !u.approved);
-  const approvedUsers = users.filter((u) => u.approved);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-5xl mx-auto px-6 py-10">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">IMMIO Admin</h1>
-            <p className="text-sm text-gray-500">{users.length} total users</p>
-          </div>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            ← Back to Dashboard
-          </button>
+        <div className="mb-10">
+          <p className="text-[11px] font-mono uppercase tracking-widest text-amber-600 mb-1">Admin</p>
+          <h1 className="text-3xl font-light text-primary tracking-tight">Verwaltung</h1>
+          {error && (
+            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
         </div>
 
-        {/* Pending Users */}
-        {pendingUsers.length > 0 && (
-          <div className="bg-white rounded-lg border border-amber-200 shadow-sm">
-            <div className="px-6 py-4 border-b border-amber-100 bg-amber-50 rounded-t-lg">
-              <h2 className="font-semibold text-amber-900">
-                Pending Approval ({pendingUsers.length})
-              </h2>
+        {/* ── Summary stats ── */}
+        <div className="grid grid-cols-3 gap-4 mb-10">
+          {[
+            { label: 'Nutzer gesamt', value: users.length },
+            { label: 'Ausstehend', value: pending.length },
+            { label: 'Einladungscodes verfügbar', value: unusedCodes.length },
+          ].map(stat => (
+            <div key={stat.label} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+              <p className="text-xs font-mono text-gray-400 uppercase tracking-widest mb-2">{stat.label}</p>
+              <p className="text-3xl font-light text-primary">{stat.value}</p>
             </div>
-            <div className="divide-y">
-              {pendingUsers.map((user) => (
-                <div key={user.id} className="px-6 py-4 flex items-center justify-between">
+          ))}
+        </div>
+
+        {/* ── Pending approvals ── */}
+        {pending.length > 0 && (
+          <div className="bg-white border border-amber-200 rounded-xl p-6 shadow-sm mb-6">
+            <SectionHeader title="Ausstehende Freischaltungen" count={pending.length} />
+            <div className="space-y-3">
+              {pending.map(user => (
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0"
+                >
                   <div>
-                    <p className="font-medium text-gray-900">{user.email}</p>
-                    <p className="text-xs text-gray-500 font-mono">{user.immioEmail}</p>
-                    <p className="text-xs text-gray-400">
-                      Registered {new Date(user.createdAt).toLocaleDateString()}
+                    <p className="text-sm font-medium text-primary">{user.email}</p>
+                    <p className="text-xs text-gray-400 font-mono mt-0.5">
+                      Registriert {formatDate(user.createdAt)}
+                      {user.inviteCode && ` · Code: ${user.inviteCode}`}
                     </p>
                   </div>
                   <button
-                    onClick={() => handleApprove(user.id)}
+                    onClick={() => approveUser(user.id)}
                     disabled={actionLoading === user.id}
-                    className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                    className="text-sm font-medium bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white px-4 py-1.5 rounded-lg transition-colors"
                   >
-                    {actionLoading === user.id ? 'Approving...' : 'Approve'}
+                    {actionLoading === user.id ? '…' : 'Freischalten'}
                   </button>
                 </div>
               ))}
@@ -195,90 +226,103 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Approved Users */}
-        <div className="bg-white rounded-lg border shadow-sm">
-          <div className="px-6 py-4 border-b">
-            <h2 className="font-semibold text-gray-900">
-              Approved Users ({approvedUsers.length})
-            </h2>
-          </div>
-          <div className="divide-y">
-            {approvedUsers.length === 0 && (
-              <p className="px-6 py-4 text-sm text-gray-500">No approved users yet.</p>
-            )}
-            {approvedUsers.map((user) => (
-              <div key={user.id} className="px-6 py-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">{user.email}</p>
-                  <p className="text-xs text-gray-500 font-mono">{user.immioEmail}</p>
-                  <p className="text-xs text-gray-400">
-                    Registered {new Date(user.createdAt).toLocaleDateString()}
-                    {user.inviteCode && ` · Code: ${user.inviteCode}`}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleRevoke(user.id)}
-                  disabled={actionLoading === user.id}
-                  className="text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-50 disabled:opacity-50 transition-colors"
-                >
-                  {actionLoading === user.id ? 'Revoking...' : 'Revoke'}
-                </button>
-              </div>
-            ))}
+        {/* ── All users ── */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm mb-6">
+          <SectionHeader title="Alle Nutzer" count={users.length} />
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b border-gray-100">
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">Email</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">IMMIO Email</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">Registriert</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">Status</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal">Aktion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(user => (
+                  <tr key={user.id} className="border-b border-gray-50 last:border-0">
+                    <td className="py-3 pr-4 text-primary font-medium">{user.email}</td>
+                    <td className="py-3 pr-4 text-gray-400 font-mono text-xs">{user.immioEmail}</td>
+                    <td className="py-3 pr-4 text-gray-500 text-xs">{formatDate(user.createdAt)}</td>
+                    <td className="py-3 pr-4"><StatusBadge approved={user.approved} /></td>
+                    <td className="py-3">
+                      {user.approved ? (
+                        <button
+                          onClick={() => revokeUser(user.id)}
+                          disabled={actionLoading === user.id}
+                          className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
+                        >
+                          {actionLoading === user.id ? '…' : 'Sperren'}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => approveUser(user.id)}
+                          disabled={actionLoading === user.id}
+                          className="text-xs text-teal-600 hover:text-teal-800 disabled:opacity-50 transition-colors"
+                        >
+                          {actionLoading === user.id ? '…' : 'Freischalten'}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* Invite Codes */}
-        <div className="bg-white rounded-lg border shadow-sm">
-          <div className="px-6 py-4 border-b">
-            <h2 className="font-semibold text-gray-900">Invite Codes</h2>
-          </div>
+        {/* ── Invite codes ── */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <SectionHeader title="Einladungscodes" count={inviteCodes.length} />
 
           {/* Create new code */}
-          <div className="px-6 py-4 border-b bg-gray-50">
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={newCode}
-                onChange={(e) => setNewCode(e.target.value.toUpperCase())}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreateCode()}
-                placeholder="IMMIO-BETA-002"
-                className="flex-1 border rounded-lg px-3 py-2 text-sm font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                onClick={handleCreateCode}
-                disabled={creating || !newCode.trim()}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {creating ? 'Creating...' : 'Create Code'}
-              </button>
-            </div>
+          <div className="flex gap-2 mb-6">
+            <input
+              type="text"
+              value={newCode}
+              onChange={e => setNewCode(e.target.value.toUpperCase())}
+              onKeyDown={e => e.key === 'Enter' && createInviteCode()}
+              placeholder="IMMIO-XXXX-XXX"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono text-primary outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all tracking-widest"
+            />
+            <button
+              onClick={createInviteCode}
+              disabled={!newCode.trim() || actionLoading === 'invite'}
+              className="bg-primary hover:bg-primary-light disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {actionLoading === 'invite' ? '…' : 'Erstellen'}
+            </button>
           </div>
 
           {/* Code list */}
-          <div className="divide-y">
-            {inviteCodes.length === 0 && (
-              <p className="px-6 py-4 text-sm text-gray-500">No invite codes yet.</p>
-            )}
-            {inviteCodes.map((code) => (
-              <div key={code.id} className="px-6 py-4 flex items-center justify-between">
-                <p className="font-mono font-medium text-gray-900">{code.code}</p>
-                <div className="text-right">
-                  {code.usedAt ? (
-                    <div>
-                      <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                        Used
-                      </span>
-                      <p className="text-xs text-gray-400 mt-1">{code.usedBy}</p>
-                    </div>
-                  ) : (
-                    <span className="inline-block bg-emerald-100 text-emerald-700 text-xs px-2 py-1 rounded">
-                      Available
-                    </span>
-                  )}
-                </div>
+          <div className="space-y-2">
+            {inviteCodes.map(code => (
+              <div
+                key={code.id}
+                className={`flex items-center justify-between py-2.5 px-3 rounded-lg ${
+                  code.usedAt ? 'bg-gray-50' : 'bg-teal-50 border border-teal-100'
+                }`}
+              >
+                <span className={`font-mono text-sm tracking-widest ${
+                  code.usedAt ? 'text-gray-400 line-through' : 'text-teal-700'
+                }`}>
+                  {code.code}
+                </span>
+                <span className="text-xs text-gray-400 font-mono">
+                  {code.usedAt
+                    ? `Verwendet von ${code.usedBy} · ${formatDate(code.usedAt)}`
+                    : 'Verfügbar'
+                  }
+                </span>
               </div>
             ))}
+            {inviteCodes.length === 0 && (
+              <p className="text-sm text-gray-400 font-light text-center py-4">
+                Noch keine Einladungscodes erstellt.
+              </p>
+            )}
           </div>
         </div>
 
