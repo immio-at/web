@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SignInModal from '@/components/SignInModal';
 import RegisterModal from '@/components/RegisterModal';
+import { useAuth } from '@/context/AuthContext';
 
 // ─── i18n ─────────────────────────────────────────────────────────────────────
 
@@ -323,35 +324,39 @@ function LandingPageInner() {
   const [lang, setLang] = useState<Lang>('de');
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [heroEmail, setHeroEmail] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = copy[lang];
+  const { session, loading } = useAuth();
 
-  // Redirect logged-in users to dashboard; show landing page to everyone else.
-  // Also auto-open sign-in modal if redirected here with ?signin=true
-  // (e.g. after successful registration without invite code lands on /pending,
-  // or after session expiry redirects back here).
+  // Wait for AuthContext to finish loading before making any redirect decision.
+  // This prevents a race condition where the landing page renders briefly
+  // before Supabase has confirmed whether a valid session exists.
+  // Once loading is false:
+  //   - session present → redirect to dashboard (user is logged in)
+  //   - session absent  → show landing page, open sign-in modal if ?signin=true
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
+    if (loading) return;
+    if (session) {
       router.push('/dashboard');
     } else {
-      setAuthChecked(true);
       if (searchParams.get('signin') === 'true') setSignInOpen(true);
     }
-  }, [router, searchParams]);
+  }, [loading, session, router, searchParams]);
 
-  if (!authChecked) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-gray-400 text-sm">Laden…</p>
       </div>
     );
   }
+
+  // Don't render the landing page if we're about to redirect
+  if (session) return null;
 
   function handleRegister() {
     if (!email || !email.includes('@')) {
