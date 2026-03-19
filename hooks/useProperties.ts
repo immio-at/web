@@ -24,6 +24,10 @@ function notifyListeners(properties: Property[]) {
   listeners.forEach(fn => fn(properties));
 }
 
+// Terminal stages — moving to one of these does NOT clear the expired flag.
+// Must match the same constant in properties.service.ts on the backend.
+const TERMINAL_STAGES = new Set(['not_relevant', 'delisted']);
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useProperties() {
@@ -92,17 +96,32 @@ export function useProperties() {
   }, [authLoading, session, fetchFromServer]);
 
   // ── Optimistic update (status / notes / movedToStageAt) ────────────────────
-  // Persists to the DB via PATCH /properties/:id.
-  // Updates cache and all listeners immediately before the API call resolves.
+  // Updates cache and all listeners immediately, then persists to the DB.
+  //
+  // Mirrors the backend business rule: if the new status is not a terminal
+  // stage, listingStatus is reset to 'active' and listingExpiredAt is cleared.
+  // This means the "Nicht mehr verfügbar" badge disappears instantly when the
+  // user moves a property back into any active funnel stage.
 
   const update = useCallback(async (
     id: string,
     data: { status?: string; notes?: string; movedToStageAt?: string }
   ) => {
+    // Build the optimistic patch — mirrors what the backend will do
+    const patch: Partial<Property> = { ...data };
+
+    if (data.status && !TERMINAL_STAGES.has(data.status)) {
+      patch.listingStatus = 'active';
+      patch.listingExpiredAt = null;
+    }
+
+    // Apply optimistically to cache first
     if (cache) {
-      cache = cache.map(p => p.id === id ? { ...p, ...data } : p);
+      cache = cache.map(p => p.id === id ? { ...p, ...patch } : p);
       notifyListeners(cache);
     }
+
+    // Persist to DB
     await updateProperty(id, data);
   }, []);
 
