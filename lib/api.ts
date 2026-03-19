@@ -53,6 +53,11 @@ export interface Property {
   createdAt: string;
   notes: string | null;
   movedToStageAt: string | null;
+  // Listing availability — set by nightly checker or manual report.
+  // listingStatus: 'active' | 'expired'
+  // listingExpiredAt: ISO timestamp of first expiry detection, or null
+  listingStatus: string;
+  listingExpiredAt: string | null;
 }
 
 // ─── Property Analysis ────────────────────────────────────────────────────────
@@ -145,6 +150,30 @@ export async function updateProperty(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
+  });
+  return handleResponse(response);
+}
+
+// Manually flags a property as no longer available.
+// Calls POST /properties/:id/report-unavailable on the backend.
+// The backend sets listingStatus: 'expired' and records listingExpiredAt.
+export async function reportUnavailable(id: string): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${id}/report-unavailable`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  return handleResponse(response);
+}
+
+// Moves an expired property into the hidden 'delisted' stage.
+// Calls POST /properties/:id/delist on the backend.
+// Only valid for properties where listingStatus === 'expired'.
+export async function delistProperty(id: string): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${id}/delist`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
   });
   return handleResponse(response);
 }
