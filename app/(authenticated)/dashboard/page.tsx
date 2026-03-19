@@ -4,7 +4,7 @@ import { useProperties } from '@/hooks/useProperties';
 import DashboardClient from '@/components/DashboardClient';
 
 export default function DashboardPage() {
-  const { properties, loading, error, update } = useProperties();
+  const { properties, loading, error, update, optimisticUpdate } = useProperties();
 
   if (loading) {
     return (
@@ -21,7 +21,11 @@ export default function DashboardPage() {
           <p className="text-red-800">⚠️ {error}</p>
         </div>
       )}
-      <DashboardClient properties={properties} onUpdate={update} />
+      <DashboardClient
+        properties={properties}
+        onUpdate={update}
+        onOptimisticUpdate={optimisticUpdate}
+      />
     </div>
   );
 }

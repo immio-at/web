@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Property } from '@/lib/api';
+import { Property, reportUnavailable } from '@/lib/api';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 import { FUNNEL_STAGES } from '@/lib/constants';
 
 type ViewMode = 'tiles' | 'table';
-
 
 // Left-border accent colour per stage for tile cards
 const STATUS_BORDER: Record<string, string> = {
@@ -65,22 +64,22 @@ const defaultFilters: Filters = {
   showHidden: false,
 };
 
-// ─── onUpdate type matches useProperties.update signature ────────────────────
 type UpdateFn = (id: string, data: { status?: string; notes?: string; movedToStageAt?: string }) => Promise<void>;
+type OptimisticUpdateFn = (id: string, data: Partial<Property>) => void;
 
 export default function DashboardClient({
   properties,
   onUpdate,
+  onOptimisticUpdate,
 }: {
   properties: Property[];
   onUpdate: UpdateFn;
+  onOptimisticUpdate: OptimisticUpdateFn;
 }) {
   const [view, setView] = useState<ViewMode>('tiles');
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [filters, setFilters] = useState<Filters>(defaultFilters);
-
-  // ── Analysis modal state — lifted here so both TilesView and TableView can use it
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
 
   function updateFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
@@ -90,6 +89,7 @@ export default function DashboardClient({
   const filtered = useMemo(() => {
     return properties.filter(p => {
       if (p.status === 'not_relevant' && !filters.showHidden) return false;
+      if (p.status === 'delisted') return false;
 
       const price = p.price ? parseFloat(String(p.price)) : null;
       const size = p.sizeSqm ?? null;
@@ -247,10 +247,23 @@ export default function DashboardClient({
       </div>
 
       {/* Views */}
-      {view === 'tiles' && <TilesView properties={filtered} onUpdate={onUpdate} onAnalyse={setAnalyseProperty} />}
-      {view === 'table' && <TableView properties={filtered} onUpdate={onUpdate} onAnalyse={setAnalyseProperty} />}
+      {view === 'tiles' && (
+        <TilesView
+          properties={filtered}
+          onUpdate={onUpdate}
+          onOptimisticUpdate={onOptimisticUpdate}
+          onAnalyse={setAnalyseProperty}
+        />
+      )}
+      {view === 'table' && (
+        <TableView
+          properties={filtered}
+          onUpdate={onUpdate}
+          onOptimisticUpdate={onOptimisticUpdate}
+          onAnalyse={setAnalyseProperty}
+        />
+      )}
 
-      {/* Analysis modal */}
       {analyseProperty && (
         <PropertyAnalysisModal
           property={analyseProperty}
@@ -263,15 +276,22 @@ export default function DashboardClient({
 
 // ─── Tile card grid ───────────────────────────────────────────────────────────
 
-function TilesView({ properties, onUpdate, onAnalyse }: {
+function TilesView({ properties, onUpdate, onOptimisticUpdate, onAnalyse }: {
   properties: Property[];
   onUpdate: UpdateFn;
+  onOptimisticUpdate: OptimisticUpdateFn;
   onAnalyse: (p: Property) => void;
 }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {properties.map(prop => (
-        <TileCard key={prop.id} property={prop} onUpdate={onUpdate} onAnalyse={onAnalyse} />
+        <TileCard
+          key={prop.id}
+          property={prop}
+          onUpdate={onUpdate}
+          onOptimisticUpdate={onOptimisticUpdate}
+          onAnalyse={onAnalyse}
+        />
       ))}
       {properties.length === 0 && (
         <div className="col-span-3 text-center py-12 text-gray-500">
@@ -282,14 +302,16 @@ function TilesView({ properties, onUpdate, onAnalyse }: {
   );
 }
 
-function TileCard({ property, onUpdate, onAnalyse }: {
+function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse }: {
   property: Property;
   onUpdate: UpdateFn;
+  onOptimisticUpdate: OptimisticUpdateFn;
   onAnalyse: (p: Property) => void;
 }) {
   const [loading, setLoading] = useState(false);
 
   const status = property.status || 'new';
+  const isExpired = property.listingStatus === 'expired';
 
   const rawPrice = property.price ? parseFloat(String(property.price)) : null;
   const priceText = rawPrice
@@ -307,8 +329,18 @@ function TileCard({ property, onUpdate, onAnalyse }: {
     setLoading(false);
   }
 
+  // Optimistic: update local state immediately, confirm with backend in background
+  async function handleReportUnavailable() {
+    onOptimisticUpdate(property.id, { listingStatus: 'expired' });
+    try {
+      await reportUnavailable(property.id);
+    } catch (e) {
+      console.error('Failed to report unavailable', e);
+    }
+  }
+
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-300 ${STATUS_BORDER[status] ?? ''}`}>
+    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-300 ${STATUS_BORDER[status] ?? ''} ${isExpired ? 'opacity-70' : ''}`}>
       {/* Status strip — hidden when new */}
       {status !== 'new' && (
         <div className="px-3 py-1.5 border-b border-gray-100 flex items-center gap-1.5">
@@ -324,7 +356,7 @@ function TileCard({ property, onUpdate, onAnalyse }: {
             <img
               src={property.imageUrl}
               alt={property.title ?? ''}
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              className={`w-full h-full object-cover hover:scale-105 transition-transform duration-300 ${isExpired ? 'grayscale' : ''}`}
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.parentElement!.innerHTML =
@@ -338,6 +370,14 @@ function TileCard({ property, onUpdate, onAnalyse }: {
           )}
         </div>
       </a>
+
+      {/* Expired badge */}
+      {isExpired && (
+        <div className="mx-4 mt-3 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 font-medium flex items-center gap-1">
+          <span>⚠</span>
+          <span>Nicht mehr verfügbar</span>
+        </div>
+      )}
 
       {/* Details */}
       <div className="p-4">
@@ -355,7 +395,7 @@ function TileCard({ property, onUpdate, onAnalyse }: {
           </div>
         </div>
 
-        {/* Funnel stage dropdown + dismiss + analyse */}
+        {/* Funnel stage dropdown + report unavailable + analyse + dismiss */}
         <div className="flex gap-2 items-center">
           <select
             value={status}
@@ -376,6 +416,16 @@ function TileCard({ property, onUpdate, onAnalyse }: {
           >
             🔍
           </button>
+          {!isExpired && (
+            <button
+              onClick={handleReportUnavailable}
+              disabled={loading}
+              title="Report as unavailable"
+              className="p-2 rounded-lg border border-gray-200 text-gray-400 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-colors disabled:opacity-30"
+            >
+              ⚠
+            </button>
+          )}
           <button
             onClick={() => handleStatusChange('not_relevant')}
             disabled={loading || status === 'not_relevant'}
@@ -392,12 +442,20 @@ function TileCard({ property, onUpdate, onAnalyse }: {
 
 // ─── Table view ───────────────────────────────────────────────────────────────
 
-function TableView({ properties, onUpdate, onAnalyse }: {
+function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse }: {
   properties: Property[];
   onUpdate: UpdateFn;
+  onOptimisticUpdate: OptimisticUpdateFn;
   onAnalyse: (p: Property) => void;
 }) {
-  
+  async function handleReportUnavailable(propertyId: string) {
+    onOptimisticUpdate(propertyId, { listingStatus: 'expired' });
+    try {
+      await reportUnavailable(propertyId);
+    } catch (e) {
+      console.error('Failed to report unavailable', e);
+    }
+  }
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -414,7 +472,7 @@ function TableView({ properties, onUpdate, onAnalyse }: {
               <th className="text-left px-4 py-3 font-medium text-gray-700">€/m²</th>
               <th className="text-left px-4 py-3 font-medium text-gray-700">Status</th>
               <th className="text-left px-4 py-3 font-medium text-gray-700">Date</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700 w-16"></th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700 w-20"></th>
             </tr>
           </thead>
           <tbody>
@@ -427,15 +485,19 @@ function TableView({ properties, onUpdate, onAnalyse }: {
                 ? '€ ' + Math.round(rawPrice / prop.sizeSqm).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
                 : '—';
               const dateText = new Date(prop.emailReceivedAt).toLocaleDateString('de-AT');
+              const isExpired = prop.listingStatus === 'expired';
 
               return (
-                <tr key={prop.id} className={`border-b border-gray-100 hover:bg-gray-50 ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
+                <tr
+                  key={prop.id}
+                  className={`border-b border-gray-100 hover:bg-gray-50 ${i % 2 === 0 ? '' : 'bg-gray-50/50'} ${isExpired ? 'opacity-60' : ''}`}
+                >
                   <td className="px-4 py-2">
                     <a href={prop.sourceUrl} target="_blank" rel="noopener noreferrer">
                       <div className="relative rounded overflow-hidden bg-gray-100 hover:opacity-80 transition-opacity cursor-pointer" style={{ width: '48px', height: '48px' }}>
                         {prop.imageUrl ? (
                           <img src={prop.imageUrl} alt={prop.title ?? ''}
-                            className="w-full h-full object-cover"
+                            className={`w-full h-full object-cover ${isExpired ? 'grayscale' : ''}`}
                             onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                         ) : (
                           <span className="text-xl flex items-center justify-center h-full">🏠</span>
@@ -448,6 +510,12 @@ function TableView({ properties, onUpdate, onAnalyse }: {
                       className="text-gray-900 hover:text-blue-600 font-medium line-clamp-2">
                       {prop.title}
                     </a>
+                    {/* Expired badge inline under title */}
+                    {isExpired && (
+                      <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 font-medium">
+                        ⚠ Nicht mehr verfügbar
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-2 font-semibold text-blue-600 whitespace-nowrap">{priceText}</td>
                   <td className="px-4 py-2 whitespace-nowrap">{prop.sizeSqm ? `${prop.sizeSqm}m²` : '—'}</td>
@@ -475,15 +543,26 @@ function TableView({ properties, onUpdate, onAnalyse }: {
                       </button>
                     </div>
                   </td>
-                  <td className="px-4 py-2 text-gray-500 whitespace-nowrap">{dateText}</td>                  
+                  <td className="px-4 py-2 text-gray-500 whitespace-nowrap">{dateText}</td>
                   <td className="px-4 py-2">
-                    <button
-                      onClick={() => onAnalyse(prop)}
-                      title="Analyse this property"
-                      className="text-gray-300 hover:text-amber-500 hover:bg-amber-50 rounded p-1 transition-colors"
-                    >
-                      🔍
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onAnalyse(prop)}
+                        title="Analyse this property"
+                        className="text-gray-300 hover:text-amber-500 hover:bg-amber-50 rounded p-1 transition-colors"
+                      >
+                        🔍
+                      </button>
+                      {!isExpired && (
+                        <button
+                          onClick={() => handleReportUnavailable(prop.id)}
+                          title="Report as unavailable"
+                          className="text-gray-300 hover:text-amber-500 hover:bg-amber-50 rounded p-1 transition-colors text-xs"
+                        >
+                          ⚠
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

@@ -91,26 +91,44 @@ export function useProperties() {
     }
   }, [authLoading, session, fetchFromServer]);
 
-  // ── Optimistic update ───────────────────────────────────────────────────────
-  // Components can call this instead of updateProperty directly.
-  // It updates the cache and all listeners immediately, then saves to the DB.
-  // This means moving a card in Funnel is reflected instantly on Dashboard too.
+  // ── Optimistic update (status / notes / movedToStageAt) ────────────────────
+  // Persists to the DB via PATCH /properties/:id.
+  // Updates cache and all listeners immediately before the API call resolves.
 
   const update = useCallback(async (
     id: string,
     data: { status?: string; notes?: string; movedToStageAt?: string }
   ) => {
-    // Apply optimistically to cache first
     if (cache) {
       cache = cache.map(p => p.id === id ? { ...p, ...data } : p);
       notifyListeners(cache);
     }
-
-    // Persist to DB
     await updateProperty(id, data);
   }, []);
 
-  return { properties, loading, error, refresh: () => fetchFromServer(true), update };
+  // ── Optimistic local-only update (arbitrary Property fields) ───────────────
+  // Use this for actions that call their own API function directly
+  // (e.g. reportUnavailable, delistProperty) and only need the local cache
+  // updated immediately without going through PATCH /properties/:id.
+  //
+  // The caller is responsible for firing the API call. If the API call fails,
+  // the cache will be corrected on the next TTL refresh (30 seconds).
+
+  const optimisticUpdate = useCallback((id: string, data: Partial<Property>) => {
+    if (cache) {
+      cache = cache.map(p => p.id === id ? { ...p, ...data } : p);
+      notifyListeners(cache);
+    }
+  }, []);
+
+  return {
+    properties,
+    loading,
+    error,
+    refresh: () => fetchFromServer(true),
+    update,
+    optimisticUpdate,
+  };
 }
 
 // ─── Cache helpers ────────────────────────────────────────────────────────────

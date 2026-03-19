@@ -7,14 +7,11 @@ import { useProperties } from '@/hooks/useProperties';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
 
-const NOT_RELEVANT = { key: 'not_relevant', label: 'Not Relevant' };
+const NOT_RELEVANT = { key: 'not_relevant', label: 'Not Relevant', variant: 'danger' as const };
+const REPORT_UNAVAILABLE = { key: 'report_unavailable', label: 'Report Unavailable', variant: 'warning' as const };
+const REMOVE_FROM_VIEW = { key: 'delist', label: 'Remove from View', variant: 'danger' as const };
 
 interface PendingMove {
-  propertyId: string;
-  propertyTitle: string;
-}
-
-interface PendingReport {
   propertyId: string;
   propertyTitle: string;
 }
@@ -24,7 +21,6 @@ function formatPrice(n: number): string {
 }
 
 // ─── Portal dropdown ──────────────────────────────────────────────────────────
-// Renders into document.body so it is never clipped by a parent overflow:hidden
 
 interface DropdownOption {
   key: string;
@@ -54,22 +50,25 @@ function DropdownPortal({ anchorRect, options, onSelect, onClose }: DropdownPort
 
   const top  = anchorRect.bottom + window.scrollY + 4;
   const left = anchorRect.left   + window.scrollX;
-  const minW = Math.max(anchorRect.width, 200);
 
-  function itemClass(variant: DropdownOption['variant'], index: number, total: number) {
+  // Always at least 220px wide, but never narrower than the anchor button
+  const minW = Math.max(anchorRect.width, 220);
+
+  function itemClass(option: DropdownOption, index: number) {
     const base = 'w-full text-left text-xs px-3 py-2 hover:bg-gray-50 transition-colors';
-    const border = index === total - 1 ? '' : '';
 
-    // Warning options (report unavailable) get a divider above them
+    // Divider above warning and danger options to separate destructive actions
     const topBorder =
-      variant === 'warning' || variant === 'danger' ? 'border-t border-gray-100' : '';
+      option.variant === 'warning' || option.variant === 'danger'
+        ? 'border-t border-gray-100'
+        : '';
 
     const colour =
-      variant === 'danger'  ? 'text-rose-500 font-medium' :
-      variant === 'warning' ? 'text-amber-600 font-medium' :
+      option.variant === 'danger'  ? 'text-rose-500 font-medium' :
+      option.variant === 'warning' ? 'text-amber-600 font-medium' :
       'text-gray-700';
 
-    return [base, topBorder, colour, border].filter(Boolean).join(' ');
+    return [base, topBorder, colour].filter(Boolean).join(' ');
   }
 
   return createPortal(
@@ -78,19 +77,19 @@ function DropdownPortal({ anchorRect, options, onSelect, onClose }: DropdownPort
       style={{ position: 'absolute', top, left, minWidth: minW, zIndex: 9999 }}
       className="bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden"
     >
-      {options.map((s, i) => (
+      {options.map((opt, i) => (
         <button
-          key={s.key}
+          key={opt.key}
           onMouseDown={(e) => {
             e.preventDefault();
-            onSelect(s.key);
+            onSelect(opt.key);
           }}
-          className={itemClass(s.variant, i, options.length)}
+          className={itemClass(opt, i)}
         >
-          {s.key === 'not_relevant'       ? '✕ Not Relevant' :
-           s.key === 'report_unavailable' ? '⚠ Report Unavailable' :
-           s.key === 'delist'             ? '✕ Remove from View' :
-           s.label}
+          {opt.key === 'not_relevant'       ? '✕ Not Relevant' :
+           opt.key === 'report_unavailable' ? '⚠ Report Unavailable' :
+           opt.key === 'delist'             ? '✕ Remove from View' :
+           opt.label}
         </button>
       ))}
     </div>,
@@ -98,28 +97,14 @@ function DropdownPortal({ anchorRect, options, onSelect, onClose }: DropdownPort
   );
 }
 
-// ─── Confirm modal ────────────────────────────────────────────────────────────
+// ─── Confirm modal — used only for Not Relevant ───────────────────────────────
 
-function ConfirmModal({
-  title,
-  icon,
-  heading,
-  description,
+function ConfirmNotRelevantModal({
   propertyTitle,
-  footnote,
-  confirmLabel,
-  confirmClass,
   onConfirm,
   onCancel,
 }: {
-  title?: string;
-  icon: string;
-  heading: string;
-  description: string;
   propertyTitle: string;
-  footnote?: string;
-  confirmLabel: string;
-  confirmClass: string;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -128,16 +113,18 @@ function ConfirmModal({
       <div className="absolute inset-0 bg-black bg-opacity-40" onClick={onCancel} />
       <div className="relative bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-2xl">{icon}</span>
-          <h2 className="text-lg font-semibold text-gray-900">{heading}</h2>
+          <span className="text-2xl">❌</span>
+          <h2 className="text-lg font-semibold text-gray-900">Mark as Not Relevant?</h2>
         </div>
-        <p className="text-sm text-gray-600 mb-1">{description}</p>
+        <p className="text-sm text-gray-600 mb-1">
+          This will hide the following property from your funnel:
+        </p>
         <p className="text-sm font-medium text-gray-900 mb-5 line-clamp-2 bg-gray-50 rounded-lg px-3 py-2">
           {propertyTitle}
         </p>
-        {footnote && (
-          <p className="text-xs text-gray-400 mb-5">{footnote}</p>
-        )}
+        <p className="text-xs text-gray-400 mb-5">
+          You can still find it later via the Show hidden properties filter on the Dashboard.
+        </p>
         <div className="flex gap-3">
           <button
             onClick={onCancel}
@@ -147,9 +134,9 @@ function ConfirmModal({
           </button>
           <button
             onClick={onConfirm}
-            className={`flex-1 px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors ${confirmClass}`}
+            className="flex-1 px-4 py-2 rounded-lg bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors"
           >
-            {confirmLabel}
+            Yes, hide it
           </button>
         </div>
       </div>
@@ -160,15 +147,14 @@ function ConfirmModal({
 // ─── Main board ───────────────────────────────────────────────────────────────
 
 export default function FunnelBoard() {
-  const { properties: all, loading, error, update, refresh } = useProperties();
-  const [pendingMove, setPendingMove]     = useState<PendingMove | null>(null);
-  const [pendingReport, setPendingReport] = useState<PendingReport | null>(null);
+  const { properties: all, loading, error, update, optimisticUpdate } = useProperties();
+  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
   const draggedId = useRef<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
   // Exclude new, not_relevant, and delisted from the funnel view.
-  // 'delisted' is the terminal stage for expired listings the user has dismissed.
+  // 'delisted' is the terminal stage for expired listings dismissed by the user.
   const properties = all.filter(
     p => p.status !== 'new' && p.status !== 'not_relevant' && p.status !== 'delisted'
   );
@@ -186,9 +172,11 @@ export default function FunnelBoard() {
 
   function requestMove(propertyId: string, propertyTitle: string, newStatus: string) {
     if (newStatus === 'not_relevant') {
+      // Not Relevant is the only action that keeps a confirm modal —
+      // it's irreversible from the funnel so worth the extra friction.
       setPendingMove({ propertyId, propertyTitle });
     } else if (newStatus === 'report_unavailable') {
-      setPendingReport({ propertyId, propertyTitle });
+      handleReportUnavailable(propertyId);
     } else if (newStatus === 'delist') {
       handleDelist(propertyId);
     } else {
@@ -202,23 +190,23 @@ export default function FunnelBoard() {
     setPendingMove(null);
   }
 
-  async function confirmReportUnavailable() {
-    if (!pendingReport) return;
+  // Optimistic: update local state immediately, fire API call in background.
+  // If the API call fails, the next refresh will correct the state.
+  async function handleReportUnavailable(propertyId: string) {
+    optimisticUpdate(propertyId, { listingStatus: 'expired' });
     try {
-      await reportUnavailable(pendingReport.propertyId);
-      // Refresh so the expired badge appears immediately without a page reload
-      await refresh();
+      await reportUnavailable(propertyId);
     } catch (e) {
       console.error('Failed to report unavailable', e);
     }
-    setPendingReport(null);
   }
 
+  // Optimistic: hide the card immediately by marking as delisted locally,
+  // then confirm with the backend in the background.
   async function handleDelist(propertyId: string) {
+    optimisticUpdate(propertyId, { status: 'delisted' });
     try {
       await delistProperty(propertyId);
-      // Refresh so the card disappears from the funnel immediately
-      await refresh();
     } catch (e) {
       console.error('Failed to delist property', e);
     }
@@ -259,30 +247,10 @@ export default function FunnelBoard() {
   return (
     <div>
       {pendingMove && (
-        <ConfirmModal
-          icon="❌"
-          heading="Mark as Not Relevant?"
-          description="This will hide the following property from your funnel:"
+        <ConfirmNotRelevantModal
           propertyTitle={pendingMove.propertyTitle}
-          footnote="You can still find it later via the Show hidden properties filter on the Dashboard."
-          confirmLabel="Yes, hide it"
-          confirmClass="bg-rose-500 hover:bg-rose-600"
           onConfirm={confirmNotRelevant}
           onCancel={() => setPendingMove(null)}
-        />
-      )}
-
-      {pendingReport && (
-        <ConfirmModal
-          icon="⚠️"
-          heading="Report as Unavailable?"
-          description="This will flag the following property as no longer listed:"
-          propertyTitle={pendingReport.propertyTitle}
-          footnote="The property will stay in your funnel with a visual indicator. You can remove it from view at any time."
-          confirmLabel="Yes, report it"
-          confirmClass="bg-amber-500 hover:bg-amber-600"
-          onConfirm={confirmReportUnavailable}
-          onCancel={() => setPendingReport(null)}
         />
       )}
 
@@ -390,23 +358,20 @@ function FunnelCard({
   const rawPrice = property.price ? parseFloat(String(property.price)) : null;
   const priceText = rawPrice ? formatPrice(rawPrice) : null;
 
-  // Build the Move dropdown options.
-  // For expired properties: replace the standard stage options with just
-  // "Remove from View" since moving an unavailable listing through the funnel
-  // is misleading. Non-expired properties get the standard stage list plus
-  // "Report Unavailable" and "Not Relevant" at the bottom.
-  const moveOptions: { key: string; label: string; variant?: 'default' | 'warning' | 'danger' }[] =
-    isExpired
-      ? [
-          { key: 'delist', label: 'Remove from View', variant: 'danger' },
-        ]
-      : [
-          ...stages
-            .filter(s => s.key !== property.status)
-            .map(s => ({ key: s.key, label: s.label, variant: 'default' as const })),
-          { key: 'report_unavailable', label: 'Report Unavailable', variant: 'warning' },
-          { key: 'not_relevant',       label: 'Not Relevant',       variant: 'danger'  },
-        ];
+  // All cards get the full stage list so the user can move an expired property
+  // to any stage (e.g. they may still want to pursue it despite it being delisted).
+  // Expired cards additionally show Remove from View at the bottom.
+  // All cards show Report Unavailable (unless already expired) and Not Relevant.
+  const moveOptions: DropdownOption[] = [
+    ...stages
+      .filter(s => s.key !== property.status)
+      .map(s => ({ key: s.key, label: s.label, variant: 'default' as const })),
+    ...(isExpired
+      ? [REMOVE_FROM_VIEW]
+      : [REPORT_UNAVAILABLE]
+    ),
+    NOT_RELEVANT,
+  ];
 
   const closeMenu = useCallback(() => setAnchorRect(null), []);
 
@@ -438,11 +403,9 @@ function FunnelCard({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       className={[
-        'bg-white rounded-lg shadow-sm border overflow-hidden cursor-grab active:cursor-grabbing transition-opacity duration-150',
-        isDragging   ? 'opacity-40'          : 'opacity-100',
-        // Expired cards get a muted border and slight opacity to signal
-        // unavailability without being fully invisible
-        isExpired    ? 'border-amber-200 opacity-60' : 'border-gray-200',
+        'bg-white rounded-lg shadow-sm border overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-150',
+        isDragging ? 'opacity-40' : 'opacity-100',
+        isExpired  ? 'border-amber-200 opacity-60' : 'border-gray-200',
       ].join(' ')}
     >
       {/* Image + key info */}
@@ -451,7 +414,7 @@ function FunnelCard({
           href={property.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-shrink-0 rounded overflow-hidden bg-gray-100 relative"
+          className="flex-shrink-0 rounded overflow-hidden bg-gray-100"
           style={{ width: '64px', height: '64px' }}
           draggable={false}
         >
@@ -485,7 +448,7 @@ function FunnelCard({
         </div>
       </div>
 
-      {/* Expired badge — only shown when listingStatus is 'expired' */}
+      {/* Expired badge */}
       {isExpired && (
         <div className="mx-2 mb-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 font-medium flex items-center gap-1">
           <span>⚠</span>
@@ -527,7 +490,6 @@ function FunnelCard({
         </button>
       </div>
 
-      {/* Portal dropdown — rendered on document.body, never clipped by card overflow */}
       {anchorRect && (
         <DropdownPortal
           anchorRect={anchorRect}
