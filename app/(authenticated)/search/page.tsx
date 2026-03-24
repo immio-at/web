@@ -139,6 +139,7 @@ export default function EntdeckenPage() {
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveFilterError, setSaveFilterError] = useState<string | null>(null);
+  const [saveFilterSuccess, setSaveFilterSuccess] = useState<string | null>(null);
 
   const fetchListings = useCallback(async () => {
     if (authLoading || !session) return;
@@ -194,16 +195,19 @@ export default function EntdeckenPage() {
     setPage(1);
   }
 
-  async function handleSaveFilter() {
+  async function handleSaveFilter(name: string) {
     if (!isFilterActive(filterValues)) return;
     setSaveFilterError(null);
+    setSaveFilterSuccess(null);
     try {
-      const created = await createFilter(valuesToSavedFilterDto(filterValues));
+      const created = await createFilter(valuesToSavedFilterDto(filterValues, name));
       setActiveFilterId(created.id);
+      setSaveFilterSuccess(`Filter "${created.name}" gespeichert.`);
+      setTimeout(() => setSaveFilterSuccess(null), 4000);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
       if (msg.includes('403')) {
-        setSaveFilterError('Filter-Limit erreicht. Upgrade für mehr gespeicherte Filter.');
+        setSaveFilterError('Filter-Limit erreicht (max. 2). Lösche einen bestehenden Filter oder upgrade für mehr.');
       } else {
         setSaveFilterError('Fehler beim Speichern des Filters.');
       }
@@ -261,7 +265,12 @@ export default function EntdeckenPage() {
         activeFilterId={activeFilterId}
       />
 
-      {/* Save filter error */}
+      {/* Save filter feedback */}
+      {saveFilterSuccess && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+          <p className="text-green-800 text-sm">✓ {saveFilterSuccess}</p>
+        </div>
+      )}
       {saveFilterError && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
           <p className="text-amber-800 text-sm">{saveFilterError}</p>
