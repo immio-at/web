@@ -62,7 +62,7 @@ app/
     ├── funnel/page.tsx             ← Drag-and-drop kanban, 8 stages
     ├── finder/page.tsx             ← Tinder-style swipe UI
     ├── settings/page.tsx
-    ├── search/page.tsx             ← Coming Soon
+    ├── search/page.tsx             ← Entdecken — browse scraped listings, filter + save to funnel
     ├── analytics/page.tsx          ← Coming Soon
     └── admin/page.tsx              ← User management, invite codes
 ```
@@ -108,6 +108,7 @@ components/
 ├── RegisterModal.tsx           ← Optional invite code field
 ├── NavBar.tsx                  ← Reads isAdmin from AuthContext for admin link
 ├── PropertyAnalysisModal.tsx   ← Full-screen ROI calculator modal shell
+├── (inline in search/page.tsx) ← ListingCard — scraped listing card with save button
 └── analysis/
     ├── PropertyInfoStrip.tsx
     ├── UsageSelector.tsx
@@ -121,6 +122,11 @@ components/
 lib/
 ├── api.ts                      ← All backend API call functions + TypeScript interfaces
 └── supabaseClient.ts           ← Supabase client singleton
+
+Scraped listings API (in lib/api.ts):
+- `ScrapedListing` interface — id, platform, title, price, sizeSqm, rooms, location, zipCode, imageUrl, savedByUser
+- `getScrapedListings(filter)` — GET /scraped-listings with optional platform/zipCode/minPrice/maxPrice/page
+- `saveScrapedListing(id)` — POST /scraped-listings/:id/save → creates Property in user's funnel
 ```
 
 ---
@@ -211,6 +217,14 @@ Set in Vercel dashboard — never commit to git.
 6. **Garbled characters fix** — some titles show `ß□` encoding edge case
 7. **Kontakt page** — simple contact form
 8. **Anna's landing page copy** — hero headline and problem section are placeholder
+
+## Entdecken Page (`/search`)
+Browse scraped listings from Raiffeisen, s REAL, and ÖRAG.
+- Filter bar: platform, PLZ, min/max price
+- Grid of listing cards with image, platform badge, price, location, size/rooms
+- "Zu meinen Immobilien" save button — calls POST /scraped-listings/:id/save
+- Saving a listing invalidates the `useProperties` cache so Dashboard/Funnel update immediately
+- Pagination: 20 per page, Zurück/Weiter controls
 
 ## Tech Debt
 - Cache invalidation via server push — 30s TTL polling in place, revisit post-MVP
