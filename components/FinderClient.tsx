@@ -1,13 +1,40 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useProperties } from '@/hooks/useProperties';
+import { useSavedFilters } from '@/hooks/useSavedFilters';
+import { SavedFilter } from '@/lib/api';
+import { savedFilterToValues } from '@/components/FilterBar';
 import Link from 'next/link';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 
 export default function FinderClient() {
   const { properties: all, loading, update } = useProperties();
-  const properties = all.filter(p => p.status === 'new');
+  const { filters: savedFilters } = useSavedFilters();
+  const [selectedFilter, setSelectedFilter] = useState<SavedFilter | null>(null);
+  const [showFilterModal, setShowFilterModal] = useState(true);
+
+  // Apply saved filter to 'new' properties client-side
+  const properties = useMemo(() => {
+    let filtered = all.filter(p => p.status === 'new');
+    if (!selectedFilter) return filtered;
+
+    const v = savedFilterToValues(selectedFilter);
+    return filtered.filter(p => {
+      const price = p.price ? parseFloat(String(p.price)) : null;
+      const size = p.sizeSqm ?? null;
+      const rooms = p.rooms ? parseFloat(String(p.rooms)) : null;
+
+      if (v.minPrice && price != null && price < parseFloat(v.minPrice)) return false;
+      if (v.maxPrice && price != null && price > parseFloat(v.maxPrice)) return false;
+      if (v.minSize && size != null && size < parseFloat(v.minSize)) return false;
+      if (v.maxSize && size != null && size > parseFloat(v.maxSize)) return false;
+      if (v.minRooms && rooms != null && rooms < parseFloat(v.minRooms)) return false;
+      if (v.maxRooms && rooms != null && rooms > parseFloat(v.maxRooms)) return false;
+      if (v.zipCode && p.zipCode && !p.zipCode.startsWith(v.zipCode)) return false;
+      return true;
+    });
+  }, [all, selectedFilter]);
 
   const [current, setCurrent] = useState(0);
   const [dragX, setDragX] = useState(0);
@@ -111,6 +138,49 @@ export default function FinderClient() {
     </div>
   );
 
+  // Filter selection modal — shown on first open when saved filters exist
+  if (showFilterModal && savedFilters.length > 0 && current === 0) return (
+    <div className="flex-1 flex items-center justify-center">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 max-w-sm w-full mx-4">
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">Filter wählen</h2>
+        <p className="text-sm text-gray-500 mb-5">
+          Wähle einen gespeicherten Filter oder starte ohne Einschränkung.
+        </p>
+        <div className="space-y-2 mb-5 max-h-48 overflow-y-auto">
+          {savedFilters.map(sf => (
+            <button
+              key={sf.id}
+              onClick={() => { setSelectedFilter(sf); setShowFilterModal(false); }}
+              className={`w-full text-left px-4 py-3 rounded-lg border text-sm transition-colors ${
+                selectedFilter?.id === sf.id
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 hover:bg-gray-50 text-gray-700'
+              }`}
+            >
+              {sf.name}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => { setSelectedFilter(null); setShowFilterModal(false); }}
+            className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            I Feel Lucky
+          </button>
+          {selectedFilter && (
+            <button
+              onClick={() => setShowFilterModal(false)}
+              className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Filter anwenden
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   if (current >= total) return (
     <div className="flex-1 flex items-center justify-center">
       <div className="text-center px-8">
@@ -128,6 +198,21 @@ export default function FinderClient() {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-start pt-4 px-4 pb-8 w-full">
+
+      {/* Active filter indicator */}
+      {selectedFilter && (
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+            {selectedFilter.name}
+          </span>
+          <button
+            onClick={() => { setSelectedFilter(null); setShowFilterModal(true); setCurrent(0); }}
+            className="text-xs text-gray-400 hover:text-gray-600"
+          >
+            ändern
+          </button>
+        </div>
+      )}
 
       {/* Directions — single line at top */}
       <div className="flex gap-6 text-xs text-gray-400 text-center mb-4">

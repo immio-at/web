@@ -41,6 +41,7 @@ export interface Property {
   id: string;
   title: string;
   price: number | null;
+  pricePerSqm: number | null;
   location: string | null;
   zipCode: string | null;
   sizeSqm: number | null;
@@ -210,6 +211,14 @@ export interface ScrapedListingsFilter {
   zipCode?: string;
   minPrice?: number;
   maxPrice?: number;
+  minPricePerSqm?: number;
+  maxPricePerSqm?: number;
+  minSize?: number;
+  maxSize?: number;
+  minRooms?: number;
+  maxRooms?: number;
+  sortBy?: string;
+  sortOrder?: string;
   page?: number;
 }
 
@@ -220,6 +229,14 @@ export async function getScrapedListings(filter: ScrapedListingsFilter = {}): Pr
   if (filter.zipCode) params.set('zipCode', filter.zipCode);
   if (filter.minPrice !== undefined) params.set('minPrice', String(filter.minPrice));
   if (filter.maxPrice !== undefined) params.set('maxPrice', String(filter.maxPrice));
+  if (filter.minPricePerSqm !== undefined) params.set('minPricePerSqm', String(filter.minPricePerSqm));
+  if (filter.maxPricePerSqm !== undefined) params.set('maxPricePerSqm', String(filter.maxPricePerSqm));
+  if (filter.minSize !== undefined) params.set('minSize', String(filter.minSize));
+  if (filter.maxSize !== undefined) params.set('maxSize', String(filter.maxSize));
+  if (filter.minRooms !== undefined) params.set('minRooms', String(filter.minRooms));
+  if (filter.maxRooms !== undefined) params.set('maxRooms', String(filter.maxRooms));
+  if (filter.sortBy) params.set('sortBy', filter.sortBy);
+  if (filter.sortOrder) params.set('sortOrder', filter.sortOrder);
   if (filter.page) params.set('page', String(filter.page));
   const qs = params.toString();
   const response = await fetch(`${API_URL}/scraped-listings${qs ? `?${qs}` : ''}`, {
@@ -288,5 +305,79 @@ export async function deleteAnalysis(propertyId: string, analysisId: string): Pr
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
+  return handleResponse(response);
+}
+
+// ─── Saved Filters ──────────────────────────────────────────────────────────
+
+export interface SavedFilter {
+  id: string;
+  userId: string;
+  name: string;
+  priceMin: number | null;
+  priceMax: number | null;
+  pricePerSqmMin: number | null;
+  pricePerSqmMax: number | null;
+  sizeMin: number | null;
+  sizeMax: number | null;
+  roomsMin: number | null;
+  roomsMax: number | null;
+  postcodes: string[];
+  bezirke: string[];
+  bundeslaender: string[];
+  sources: string[];
+  listedAfter: string | null;
+  listedBefore: string | null;
+  sortBy: string;
+  sortOrder: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateSavedFilterDto = Partial<Omit<SavedFilter, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>;
+export type UpdateSavedFilterDto = CreateSavedFilterDto;
+
+export async function getSavedFilters(): Promise<SavedFilter[]> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/saved-filters`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  return handleResponse(response);
+}
+
+export async function createSavedFilter(dto: CreateSavedFilterDto): Promise<SavedFilter> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/saved-filters`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(dto),
+  });
+  return handleResponse(response);
+}
+
+export async function updateSavedFilter(id: string, dto: UpdateSavedFilterDto): Promise<SavedFilter> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/saved-filters/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(dto),
+  });
+  return handleResponse(response);
+}
+
+export async function deleteSavedFilter(id: string): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/saved-filters/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (response.status === 204) return;
   return handleResponse(response);
 }

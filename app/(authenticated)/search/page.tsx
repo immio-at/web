@@ -1,9 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { getScrapedListings, saveScrapedListing, ScrapedListing } from '@/lib/api';
+import { getScrapedListings, saveScrapedListing, ScrapedListing, SavedFilter } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { invalidateCache } from '@/hooks/useProperties';
+import { useSavedFilters } from '@/hooks/useSavedFilters';
+import FilterBar, {
+  FilterValues,
+  EMPTY_FILTERS,
+  savedFilterToValues,
+  valuesToSavedFilterDto,
+  isFilterActive,
+} from '@/components/FilterBar';
 
 // ─── Platform display names ───────────────────────────────────────────────────
 
@@ -25,6 +33,12 @@ function formatPrice(price: number | null) {
   return '€ ' + Math.round(price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
+function formatPricePerSqm(price: number | null, size: number | null) {
+  if (!price || !size || size <= 0) return null;
+  const ppsm = Math.round(price / size);
+  return '€ ' + ppsm.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '/m²';
+}
+
 // ─── Listing card ─────────────────────────────────────────────────────────────
 
 function ListingCard({
@@ -37,6 +51,10 @@ function ListingCard({
   saving: boolean;
 }) {
   const priceText = formatPrice(listing.price ? parseFloat(String(listing.price)) : null);
+  const ppsmText = formatPricePerSqm(
+    listing.price ? parseFloat(String(listing.price)) : null,
+    listing.sizeSqm ? parseFloat(String(listing.sizeSqm)) : null,
+  );
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
@@ -70,6 +88,9 @@ function ListingCard({
           {priceText && (
             <div className="text-lg font-semibold text-blue-600">{priceText}</div>
           )}
+          {ppsmText && (
+            <div className="text-xs text-gray-400">{ppsmText}</div>
+          )}
           {listing.location && <div className="text-xs">📍 {listing.location}</div>}
           <div className="flex items-center gap-3 text-xs">
             {listing.sizeSqm && <span>📏 {Math.round(parseFloat(String(listing.sizeSqm)))} m²</span>}
@@ -102,15 +123,13 @@ function ListingCard({
 
 export default function EntdeckenPage() {
   const { session, loading: authLoading } = useAuth();
+  const { filters: savedFilters, create: createFilter, remove: removeFilter } = useSavedFilters();
 
-  // Filter inputs (live state)
-  const [platform, setPlatform] = useState('');
-  const [zipCode, setZipCode] = useState('');
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-
-  // Applied filters (only change on submit)
-  const [applied, setApplied] = useState({ platform: '', zipCode: '', minPrice: '', maxPrice: '', page: 1 });
+  // Filter state
+  const [filterValues, setFilterValues] = useState<FilterValues>(EMPTY_FILTERS);
+  const [applied, setApplied] = useState<FilterValues>(EMPTY_FILTERS);
+  const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   // Data state
   const [listings, setListings] = useState<ScrapedListing[]>([]);
@@ -119,6 +138,7 @@ export default function EntdeckenPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [saveFilterError, setSaveFilterError] = useState<string | null>(null);
 
   const fetchListings = useCallback(async () => {
     if (authLoading || !session) return;
@@ -130,7 +150,15 @@ export default function EntdeckenPage() {
         zipCode: applied.zipCode || undefined,
         minPrice: applied.minPrice ? parseFloat(applied.minPrice) : undefined,
         maxPrice: applied.maxPrice ? parseFloat(applied.maxPrice) : undefined,
-        page: applied.page,
+        minPricePerSqm: applied.minPricePerSqm ? parseFloat(applied.minPricePerSqm) : undefined,
+        maxPricePerSqm: applied.maxPricePerSqm ? parseFloat(applied.maxPricePerSqm) : undefined,
+        minSize: applied.minSize ? parseFloat(applied.minSize) : undefined,
+        maxSize: applied.maxSize ? parseFloat(applied.maxSize) : undefined,
+        minRooms: applied.minRooms ? parseFloat(applied.minRooms) : undefined,
+        maxRooms: applied.maxRooms ? parseFloat(applied.maxRooms) : undefined,
+        sortBy: applied.sortBy || undefined,
+        sortOrder: applied.sortOrder || undefined,
+        page,
       });
       setListings(data.data);
       setTotal(data.total);
@@ -140,19 +168,55 @@ export default function EntdeckenPage() {
     } finally {
       setLoading(false);
     }
-  }, [authLoading, session, applied]);
+  }, [authLoading, session, applied, page]);
 
   useEffect(() => {
     fetchListings();
   }, [fetchListings]);
 
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    setApplied({ platform, zipCode, minPrice, maxPrice, page: 1 });
+  function handleSearch() {
+    setApplied({ ...filterValues });
+    setPage(1);
+  }
+
+  function handleReset() {
+    setFilterValues(EMPTY_FILTERS);
+    setApplied(EMPTY_FILTERS);
+    setActiveFilterId(null);
+    setPage(1);
+  }
+
+  function handleLoadFilter(sf: SavedFilter) {
+    const vals = savedFilterToValues(sf);
+    setFilterValues(vals);
+    setApplied(vals);
+    setActiveFilterId(sf.id);
+    setPage(1);
+  }
+
+  async function handleSaveFilter() {
+    if (!isFilterActive(filterValues)) return;
+    setSaveFilterError(null);
+    try {
+      const created = await createFilter(valuesToSavedFilterDto(filterValues));
+      setActiveFilterId(created.id);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.includes('403')) {
+        setSaveFilterError('Filter-Limit erreicht. Upgrade für mehr gespeicherte Filter.');
+      } else {
+        setSaveFilterError('Fehler beim Speichern des Filters.');
+      }
+    }
+  }
+
+  async function handleDeleteFilter(id: string) {
+    await removeFilter(id);
+    if (activeFilterId === id) setActiveFilterId(null);
   }
 
   function handlePageChange(newPage: number) {
-    setApplied(prev => ({ ...prev, page: newPage }));
+    setPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -160,13 +224,10 @@ export default function EntdeckenPage() {
     setSavingId(listing.id);
     try {
       await saveScrapedListing(listing.id);
-      // Mark as saved in the local list
       setListings(prev => prev.map(l => l.id === listing.id ? { ...l, savedByUser: true } : l));
-      // Invalidate the properties cache so Dashboard/Funnel picks up the new property
       invalidateCache();
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
-      // 409 = already saved — update UI anyway
       if (msg.includes('409')) {
         setListings(prev => prev.map(l => l.id === listing.id ? { ...l, savedByUser: true } : l));
       }
@@ -183,80 +244,29 @@ export default function EntdeckenPage() {
         <p className="text-[11px] font-mono uppercase tracking-widest text-teal-600 mb-1">Entdecken</p>
         <h1 className="text-2xl font-light text-gray-900 tracking-tight">Inserate entdecken</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Täglich aktualisierte Immobilien von Raiffeisen, s REAL und ÖRAG.
+          Täglich aktualisierte Immobilien von Raiffeisen, s REAL, ÖRAG und RE/MAX.
         </p>
       </div>
 
       {/* Filter bar */}
-      <form onSubmit={handleSearch} className="bg-white border border-gray-200 rounded-xl p-4 mb-6 flex flex-wrap gap-3 items-end">
-        <div className="flex flex-col gap-1 min-w-[140px]">
-          <label className="text-xs text-gray-500 font-medium">Plattform</label>
-          <select
-            value={platform}
-            onChange={e => setPlatform(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Alle Plattformen</option>
-            <option value="raiffeisen">Raiffeisen</option>
-            <option value="sreal">s REAL</option>
-            <option value="oerag">ÖRAG</option>
-          </select>
+      <FilterBar
+        values={filterValues}
+        onChange={setFilterValues}
+        onSearch={handleSearch}
+        onReset={handleReset}
+        onSave={handleSaveFilter}
+        savedFilters={savedFilters}
+        onLoadFilter={handleLoadFilter}
+        onDeleteFilter={handleDeleteFilter}
+        activeFilterId={activeFilterId}
+      />
+
+      {/* Save filter error */}
+      {saveFilterError && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+          <p className="text-amber-800 text-sm">{saveFilterError}</p>
         </div>
-
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500 font-medium">PLZ</label>
-          <input
-            type="text"
-            value={zipCode}
-            onChange={e => setZipCode(e.target.value)}
-            placeholder="z.B. 1010"
-            maxLength={4}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500 font-medium">Preis von (€)</label>
-          <input
-            type="number"
-            value={minPrice}
-            onChange={e => setMinPrice(e.target.value)}
-            placeholder="z.B. 200000"
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500 font-medium">Preis bis (€)</label>
-          <input
-            type="number"
-            value={maxPrice}
-            onChange={e => setMaxPrice(e.target.value)}
-            placeholder="z.B. 500000"
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          Suchen
-        </button>
-
-        {(applied.platform || applied.zipCode || applied.minPrice || applied.maxPrice) && (
-          <button
-            type="button"
-            onClick={() => {
-              setPlatform(''); setZipCode(''); setMinPrice(''); setMaxPrice('');
-              setApplied({ platform: '', zipCode: '', minPrice: '', maxPrice: '', page: 1 });
-            }}
-            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            Zurücksetzen
-          </button>
-        )}
-      </form>
+      )}
 
       {/* Error */}
       {error && (
@@ -303,18 +313,18 @@ export default function EntdeckenPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-8">
           <button
-            onClick={() => handlePageChange(applied.page - 1)}
-            disabled={applied.page <= 1 || loading}
+            onClick={() => handlePageChange(page - 1)}
+            disabled={page <= 1 || loading}
             className="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             ← Zurück
           </button>
           <span className="text-sm text-gray-500 px-3">
-            Seite {applied.page} von {totalPages}
+            Seite {page} von {totalPages}
           </span>
           <button
-            onClick={() => handlePageChange(applied.page + 1)}
-            disabled={applied.page >= totalPages || loading}
+            onClick={() => handlePageChange(page + 1)}
+            disabled={page >= totalPages || loading}
             className="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Weiter →
