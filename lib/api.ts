@@ -178,6 +178,66 @@ export async function delistProperty(id: string): Promise<void> {
   return handleResponse(response);
 }
 
+// ─── Scraped Listings ─────────────────────────────────────────────────────────
+
+export interface ScrapedListing {
+  id: string;
+  adId: string;
+  platform: string;
+  sourceUrl: string;
+  title: string | null;
+  price: number | null;
+  sizeSqm: number | null;
+  rooms: number | null;
+  location: string | null;
+  zipCode: string | null;
+  imageUrl: string | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  savedByUser: boolean;
+}
+
+export interface ScrapedListingsResponse {
+  data: ScrapedListing[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface ScrapedListingsFilter {
+  platform?: string;
+  zipCode?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  page?: number;
+}
+
+export async function getScrapedListings(filter: ScrapedListingsFilter = {}): Promise<ScrapedListingsResponse> {
+  const token = await getAuthToken();
+  const params = new URLSearchParams();
+  if (filter.platform) params.set('platform', filter.platform);
+  if (filter.zipCode) params.set('zipCode', filter.zipCode);
+  if (filter.minPrice !== undefined) params.set('minPrice', String(filter.minPrice));
+  if (filter.maxPrice !== undefined) params.set('maxPrice', String(filter.maxPrice));
+  if (filter.page) params.set('page', String(filter.page));
+  const qs = params.toString();
+  const response = await fetch(`${API_URL}/scraped-listings${qs ? `?${qs}` : ''}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  return handleResponse(response);
+}
+
+export async function saveScrapedListing(id: string): Promise<{ message: string; property: Property }> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/scraped-listings/${id}/save`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  return handleResponse(response);
+}
+
 // ─── Analysis API ─────────────────────────────────────────────────────────────
 
 export async function getAnalyses(propertyId: string): Promise<PropertyAnalysis[]> {
