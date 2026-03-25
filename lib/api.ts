@@ -181,7 +181,7 @@ export async function delistProperty(id: string): Promise<void> {
 
 // ─── Import from URL ─────────────────────────────────────────────────────────
 
-export async function importFromUrl(url: string): Promise<{ message: string; property: Property }> {
+export async function importFromUrl(url: string, status?: string): Promise<{ message: string; property: Property }> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/from-url`, {
     method: 'POST',
@@ -189,7 +189,7 @@ export async function importFromUrl(url: string): Promise<{ message: string; pro
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, status }),
   });
   return handleResponse(response);
 }
