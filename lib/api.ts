@@ -179,6 +179,21 @@ export async function delistProperty(id: string): Promise<void> {
   return handleResponse(response);
 }
 
+// ─── Import from URL ─────────────────────────────────────────────────────────
+
+export async function importFromUrl(url: string): Promise<{ message: string; property: Property }> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/from-url`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ url }),
+  });
+  return handleResponse(response);
+}
+
 // ─── Scraped Listings ─────────────────────────────────────────────────────────
 
 export interface ScrapedListing {
