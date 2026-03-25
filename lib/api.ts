@@ -30,7 +30,13 @@ async function handleResponse(response: Response) {
     throw new Error('Session expired');
   }
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    // Try to extract the backend error message
+    let message = `Request failed: ${response.status}`;
+    try {
+      const body = await response.json();
+      if (body.message) message = body.message;
+    } catch { /* response wasn't JSON */ }
+    throw new Error(message);
   }
   return response.json();
 }

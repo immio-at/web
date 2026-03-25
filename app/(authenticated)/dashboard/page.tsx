@@ -27,14 +27,8 @@ export default function DashboardPage() {
       invalidateCache();
       setTimeout(() => setImportSuccess(null), 5000);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
-      if (msg.includes('409')) {
-        setImportError('Dieses Inserat hast du bereits gespeichert.');
-      } else if (msg.includes('400')) {
-        setImportError('Ungültige URL oder Plattform wird noch nicht unterstützt.');
-      } else {
-        setImportError('Fehler beim Importieren. Bitte prüfe die URL.');
-      }
+      const msg = e instanceof Error ? e.message : 'Unbekannter Fehler';
+      setImportError(msg);
     } finally {
       setImporting(false);
     }
