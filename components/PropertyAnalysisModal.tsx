@@ -8,12 +8,17 @@ import {
 import {
   Property,
   PropertyAnalysis,
+  PropertyDocument,
   RehabCostItem,
   UpdateAnalysisDto,
   getAnalyses,
   createAnalysis,
   updateAnalysis,
   deleteAnalysis,
+  getDocuments,
+  uploadDocument,
+  getDocumentDownloadUrl,
+  deleteDocument,
 } from '@/lib/api';
 import {
   calcOwnerResults,
@@ -148,6 +153,12 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Documents
+  const [documents, setDocuments] = useState<PropertyDocument[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [docLabel, setDocLabel] = useState('Exposé');
+  const [docError, setDocError] = useState<string | null>(null);
+
   // Attach sizeSqm from property for price-per-sqm calculation
   const sizeSqm = property.sizeSqm;
 
@@ -195,6 +206,9 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
             flipResalePrice: a.flipResalePrice ? parseFloat(String(a.flipResalePrice)) : null,
           });
         }
+        // Load documents in parallel
+        const docs = await getDocuments(property.id);
+        setDocuments(docs);
       } catch (e) {
         setError('Fehler beim Laden der Analyse.');
       } finally {
@@ -240,6 +254,47 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
     } finally {
       setSaving(false);
     }
+  }
+
+  // ── Document handlers ────────────────────────────────────────────────────
+  async function handleDocUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setDocError(null);
+    try {
+      const doc = await uploadDocument(property.id, file, docLabel);
+      setDocuments(prev => [doc, ...prev]);
+    } catch (err) {
+      setDocError(err instanceof Error ? err.message : 'Upload fehlgeschlagen');
+    } finally {
+      setUploading(false);
+      e.target.value = ''; // reset file input
+    }
+  }
+
+  async function handleDocDownload(doc: PropertyDocument) {
+    try {
+      const url = await getDocumentDownloadUrl(property.id, doc.id);
+      window.open(url, '_blank');
+    } catch {
+      setDocError('Download fehlgeschlagen');
+    }
+  }
+
+  async function handleDocDelete(doc: PropertyDocument) {
+    try {
+      await deleteDocument(property.id, doc.id);
+      setDocuments(prev => prev.filter(d => d.id !== doc.id));
+    } catch {
+      setDocError('Löschen fehlgeschlagen');
+    }
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   // ── Build a full PropertyAnalysis shape for calculators ───────────────────
@@ -671,6 +726,78 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                 </p>
               </div>
             )}
+
+            {/* ── Documents ── */}
+            <div className="pt-6 border-t border-[#e2e6ed]">
+              <h3 className="text-sm font-semibold text-[#0F1F3D] uppercase tracking-wide mb-3">Dokumente</h3>
+
+              {/* Upload row */}
+              <div className="flex flex-wrap gap-2 items-end mb-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-[#6b7a99] font-medium">Typ</label>
+                  <select
+                    value={docLabel}
+                    onChange={e => setDocLabel(e.target.value)}
+                    className="border border-[#e2e6ed] rounded-lg px-3 py-2 text-sm text-[#0F1F3D] bg-white focus:outline-none focus:ring-2 focus:ring-[#F5A623]"
+                  >
+                    {['Exposé', 'Energieausweis', 'Grundriss', 'Provisionsvereinbarung', 'Widerrufsformular', 'Protokoll', 'Kaufanbot', 'Kaufvertrag', 'Gutachten', 'Sonstiges'].map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+                <label className={`px-4 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors ${
+                  uploading || documents.length >= 10
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-[#F5A623] text-white hover:bg-[#d4891a]'
+                }`}>
+                  {uploading ? 'Hochladen...' : '+ PDF hochladen'}
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={handleDocUpload}
+                    disabled={uploading || documents.length >= 10}
+                    className="hidden"
+                  />
+                </label>
+                {documents.length >= 10 && (
+                  <span className="text-xs text-[#6b7a99]">Max. 10 Dokumente erreicht</span>
+                )}
+              </div>
+
+              {docError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2 mb-3">{docError}</div>
+              )}
+
+              {/* Document list */}
+              {documents.length > 0 ? (
+                <div className="space-y-1.5">
+                  {documents.map(doc => (
+                    <div key={doc.id} className="flex items-center justify-between bg-[#f8f9fb] rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs font-medium text-[#F5A623] bg-[#FEF3E2] px-2 py-0.5 rounded flex-shrink-0">{doc.label}</span>
+                        <button
+                          onClick={() => handleDocDownload(doc)}
+                          className="text-sm text-[#0F1F3D] hover:text-[#F5A623] truncate transition-colors"
+                          title={doc.fileName}
+                        >
+                          {doc.fileName}
+                        </button>
+                        <span className="text-xs text-[#6b7a99] flex-shrink-0">{formatFileSize(doc.fileSize)}</span>
+                      </div>
+                      <button
+                        onClick={() => handleDocDelete(doc)}
+                        className="text-[#6b7a99] hover:text-red-500 text-xs ml-2 flex-shrink-0"
+                        title="Löschen"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-[#6b7a99]">Noch keine Dokumente. Lade PDFs hoch (Exposé, Energieausweis, etc.).</p>
+              )}
+            </div>
 
             {/* ── Error ── */}
             {error && (

@@ -329,6 +329,59 @@ export async function deleteAnalysis(propertyId: string, analysisId: string): Pr
   return handleResponse(response);
 }
 
+// ─── Property Documents ─────────────────────────────────────────────────────
+
+export interface PropertyDocument {
+  id: string;
+  propertyId: string;
+  label: string;
+  fileName: string;
+  storageKey: string;
+  fileSize: number;
+  createdAt: string;
+}
+
+export async function getDocuments(propertyId: string): Promise<PropertyDocument[]> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${propertyId}/documents`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  return handleResponse(response);
+}
+
+export async function uploadDocument(propertyId: string, file: File, label: string): Promise<PropertyDocument> {
+  const token = await getAuthToken();
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('label', label);
+  const response = await fetch(`${API_URL}/properties/${propertyId}/documents`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData,
+  });
+  return handleResponse(response);
+}
+
+export async function getDocumentDownloadUrl(propertyId: string, documentId: string): Promise<string> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${propertyId}/documents/${documentId}/download`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  const data = await handleResponse(response);
+  return data.url;
+}
+
+export async function deleteDocument(propertyId: string, documentId: string): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${propertyId}/documents/${documentId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (response.status === 204) return;
+  return handleResponse(response);
+}
+
 // ─── Saved Filters ──────────────────────────────────────────────────────────
 
 export interface SavedFilter {
