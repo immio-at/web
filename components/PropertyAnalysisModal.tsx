@@ -377,7 +377,27 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
               </a>
             </div>
 
-            {/* ── Section 1: Kaufdetails ── */}
+            {/* ── Section 1: Nutzung ── */}
+            <div>
+              <SectionTitle>Nutzung</SectionTitle>
+              <div className="flex gap-3">
+                {(['rental', 'owner', 'flip'] as const).map(type => (
+                  <button
+                    key={type}
+                    onClick={() => set('usageType', type)}
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium border transition-all ${
+                      draft.usageType === type
+                        ? 'bg-[#0F1F3D] text-white border-[#0F1F3D]'
+                        : 'bg-white text-[#6b7a99] border-[#e2e6ed] hover:border-[#0F1F3D]'
+                    }`}
+                  >
+                    {type === 'rental' ? 'Vermietung' : type === 'owner' ? 'Eigennutzung' : 'Flip'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Section 2: Kaufdetails ── */}
             <div>
               <SectionTitle>Kaufdetails</SectionTitle>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -473,25 +493,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
               </div>
             </div>
 
-            {/* ── Section 2: Nutzung ── */}
-            <div>
-              <SectionTitle>Nutzung</SectionTitle>
-              <div className="flex gap-3">
-                {(['rental', 'owner', 'flip'] as const).map(type => (
-                  <button
-                    key={type}
-                    onClick={() => set('usageType', type)}
-                    className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium border transition-all ${
-                      draft.usageType === type
-                        ? 'bg-[#0F1F3D] text-white border-[#0F1F3D]'
-                        : 'bg-white text-[#6b7a99] border-[#e2e6ed] hover:border-[#0F1F3D]'
-                    }`}
-                  >
-                    {type === 'rental' ? 'Vermietung' : type === 'owner' ? 'Eigennutzung' : 'Flip'}
-                  </button>
-                ))}
-              </div>
-            </div>
+
 
             {/* ── Section 3: Finanzierung ── */}
             <div>
