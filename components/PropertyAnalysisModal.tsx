@@ -447,6 +447,15 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                 )}
               </div>
 
+              {/* Laufende Kosten */}
+              <div className="mb-4">
+                <span className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide block mb-2">Laufende Kosten (monatlich)</span>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <NumInput label="Betriebskosten" value={draft.ooBetriebskostenMonthly} onChange={v => set('ooBetriebskostenMonthly', v)} prefix="€" hint="Monatlich" />
+                  <NumInput label="Reparaturrücklage" value={draft.reparaturruecklageMon} onChange={v => set('reparaturruecklageMon', v)} prefix="€" hint="Monatliche HV-Umlage" />
+                </div>
+              </div>
+
               {/* Totals */}
               <div className="flex gap-6 bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl px-4 py-3 text-sm">
                 <div>
@@ -566,8 +575,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
               <div>
                 <SectionTitle>Eigennutzung</SectionTitle>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <NumInput label="Betriebskosten/Monat" value={draft.ooBetriebskostenMonthly} onChange={v => set('ooBetriebskostenMonthly', v)} prefix="€" />
-                  <NumInput label="Reparaturrücklage" value={draft.ooRepairsPct * 100} onChange={v => set('ooRepairsPct', (v ?? 0) / 100)} suffix="% p.a." hint="% des Kaufpreises" />
+                  <NumInput label="Instandhaltung" value={draft.ooRepairsPct * 100} onChange={v => set('ooRepairsPct', (v ?? 0) / 100)} suffix="% p.a." hint="% des Kaufpreises" />
                   <NumInput label="Wertsteigerung p.a." value={draft.ooAppreciationPct * 100} onChange={v => set('ooAppreciationPct', (v ?? 0) / 100)} suffix="%" />
                 </div>
               </div>
@@ -614,7 +622,6 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <NumInput label="BK umlagefähig (Mieter)" value={draft.bkUmlagefaehig} onChange={v => set('bkUmlagefaehig', v)} prefix="€" />
                     <NumInput label="BK nicht umlagefähig (Eigentümer)" value={draft.bkNichtUmlagefaehig} onChange={v => set('bkNichtUmlagefaehig', v)} prefix="€" />
-                    <NumInput label="Reparaturrücklage (HV)" value={draft.reparaturruecklageMon} onChange={v => set('reparaturruecklageMon', v)} prefix="€" hint="Monatliche HV-Umlage" />
                     <NumInput label="Leerstand" value={draft.vacancyPct * 100} onChange={v => set('vacancyPct', (v ?? 0) / 100)} suffix="%" />
                     <NumInput label="Reparaturreserve" value={draft.repairsPct * 100} onChange={v => set('repairsPct', (v ?? 0) / 100)} suffix="% p.a." hint="Persönliche Reserve (% des Kaufpreises)" />
                     <NumInput label="Mietsteigerung p.a." value={draft.rentGrowthPct * 100} onChange={v => set('rentGrowthPct', (v ?? 0) / 100)} suffix="%" />
