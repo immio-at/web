@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useProperties, invalidateCache } from '@/hooks/useProperties';
 import { importFromUrl } from '@/lib/api';
+import { useInteractionTracker } from '@/hooks/useInteractionTracker';
 import DashboardClient from '@/components/DashboardClient';
 
 export default function DashboardPage() {
   const { properties, loading, error, update, optimisticUpdate } = useProperties();
+  const { track, getRecent, getMost } = useInteractionTracker();
+  const [, setInteractionTick] = useState(0); // force re-render on interaction
+
+  const handleInteraction = useCallback((id: string) => {
+    track(id);
+    setInteractionTick(t => t + 1); // trigger re-render so carousels update
+  }, [track]);
 
   // URL import state
   const [importUrl, setImportUrl] = useState('');
@@ -87,6 +95,9 @@ export default function DashboardPage() {
         properties={properties}
         onUpdate={update}
         onOptimisticUpdate={optimisticUpdate}
+        onInteraction={handleInteraction}
+        recentIds={getRecent(15)}
+        frequentIds={getMost(15)}
       />
     </div>
   );

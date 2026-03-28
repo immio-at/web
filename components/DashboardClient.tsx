@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Property, reportUnavailable } from '@/lib/api';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 import { FUNNEL_STAGES } from '@/lib/constants';
+
+type InteractionFn = (id: string) => void;
 
 type ViewMode = 'tiles' | 'table';
 
@@ -71,16 +73,43 @@ export default function DashboardClient({
   properties,
   onUpdate,
   onOptimisticUpdate,
+  onInteraction,
+  recentIds,
+  frequentIds,
 }: {
   properties: Property[];
   onUpdate: UpdateFn;
   onOptimisticUpdate: OptimisticUpdateFn;
+  onInteraction?: InteractionFn;
+  recentIds?: string[];
+  frequentIds?: string[];
 }) {
   const [view, setView] = useState<ViewMode>('tiles');
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
+
+  // Build carousel data from property IDs
+  const propMap = useMemo(() => {
+    const m = new Map<string, Property>();
+    properties.forEach(p => m.set(p.id, p));
+    return m;
+  }, [properties]);
+
+  const recentProperties = useMemo(
+    () => (recentIds ?? []).map(id => propMap.get(id)).filter((p): p is Property => !!p),
+    [recentIds, propMap],
+  );
+  const frequentProperties = useMemo(
+    () => (frequentIds ?? []).map(id => propMap.get(id)).filter((p): p is Property => !!p),
+    [frequentIds, propMap],
+  );
+
+  function handleAnalyse(p: Property) {
+    onInteraction?.(p.id);
+    setAnalyseProperty(p);
+  }
 
   function updateFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -128,6 +157,24 @@ export default function DashboardClient({
 
   return (
     <div>
+      {/* Carousels */}
+      {recentProperties.length > 0 && (
+        <PropertyCarousel
+          title="Zuletzt angesehen"
+          properties={recentProperties}
+          onInteraction={onInteraction}
+          onAnalyse={handleAnalyse}
+        />
+      )}
+      {frequentProperties.length > 0 && (
+        <PropertyCarousel
+          title="Am häufigsten angesehen"
+          properties={frequentProperties}
+          onInteraction={onInteraction}
+          onAnalyse={handleAnalyse}
+        />
+      )}
+
       {/* Sub-nav */}
       <div className="flex flex-col gap-3 mb-6">
         <div className="flex items-center justify-between">
@@ -252,7 +299,8 @@ export default function DashboardClient({
           properties={filtered}
           onUpdate={onUpdate}
           onOptimisticUpdate={onOptimisticUpdate}
-          onAnalyse={setAnalyseProperty}
+          onAnalyse={handleAnalyse}
+          onInteraction={onInteraction}
         />
       )}
       {view === 'table' && (
@@ -260,7 +308,8 @@ export default function DashboardClient({
           properties={filtered}
           onUpdate={onUpdate}
           onOptimisticUpdate={onOptimisticUpdate}
-          onAnalyse={setAnalyseProperty}
+          onAnalyse={handleAnalyse}
+          onInteraction={onInteraction}
         />
       )}
 
@@ -276,11 +325,12 @@ export default function DashboardClient({
 
 // ─── Tile card grid ───────────────────────────────────────────────────────────
 
-function TilesView({ properties, onUpdate, onOptimisticUpdate, onAnalyse }: {
+function TilesView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInteraction }: {
   properties: Property[];
   onUpdate: UpdateFn;
   onOptimisticUpdate: OptimisticUpdateFn;
   onAnalyse: (p: Property) => void;
+  onInteraction?: InteractionFn;
 }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -291,6 +341,7 @@ function TilesView({ properties, onUpdate, onOptimisticUpdate, onAnalyse }: {
           onUpdate={onUpdate}
           onOptimisticUpdate={onOptimisticUpdate}
           onAnalyse={onAnalyse}
+          onInteraction={onInteraction}
         />
       ))}
       {properties.length === 0 && (
@@ -302,11 +353,12 @@ function TilesView({ properties, onUpdate, onOptimisticUpdate, onAnalyse }: {
   );
 }
 
-function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse }: {
+function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInteraction }: {
   property: Property;
   onUpdate: UpdateFn;
   onOptimisticUpdate: OptimisticUpdateFn;
   onAnalyse: (p: Property) => void;
+  onInteraction?: InteractionFn;
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -321,6 +373,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse }: {
   const stageLabel = FUNNEL_STAGES.find(s => s.key === status)?.label ?? 'New';
 
   async function handleStatusChange(newStatus: string) {
+    onInteraction?.(property.id);
     setLoading(true);
     await onUpdate(property.id, {
       status: newStatus,
@@ -329,8 +382,8 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse }: {
     setLoading(false);
   }
 
-  // Optimistic: update local state immediately, confirm with backend in background
   async function handleReportUnavailable() {
+    onInteraction?.(property.id);
     onOptimisticUpdate(property.id, { listingStatus: 'expired' });
     try {
       await reportUnavailable(property.id);
@@ -350,7 +403,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse }: {
       )}
 
       {/* Image */}
-      <a href={property.sourceUrl} target="_blank" rel="noopener noreferrer">
+      <a href={property.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => onInteraction?.(property.id)}>
         <div className="relative overflow-hidden bg-gray-200 rounded-t-lg" style={{ height: '192px' }}>
           {property.imageUrl ? (
             <img
@@ -381,7 +434,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse }: {
 
       {/* Details */}
       <div className="p-4">
-        <a href={property.sourceUrl} target="_blank" rel="noopener noreferrer">
+        <a href={property.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => onInteraction?.(property.id)}>
           <h3 className="font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors line-clamp-2">
             {property.title}
           </h3>
@@ -442,13 +495,15 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse }: {
 
 // ─── Table view ───────────────────────────────────────────────────────────────
 
-function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse }: {
+function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInteraction }: {
   properties: Property[];
   onUpdate: UpdateFn;
   onOptimisticUpdate: OptimisticUpdateFn;
   onAnalyse: (p: Property) => void;
+  onInteraction?: InteractionFn;
 }) {
   async function handleReportUnavailable(propertyId: string) {
+    onInteraction?.(propertyId);
     onOptimisticUpdate(propertyId, { listingStatus: 'expired' });
     try {
       await reportUnavailable(propertyId);
@@ -493,7 +548,7 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse }: {
                   className={`border-b border-gray-100 hover:bg-gray-50 ${i % 2 === 0 ? '' : 'bg-gray-50/50'} ${isExpired ? 'opacity-60' : ''}`}
                 >
                   <td className="px-4 py-2">
-                    <a href={prop.sourceUrl} target="_blank" rel="noopener noreferrer">
+                    <a href={prop.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => onInteraction?.(prop.id)}>
                       <div className="relative rounded overflow-hidden bg-gray-100 hover:opacity-80 transition-opacity cursor-pointer" style={{ width: '48px', height: '48px' }}>
                         {prop.imageUrl ? (
                           <img src={prop.imageUrl} alt={prop.title ?? ''}
@@ -506,7 +561,7 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse }: {
                     </a>
                   </td>
                   <td className="px-4 py-2 max-w-xs">
-                    <a href={prop.sourceUrl} target="_blank" rel="noopener noreferrer"
+                    <a href={prop.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => onInteraction?.(prop.id)}
                       className="text-gray-900 hover:text-blue-600 font-medium line-clamp-2">
                       {prop.title}
                     </a>
@@ -526,7 +581,7 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse }: {
                     <div className="flex items-center gap-1">
                       <select
                         defaultValue={prop.status ?? 'new'}
-                        onChange={e => onUpdate(prop.id, { status: e.target.value, movedToStageAt: new Date().toISOString() })}
+                        onChange={e => { onInteraction?.(prop.id); onUpdate(prop.id, { status: e.target.value, movedToStageAt: new Date().toISOString() }); }}
                         className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-300 ${STATUS_BADGE[prop.status ?? ''] ?? 'bg-gray-100 text-gray-600'}`}
                       >
                         {FUNNEL_STAGES.filter(s => s.key !== 'not_relevant').map(stage => (
@@ -574,6 +629,95 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse }: {
             No properties match your filters
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Property Carousel ───────────────────────────────────────────────────────
+
+function PropertyCarousel({ title, properties, onInteraction, onAnalyse }: {
+  title: string;
+  properties: Property[];
+  onInteraction?: InteractionFn;
+  onAnalyse: (p: Property) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  function scroll(direction: 'left' | 'right') {
+    if (!scrollRef.current) return;
+    const amount = scrollRef.current.clientWidth * 0.75;
+    scrollRef.current.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' });
+  }
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
+        <div className="flex gap-1">
+          <button onClick={() => scroll('left')} className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors text-xs">←</button>
+          <button onClick={() => scroll('right')} className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors text-xs">→</button>
+        </div>
+      </div>
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto pb-2"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {properties.map(p => (
+          <CarouselCard key={p.id} property={p} onInteraction={onInteraction} onAnalyse={onAnalyse} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CarouselCard({ property, onInteraction, onAnalyse }: {
+  property: Property;
+  onInteraction?: InteractionFn;
+  onAnalyse: (p: Property) => void;
+}) {
+  const rawPrice = property.price ? parseFloat(String(property.price)) : null;
+  const priceText = rawPrice
+    ? '€ ' + Math.round(rawPrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    : '';
+  const isExpired = property.listingStatus === 'expired';
+
+  return (
+    <div className="flex-shrink-0 w-48 bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+      <a
+        href={property.sourceUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => onInteraction?.(property.id)}
+      >
+        <div className="relative h-28 bg-gray-100">
+          {property.imageUrl ? (
+            <img
+              src={property.imageUrl}
+              alt={property.title ?? ''}
+              className={`w-full h-full object-cover ${isExpired ? 'grayscale' : ''}`}
+              onError={e => { e.currentTarget.style.display = 'none'; }}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-2xl text-gray-300">🏠</div>
+          )}
+        </div>
+      </a>
+      <div className="p-2">
+        <p className="text-xs font-medium text-gray-900 line-clamp-1">{property.title ?? '—'}</p>
+        {priceText && <p className="text-xs font-semibold text-blue-600 mt-0.5">{priceText}</p>}
+        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
+          {property.sizeSqm && <span>{property.sizeSqm}m²</span>}
+          {property.rooms && <span>{property.rooms} Zi.</span>}
+          {property.zipCode && <span>{property.zipCode}</span>}
+        </div>
+        <button
+          onClick={() => onAnalyse(property)}
+          className="mt-1.5 w-full text-[10px] text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded py-1 transition-colors"
+        >
+          🔍 Analyse
+        </button>
       </div>
     </div>
   );
