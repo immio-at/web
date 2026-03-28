@@ -373,7 +373,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
   const stageLabel = FUNNEL_STAGES.find(s => s.key === status)?.label ?? 'New';
 
   async function handleStatusChange(newStatus: string) {
-    onInteraction?.(property.id);
+    if (newStatus !== 'not_relevant') onInteraction?.(property.id);
     setLoading(true);
     await onUpdate(property.id, {
       status: newStatus,
@@ -383,7 +383,6 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
   }
 
   async function handleReportUnavailable() {
-    onInteraction?.(property.id);
     onOptimisticUpdate(property.id, { listingStatus: 'expired' });
     try {
       await reportUnavailable(property.id);
@@ -503,7 +502,6 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
   onInteraction?: InteractionFn;
 }) {
   async function handleReportUnavailable(propertyId: string) {
-    onInteraction?.(propertyId);
     onOptimisticUpdate(propertyId, { listingStatus: 'expired' });
     try {
       await reportUnavailable(propertyId);
@@ -581,7 +579,7 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
                     <div className="flex items-center gap-1">
                       <select
                         defaultValue={prop.status ?? 'new'}
-                        onChange={e => { onInteraction?.(prop.id); onUpdate(prop.id, { status: e.target.value, movedToStageAt: new Date().toISOString() }); }}
+                        onChange={e => { if (e.target.value !== 'not_relevant') onInteraction?.(prop.id); onUpdate(prop.id, { status: e.target.value, movedToStageAt: new Date().toISOString() }); }}
                         className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-300 ${STATUS_BADGE[prop.status ?? ''] ?? 'bg-gray-100 text-gray-600'}`}
                       >
                         {FUNNEL_STAGES.filter(s => s.key !== 'not_relevant').map(stage => (
