@@ -90,6 +90,16 @@ Do not create a `/login` route. Session expiry redirects to `/?signin=true`.
 - Provides: `properties`, `loading`, `update()`, `optimisticUpdate()`
 - 30-second TTL cache
 - `update()` mirrors backend rule: clears `listingStatus` to `active` optimistically
+
+**useInteractionTracker hook — localStorage-based view tracking**
+- Location: `hooks/useInteractionTracker.ts`
+- Tracks property interactions in `localStorage` key `immio_property_interactions`
+- Stores per-property: `{ count, lastInteractedAt }`
+- Tracked actions: clicking listing URL, opening analysis modal, changing funnel status
+- NOT tracked: report unavailable, dismiss (not_relevant)
+- Provides: `track(id)`, `getRecent(limit)`, `getMost(limit)`
+- Used by Dashboard for "Zuletzt angesehen" and "Am häufigsten angesehen" carousels
+- Tech debt: migrate to backend table for cross-device persistence
   when status moves to any non-terminal stage
 - `optimisticUpdate()` patches arbitrary `Property` fields in cache instantly
 
@@ -107,7 +117,9 @@ components/
 ├── SignInModal.tsx              ← Modal auth — never a separate page
 ├── RegisterModal.tsx           ← Optional invite code field
 ├── NavBar.tsx                  ← Reads isAdmin from AuthContext for admin link
-├── PropertyAnalysisModal.tsx   ← Full-screen ROI calculator modal shell
+├── DashboardClient.tsx         ← Dashboard logic: tiles/table views, carousels, filters
+├── FilterBar.tsx               ← Shared filter component (Search, Dashboard, Finder)
+├── PropertyAnalysisModal.tsx   ← Full-screen ROI calculator + document uploads
 ├── (inline in search/page.tsx) ← ListingCard — scraped listing card with save button
 └── analysis/
     ├── PropertyInfoStrip.tsx
