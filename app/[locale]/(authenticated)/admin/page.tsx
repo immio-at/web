@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/context/AuthContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -49,14 +50,16 @@ function SectionHeader({ title, count }: { title: string; count?: number }) {
 }
 
 function StatusBadge({ approved }: { approved: boolean }) {
+  const t = useTranslations('admin');
   return approved
-    ? <span className="text-xs font-mono bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full">Aktiv</span>
-    : <span className="text-xs font-mono bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">Ausstehend</span>;
+    ? <span className="text-xs font-mono bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full">{t('allUsers.statusActive')}</span>
+    : <span className="text-xs font-mono bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">{t('allUsers.statusPending')}</span>;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
+  const t = useTranslations('admin');
   const router = useRouter();
   const { isAdmin, loading: authLoading, session } = useAuth();
   const [users, setUsers] = useState<AppUser[]>([]);
@@ -96,18 +99,18 @@ export default function AdminPage() {
       ]);
 
       if (!usersRes.ok || !codesRes.ok) {
-        setError('Fehler beim Laden der Daten.');
+        setError(t('errorLoading'));
         return;
       }
 
       setUsers(await usersRes.json());
       setInviteCodes(await codesRes.json());
     } catch {
-      setError('Verbindung zum Server fehlgeschlagen.');
+      setError(t('errorConnection'));
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, [session, t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -162,7 +165,7 @@ export default function AdminPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-sm text-gray-400 font-mono">Laden…</p>
+        <p className="text-sm text-gray-400 font-mono">{t('loading')}</p>
       </div>
     );
   }
@@ -173,8 +176,8 @@ export default function AdminPage() {
 
         {/* Header */}
         <div className="mb-10">
-          <p className="text-[11px] font-mono uppercase tracking-widest text-amber-600 mb-1">Admin</p>
-          <h1 className="text-3xl font-light text-primary tracking-tight">Verwaltung</h1>
+          <p className="text-[11px] font-mono uppercase tracking-widest text-amber-600 mb-1">{t('label')}</p>
+          <h1 className="text-3xl font-light text-primary tracking-tight">{t('title')}</h1>
           {error && (
             <div className="mt-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
               <p className="text-red-700 text-sm">{error}</p>
@@ -185,9 +188,9 @@ export default function AdminPage() {
         {/* ── Summary stats ── */}
         <div className="grid grid-cols-3 gap-4 mb-10">
           {[
-            { label: 'Nutzer gesamt', value: users.length },
-            { label: 'Ausstehend', value: pending.length },
-            { label: 'Einladungscodes verfügbar', value: unusedCodes.length },
+            { label: t('stats.totalUsers'), value: users.length },
+            { label: t('stats.pending'), value: pending.length },
+            { label: t('stats.inviteCodesAvailable'), value: unusedCodes.length },
           ].map(stat => (
             <div key={stat.label} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
               <p className="text-xs font-mono text-gray-400 uppercase tracking-widest mb-2">{stat.label}</p>
@@ -199,7 +202,7 @@ export default function AdminPage() {
         {/* ── Pending approvals ── */}
         {pending.length > 0 && (
           <div className="bg-white border border-amber-200 rounded-xl p-6 shadow-sm mb-6">
-            <SectionHeader title="Ausstehende Freischaltungen" count={pending.length} />
+            <SectionHeader title={t('pendingApprovals.title')} count={pending.length} />
             <div className="space-y-3">
               {pending.map(user => (
                 <div
@@ -209,8 +212,8 @@ export default function AdminPage() {
                   <div>
                     <p className="text-sm font-medium text-primary">{user.email}</p>
                     <p className="text-xs text-gray-400 font-mono mt-0.5">
-                      Registriert {formatDate(user.createdAt)}
-                      {user.inviteCode && ` · Code: ${user.inviteCode}`}
+                      {t('pendingApprovals.registered', { date: formatDate(user.createdAt) })}
+                      {user.inviteCode && ` · ${t('pendingApprovals.code', { code: user.inviteCode })}`}
                     </p>
                   </div>
                   <button
@@ -218,7 +221,7 @@ export default function AdminPage() {
                     disabled={actionLoading === user.id}
                     className="text-sm font-medium bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white px-4 py-1.5 rounded-lg transition-colors"
                   >
-                    {actionLoading === user.id ? '…' : 'Freischalten'}
+                    {actionLoading === user.id ? '…' : t('pendingApprovals.approve')}
                   </button>
                 </div>
               ))}
@@ -228,16 +231,16 @@ export default function AdminPage() {
 
         {/* ── All users ── */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm mb-6">
-          <SectionHeader title="Alle Nutzer" count={users.length} />
+          <SectionHeader title={t('allUsers.title')} count={users.length} />
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left border-b border-gray-100">
-                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">Email</th>
-                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">IMMIO Email</th>
-                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">Registriert</th>
-                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">Status</th>
-                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal">Aktion</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">{t('allUsers.headerEmail')}</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">{t('allUsers.headerImmioEmail')}</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">{t('allUsers.headerRegistered')}</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">{t('allUsers.headerStatus')}</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal">{t('allUsers.headerAction')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -254,7 +257,7 @@ export default function AdminPage() {
                           disabled={actionLoading === user.id}
                           className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
                         >
-                          {actionLoading === user.id ? '…' : 'Sperren'}
+                          {actionLoading === user.id ? '…' : t('allUsers.revoke')}
                         </button>
                       ) : (
                         <button
@@ -262,7 +265,7 @@ export default function AdminPage() {
                           disabled={actionLoading === user.id}
                           className="text-xs text-teal-600 hover:text-teal-800 disabled:opacity-50 transition-colors"
                         >
-                          {actionLoading === user.id ? '…' : 'Freischalten'}
+                          {actionLoading === user.id ? '…' : t('allUsers.approve')}
                         </button>
                       )}
                     </td>
@@ -275,7 +278,7 @@ export default function AdminPage() {
 
         {/* ── Invite codes ── */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-          <SectionHeader title="Einladungscodes" count={inviteCodes.length} />
+          <SectionHeader title={t('inviteCodes.title')} count={inviteCodes.length} />
 
           {/* Create new code */}
           <div className="flex gap-2 mb-6">
@@ -284,7 +287,7 @@ export default function AdminPage() {
               value={newCode}
               onChange={e => setNewCode(e.target.value.toUpperCase())}
               onKeyDown={e => e.key === 'Enter' && createInviteCode()}
-              placeholder="IMMIO-XXXX-XXX"
+              placeholder={t('inviteCodes.placeholder')}
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono text-primary outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all tracking-widest"
             />
             <button
@@ -292,7 +295,7 @@ export default function AdminPage() {
               disabled={!newCode.trim() || actionLoading === 'invite'}
               className="bg-primary hover:bg-primary-light disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
-              {actionLoading === 'invite' ? '…' : 'Erstellen'}
+              {actionLoading === 'invite' ? '…' : t('inviteCodes.create')}
             </button>
           </div>
 
@@ -312,15 +315,15 @@ export default function AdminPage() {
                 </span>
                 <span className="text-xs text-gray-400 font-mono">
                   {code.usedAt
-                    ? `Verwendet von ${code.usedBy} · ${formatDate(code.usedAt)}`
-                    : 'Verfügbar'
+                    ? t('inviteCodes.usedBy', { email: code.usedBy ?? '', date: formatDate(code.usedAt) })
+                    : t('inviteCodes.available')
                   }
                 </span>
               </div>
             ))}
             {inviteCodes.length === 0 && (
               <p className="text-sm text-gray-400 font-light text-center py-4">
-                Noch keine Einladungscodes erstellt.
+                {t('inviteCodes.empty')}
               </p>
             )}
           </div>

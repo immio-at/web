@@ -2,24 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-// ─── Copy type ────────────────────────────────────────────────────────────────
-
-export interface RegisterModalCopy {
-  regTitle: string;
-  regSub: string;
-  regEmail: string;
-  regPassword: string;
-  regInvite: string;
-  regInvitePlaceholder: string;
-  regInviteHint: string;
-  regSubmit: string;
-  regSubmitting: string;
-  regHaveAccount: string;
-  regSignIn: string;
-}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -27,7 +12,6 @@ interface RegisterModalProps {
   open: boolean;
   onClose: () => void;
   initialEmail: string;
-  t: RegisterModalCopy;
   onSwitchToSignIn: () => void;
 }
 
@@ -37,10 +21,10 @@ export default function RegisterModal({
   open,
   onClose,
   initialEmail,
-  t,
   onSwitchToSignIn,
 }: RegisterModalProps) {
   const router = useRouter();
+  const t = useTranslations('auth.register');
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
@@ -69,7 +53,7 @@ export default function RegisterModal({
   }, [open, initialEmail]);
 
   async function handleRegister() {
-    if (!email || !password) { setError('Bitte Email und Passwort eingeben.'); return; }
+    if (!email || !password) { setError(t('errorEmptyFields')); return; }
     setLoading(true);
     setError('');
     try {
@@ -79,7 +63,7 @@ export default function RegisterModal({
         body: JSON.stringify({ email, password, inviteCode: inviteCode || undefined }),
       });
       const data = await response.json();
-      if (!response.ok) { setError(data.message || 'Registrierung fehlgeschlagen'); return; }
+      if (!response.ok) { setError(data.message || t('errorRegisterFailed')); return; }
 
       // Invite code = auto-approved → open sign-in modal
       // No invite code = pending approval → redirect to /pending
@@ -90,7 +74,7 @@ export default function RegisterModal({
         router.push('/pending');
       }
     } catch {
-      setError('Verbindung zum Server fehlgeschlagen.');
+      setError(t('errorConnection'));
     } finally {
       setLoading(false);
     }
@@ -112,7 +96,7 @@ export default function RegisterModal({
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-300 hover:text-gray-500 transition-colors text-xl leading-none"
-          aria-label="Schließen"
+          aria-label={t('closeAriaLabel')}
         >
           ✕
         </button>
@@ -120,8 +104,8 @@ export default function RegisterModal({
         {/* Header */}
         <div className="mb-6">
           <p className="text-[11px] font-mono uppercase tracking-widest text-teal-600 mb-1">IMMIO</p>
-          <h2 className="text-xl font-semibold text-primary">{t.regTitle}</h2>
-          <p className="text-sm text-gray-500 font-light mt-1">{t.regSub}</p>
+          <h2 className="text-xl font-semibold text-primary">{t('title')}</h2>
+          <p className="text-sm text-gray-500 font-light mt-1">{t('sub')}</p>
         </div>
 
         {/* Error */}
@@ -134,53 +118,57 @@ export default function RegisterModal({
         {/* Fields */}
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">{t.regEmail}</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('emailLabel')}</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder={t('emailPlaceholder')}
               autoFocus
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">{t.regPassword}</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('passwordLabel')}</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder={t('passwordPlaceholder')}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">{t.regInvite}</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+              {t('inviteLabel')} <span className="text-gray-400 font-normal">({t('inviteOptional')})</span>
+            </label>
             <input
               type="text"
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
-              placeholder={t.regInvitePlaceholder}
+              placeholder={t('invitePlaceholder')}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all font-mono tracking-widest"
             />
-            <p className="text-xs text-gray-400 mt-1.5 font-light">{t.regInviteHint}</p>
+            <p className="text-xs text-gray-400 mt-1.5 font-light">{t('inviteHint')}</p>
           </div>
           <button
             onClick={handleRegister}
             disabled={loading}
             className="w-full bg-accent hover:bg-accent-light disabled:opacity-50 text-primary font-semibold text-sm py-2.5 rounded-lg transition-colors mt-2"
           >
-            {loading ? t.regSubmitting : t.regSubmit}
+            {loading ? t('submitting') : t('submit')}
           </button>
         </div>
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-6">
-          {t.regHaveAccount}{' '}
+          {t('haveAccount')}{' '}
           <button
             onClick={() => { onClose(); onSwitchToSignIn(); }}
             className="text-teal-600 hover:underline font-medium"
           >
-            {t.regSignIn}
+            {t('signIn')}
           </button>
         </p>
       </div>

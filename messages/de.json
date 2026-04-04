@@ -1,0 +1,753 @@
+{
+  "landing": {
+    "nav": {
+      "how": "So funktioniert es",
+      "features": "Funktionen",
+      "pricing": "Preise",
+      "signIn": "Anmelden",
+      "cta": "Frühen Zugang beantragen",
+      "langToggle": "EN"
+    },
+    "hero": {
+      "badge": "Früher Zugang — jetzt beantragen",
+      "h1Line1": "Jede Immobilie.",
+      "h1Line2": "Eine Plattform.",
+      "h1Line3": "Kein Chaos.",
+      "sub": "IMMIO erfasst Willhaben & Immoscout24-Angebote automatisch per Email, berechnet Renditen in Echtzeit und führt dich durch den gesamten Kaufprozess.",
+      "cta": "Zugang beantragen",
+      "placeholder": "deine@email.at",
+      "note": "Keine Kreditkarte · Keine Verpflichtungen · 2 Wochen Pro gratis"
+    },
+    "market": {
+      "prefix": "Österreichischer Immobilienmarkt —",
+      "number": "63.000+",
+      "suffix": "aktive Inserate auf Willhaben & Co.",
+      "claim": "IMMIO erfasst sie alle."
+    },
+    "problem": {
+      "label": "Das Problem",
+      "h2a": "Immobilieninvestment",
+      "h2b": "ist strukturlos",
+      "sub": "Die meisten Privatinvestoren jonglieren zwischen Suchagenten, Excel, Browser-Tabs und Notizzetteln. Nichts ist verbunden. Entscheidungen gehen verloren.",
+      "card1Title": "Excel für ROI-Berechnungen",
+      "card1Body": "Jede Immobilie bekommt eine eigene Tabelle. Formeln werden kopiert, Fehler schleichen sich ein. Kein Vergleich möglich.",
+      "card2Title": "Suchagenten-Emails versanden",
+      "card2Body": "Täglich Dutzende Benachrichtigungen. Interessante Objekte gehen im Posteingang unter — oft bevor du sie je gesehen hast.",
+      "card3Title": "Kein Kaufprozess-Überblick",
+      "card3Body": "Von der Besichtigung bis zum Notar: keine Pipeline, kein Überblick, kein Gedächtnis für getroffene Entscheidungen."
+    },
+    "howItWorks": {
+      "label": "So funktioniert es",
+      "h2a": "Von der Email zur",
+      "h2b": "Kaufentscheidung",
+      "sub": "Drei Schritte. Kein Setup. Vollautomatisch.",
+      "step1Num": "Schritt 01",
+      "step1Title": "Suchagent weiterleiten",
+      "step1Body": "Du erhältst eine persönliche IMMIO-Adresse. Leite deine Willhaben- und Immoscout24-Suchagenten einfach dorthin weiter. Kein Scraping, keine AGB-Verstöße.",
+      "step1Chip": "user_xxx@mail.immio.at",
+      "step2Num": "Schritt 02",
+      "step2Title": "Automatische Extraktion",
+      "step2Body": "IMMIO parst jede Email und extrahiert Preis, Größe, Lage, Zimmer und Originallink — vollautomatisch, in Sekunden.",
+      "step2Chip": "9 Felder strukturiert",
+      "step3Num": "Schritt 03",
+      "step3Title": "Analysieren & entscheiden",
+      "step3Body": "Dashboard, Renditerechner, Kaufprozess-Funnel und Finder in einem Portal. Alle Daten bleiben am Objekt gespeichert.",
+      "step3Chip": "ROI in Echtzeit"
+    },
+    "features": {
+      "label": "Funktionen",
+      "h2a": "Alles was du brauchst.",
+      "h2b": "Nichts was du nicht brauchst.",
+      "sub": "Vier Module, die zusammenarbeiten — von der ersten Email bis zum Kaufabschluss.",
+      "feat1Tag": "Dashboard",
+      "feat1Title": "Alle Objekte im Überblick",
+      "feat1Body": "Kachel- und Tabellenansicht, Sofortsuche, Filter nach Plattform, Preis und Größe. Alle Daten aus deinen Suchagenten — strukturiert auf einem Screen.",
+      "feat1Pills": ["Kachelansicht", "Tabellenansicht", "Sofortsuche", "€/m²"],
+      "feat2Tag": "Renditerechner",
+      "feat2Title": "ROI — Vermietung, Eigennutzung, Flip",
+      "feat2Body": "Kaufnebenkosten, Finanzierung, Cashflow, Brutto-/Nettomietrendite, Eigenkapitalrendite. Alle Berechnungen lokal im Browser — keine Serverlatenz.",
+      "feat2Pills": ["Vermietung", "Eigennutzung", "Flip", "Diagramme"],
+      "feat3Tag": "Kaufprozess-Funnel",
+      "feat3Title": "Von der Besichtigung bis zum Notar",
+      "feat3Body": "Kanban-Board mit 8 Stufen. Drag & Drop, Durchschnittspreise pro Spalte. Jedes Objekt strukturiert durch den Prozess geführt.",
+      "feat3Pills": ["8 Stufen", "Drag & Drop", "Preisstatistik"],
+      "feat4Tag": "Finder",
+      "feat4Title": "Schnellentscheidung per Swipe",
+      "feat4Body": "Tinder-ähnliche Oberfläche für schnelle Vorselektion. Links: nicht relevant. Rechts: interessiert. Runter: Analyse öffnen. Oben: Originalinserat.",
+      "feat4Pills": ["Swipe UI", "Optimistische Updates", "Sofort"]
+    },
+    "pricing": {
+      "label": "Preise",
+      "h2a": "Transparent.",
+      "h2b": "Keine Überraschungen.",
+      "sub": "Alle Tarife starten mit 2 Wochen Pro — kostenlos, keine Kreditkarte.",
+      "tier1": {
+        "name": "Free",
+        "price": "0",
+        "cadence": "für immer",
+        "features": [
+          { "included": true, "text": "Manuelle Einträge" },
+          { "included": true, "text": "Bis zu 5 Objekte" },
+          { "included": false, "text": "Email-Parsing" },
+          { "included": false, "text": "Kaufprozess-Funnel" },
+          { "included": false, "text": "Renditerechner" },
+          { "included": false, "text": "Finder" }
+        ],
+        "cta": "Kostenlos starten"
+      },
+      "tier2": {
+        "name": "Light",
+        "price": "29",
+        "cents": ".99",
+        "cadence": "/Monat · oder €329/Jahr",
+        "badge": "Empfohlen",
+        "features": [
+          { "included": true, "text": "Email-Parsing" },
+          { "included": true, "text": "20 Suchagenten" },
+          { "included": true, "text": "Kaufprozess-Funnel" },
+          { "included": true, "text": "Renditerechner" },
+          { "included": true, "text": "Finder" },
+          { "included": false, "text": "Analytics & Karte" }
+        ],
+        "cta": "Frühen Zugang beantragen"
+      },
+      "tier3": {
+        "name": "Pro",
+        "price": "39",
+        "cents": ".99",
+        "cadence": "/Monat · oder €429/Jahr",
+        "features": [
+          { "included": true, "text": "Alles aus Light" },
+          { "included": true, "text": "Unbegrenzte Suchagenten" },
+          { "included": true, "text": "Analytics-Dashboard" },
+          { "included": true, "text": "Intelligente Karte" },
+          { "included": true, "text": "Prioritäts-Support" },
+          { "included": true, "text": "Frühe Feature-Zugänge" }
+        ],
+        "cta": "Pro beantragen"
+      }
+    },
+    "footer": {
+      "privacy": "Datenschutz",
+      "imprint": "Impressum",
+      "contact": "Kontakt",
+      "copy": "© 2026 IMMIO GmbH (in Gründung)"
+    },
+    "sessionExpired": "Deine Sitzung ist abgelaufen. Bitte erneut anmelden."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "search": "Entdecken",
+    "finder": "Finder",
+    "funnel": "Funnel",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "admin": "Admin",
+    "signOut": "Sign Out"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Willkommen zurück",
+      "sub": "Mit deinem IMMIO-Konto anmelden",
+      "emailLabel": "Email",
+      "passwordLabel": "Passwort",
+      "emailPlaceholder": "deine@email.at",
+      "passwordPlaceholder": "••••••••",
+      "submit": "Anmelden",
+      "submitting": "Wird angemeldet…",
+      "noAccount": "Noch kein Konto?",
+      "register": "Registrieren",
+      "closeAriaLabel": "Schließen",
+      "errorEmptyFields": "Bitte Email und Passwort eingeben.",
+      "errorLoginFailed": "Login fehlgeschlagen",
+      "errorConnection": "Verbindung zum Server fehlgeschlagen."
+    },
+    "register": {
+      "title": "Zugang beantragen",
+      "sub": "Erstelle dein IMMIO-Konto",
+      "emailLabel": "Email",
+      "passwordLabel": "Passwort",
+      "inviteLabel": "Einladungscode",
+      "inviteOptional": "optional",
+      "invitePlaceholder": "IMMIO-XXXX-XXX",
+      "inviteHint": "Mit Einladungscode wirst du sofort freigeschaltet.",
+      "submit": "Konto erstellen",
+      "submitting": "Wird erstellt…",
+      "haveAccount": "Bereits ein Konto?",
+      "signIn": "Anmelden",
+      "closeAriaLabel": "Schließen",
+      "errorEmptyFields": "Bitte Email und Passwort eingeben.",
+      "errorRegisterFailed": "Registrierung fehlgeschlagen",
+      "errorConnection": "Verbindung zum Server fehlgeschlagen.",
+      "emailPlaceholder": "deine@email.at",
+      "passwordPlaceholder": "••••••••"
+    },
+    "pending": {
+      "title": "Your account is pending approval",
+      "description": "Thanks for registering. We review each account personally before granting access. You'll receive an email once your account is approved — usually within 24 hours.",
+      "whatNextTitle": "What happens next",
+      "step1": "We review your registration",
+      "step2": "You receive an approval email",
+      "step3": "Sign back in to access IMMIO",
+      "contact": "Questions? Contact us at",
+      "signOut": "Sign out"
+    }
+  },
+  "dashboard": {
+    "loading": "Loading properties...",
+    "urlImport": {
+      "label": "Inserat per URL importieren",
+      "placeholder": "https://www.willhaben.at/iad/immobilien/d/...",
+      "importing": "Importieren...",
+      "import": "Importieren",
+      "supportedPlatforms": "Unterstützt: Willhaben. Weitere Plattformen folgen.",
+      "successMessage": "\"{title}\" importiert und in Investigating verschoben.",
+      "errorUnknown": "Unbekannter Fehler",
+      "defaultTitle": "Inserat"
+    },
+    "carousel": {
+      "recentlyViewed": "Zuletzt angesehen",
+      "mostViewed": "Am häufigsten angesehen",
+      "analyse": "Analyse"
+    },
+    "viewToggle": {
+      "tiles": "Tiles",
+      "tilesIcon": "⊞",
+      "table": "Table",
+      "tableIcon": "☰"
+    },
+    "propertyCount": "{count} Immobilien",
+    "noMatchingProperties": "No properties match your filters",
+    "tile": {
+      "expired": "Nicht mehr verfügbar",
+      "rooms": "Zi.",
+      "analyseTitle": "Analyse this property",
+      "reportUnavailableTitle": "Report as unavailable",
+      "dismissTitle": "Dismiss — hide this property"
+    },
+    "table": {
+      "headerImage": "Image",
+      "headerTitle": "Title",
+      "headerPrice": "Price",
+      "headerSize": "m²",
+      "headerRooms": "Rooms",
+      "headerLocation": "Location",
+      "headerPricePerSqm": "€/m²",
+      "headerStatus": "Status",
+      "headerDate": "Date",
+      "dismissTitle": "Dismiss",
+      "analyseTitle": "Analyse this property",
+      "reportUnavailableTitle": "Report as unavailable"
+    }
+  },
+  "search": {
+    "label": "Entdecken",
+    "title": "Inserate entdecken",
+    "subtitle": "Täglich aktualisierte Immobilien von Raiffeisen, s REAL, ÖRAG und RE/MAX.",
+    "rooms": "Zimmer",
+    "saved": "Gespeichert",
+    "saving": "Speichern...",
+    "saveToProperties": "+ Zu meinen Immobilien",
+    "noListingsFound": "Keine Inserate gefunden.",
+    "listingsFound": "{count} Inserate gefunden",
+    "errorLoadingListings": "Fehler beim Laden der Inserate",
+    "filterSaved": "Filter \"{name}\" gespeichert.",
+    "filterLimitReached": "Filter-Limit erreicht (max. 2). Lösche einen bestehenden Filter oder upgrade für mehr.",
+    "filterSaveError": "Fehler beim Speichern des Filters.",
+    "paginationPrev": "← Zurück",
+    "paginationNext": "Weiter →",
+    "paginationPage": "Seite {page} von {total}"
+  },
+  "finder": {
+    "loading": "Loading properties...",
+    "filterModal": {
+      "title": "Filter wählen",
+      "subtitle": "Wähle einen gespeicherten Filter oder starte ohne Einschränkung.",
+      "iFeelLucky": "I Feel Lucky",
+      "applyFilter": "Filter anwenden",
+      "changeFilter": "ändern"
+    },
+    "allCaughtUp": {
+      "title": "All caught up",
+      "subtitle": "You've reviewed all {total} new properties",
+      "backToDashboard": "Back to Dashboard"
+    },
+    "directions": {
+      "left": "← Not Relevant",
+      "up": "↑ Open",
+      "down": "↓ Analyse",
+      "right": "→ Investigating"
+    },
+    "overlay": {
+      "investigating": "Investigating",
+      "notRelevant": "Not Relevant",
+      "openListing": "Open Listing",
+      "analyse": "Analyse"
+    },
+    "buttons": {
+      "notRelevantTitle": "Not Relevant",
+      "analyseTitle": "Analyse Property",
+      "openListingTitle": "Open Listing",
+      "investigatingTitle": "Investigating"
+    },
+    "progress": "{current} of {total} reviewed",
+    "rooms": "Zimmer"
+  },
+  "funnel": {
+    "title": "Buy Funnel",
+    "subtitle": "Track your properties through the acquisition process",
+    "loading": "Loading funnel...",
+    "propertyCount": "{count} properties in funnel",
+    "stages": {
+      "new": "New",
+      "investigating": "Investigating",
+      "interested": "Interested",
+      "visitBooked": "Visit Booked",
+      "visited": "Visited",
+      "offerMade": "Offer Made",
+      "parked": "Parked",
+      "won": "Won",
+      "notRelevant": "Not Relevant"
+    },
+    "card": {
+      "rooms": "Zi.",
+      "expired": "Nicht mehr verfügbar",
+      "moveButton": "Move ▾",
+      "optionsButton": "Optionen ▾",
+      "analyseTitle": "Analyse this property",
+      "notRelevant": "✕ Not Relevant",
+      "reportUnavailable": "⚠ Report Unavailable",
+      "removeFromView": "✕ Remove from View",
+      "dropHere": "Drop here",
+      "noProperties": "No properties"
+    },
+    "confirmNotRelevant": {
+      "title": "Mark as Not Relevant?",
+      "description": "This will hide the following property from your funnel:",
+      "hint": "You can still find it later via the Show hidden properties filter on the Dashboard.",
+      "cancel": "Cancel",
+      "confirm": "Yes, hide it"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "immioEmail": {
+      "title": "Your IMMIO Email Address",
+      "description": "Use this address when subscribing to search agents on Willhaben, Immoscout24, and other platforms.",
+      "loading": "Loading...",
+      "copied": "✓ Copied",
+      "copy": "Copy",
+      "account": "Account: {email}"
+    },
+    "password": {
+      "title": "Change Password",
+      "newPasswordLabel": "New Password",
+      "newPasswordPlaceholder": "Min. 8 characters",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "Repeat new password",
+      "errorMinLength": "Password must be at least 8 characters.",
+      "errorMismatch": "Passwords do not match.",
+      "success": "Password updated successfully.",
+      "updating": "Updating...",
+      "submit": "Update Password"
+    },
+    "subscription": {
+      "title": "Subscription",
+      "description": "Subscription management coming soon — upgrade, downgrade, and billing will be available here."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Notification preferences coming soon — configure push notifications and email digests here."
+    },
+    "gdpr": {
+      "title": "GDPR & Privacy",
+      "description": "Data export, right to erasure, and privacy controls coming soon."
+    }
+  },
+  "analytics": {
+    "label": "Analytics",
+    "title": "Marktanalyse & Statistiken",
+    "description": "Das Analytics-Dashboard ist in Entwicklung. Hier findest du bald Markttrends, Preisverläufe und Auswertungen deines Portfolios.",
+    "comingSoon": "Demnächst verfügbar"
+  },
+  "admin": {
+    "label": "Admin",
+    "title": "Verwaltung",
+    "loading": "Laden…",
+    "errorLoading": "Fehler beim Laden der Daten.",
+    "errorConnection": "Verbindung zum Server fehlgeschlagen.",
+    "stats": {
+      "totalUsers": "Nutzer gesamt",
+      "pending": "Ausstehend",
+      "inviteCodesAvailable": "Einladungscodes verfügbar"
+    },
+    "pendingApprovals": {
+      "title": "Ausstehende Freischaltungen",
+      "registered": "Registriert {date}",
+      "code": "Code: {code}",
+      "approve": "Freischalten"
+    },
+    "allUsers": {
+      "title": "Alle Nutzer",
+      "headerEmail": "Email",
+      "headerImmioEmail": "IMMIO Email",
+      "headerRegistered": "Registriert",
+      "headerStatus": "Status",
+      "headerAction": "Aktion",
+      "statusActive": "Aktiv",
+      "statusPending": "Ausstehend",
+      "revoke": "Sperren",
+      "approve": "Freischalten"
+    },
+    "inviteCodes": {
+      "title": "Einladungscodes",
+      "placeholder": "IMMIO-XXXX-XXX",
+      "create": "Erstellen",
+      "usedBy": "Verwendet von {email} · {date}",
+      "available": "Verfügbar",
+      "empty": "Noch keine Einladungscodes erstellt."
+    }
+  },
+  "filter": {
+    "keyword": "Suchbegriff",
+    "keywordPlaceholder": "Titel, Ort, Beschreibung...",
+    "location": "PLZ / Bundesland",
+    "locationPlaceholder": "z.B. 1010, Wien, NÖ",
+    "priceFrom": "Preis von (€)",
+    "priceFromPlaceholder": "z.B. 200000",
+    "priceTo": "Preis bis (€)",
+    "priceToPlaceholder": "z.B. 500000",
+    "pricePerSqmFrom": "€/m² von",
+    "pricePerSqmFromPlaceholder": "z.B. 3000",
+    "pricePerSqmTo": "€/m² bis",
+    "pricePerSqmToPlaceholder": "z.B. 6000",
+    "sizeFrom": "Fläche von (m²)",
+    "sizeFromPlaceholder": "z.B. 50",
+    "sizeTo": "Fläche bis (m²)",
+    "sizeToPlaceholder": "z.B. 120",
+    "roomsFrom": "Zimmer von",
+    "roomsFromPlaceholder": "z.B. 2",
+    "roomsTo": "Zimmer bis",
+    "roomsToPlaceholder": "z.B. 4",
+    "sort": {
+      "listedDate": "Neueste zuerst",
+      "price": "Preis",
+      "pricePerSqm": "Preis/m²",
+      "size": "Größe",
+      "rooms": "Zimmer"
+    },
+    "sortAscending": "Aufsteigend",
+    "sortDescending": "Absteigend",
+    "savedFilters": "Gespeicherte Filter",
+    "filter": "Filter",
+    "deleteTitle": "Löschen",
+    "showHidden": "Ohne Preis anzeigen",
+    "search": "Suchen",
+    "reset": "Zurücksetzen",
+    "saveFilter": "Filter speichern",
+    "saveModal": {
+      "title": "Filter speichern",
+      "description": "Gib deinem Filter einen Namen oder lass das Feld leer für einen automatischen Namen.",
+      "placeholder": "z.B. Wien Investment",
+      "cancel": "Abbrechen",
+      "save": "Speichern"
+    }
+  },
+  "analysis": {
+    "header": "Analyse",
+    "defaultPropertyTitle": "Immobilie",
+    "loading": "Lade Analyse…",
+    "errorLoading": "Fehler beim Laden der Analyse.",
+    "errorSaving": "Fehler beim Speichern.",
+    "openListing": "Öffnen ↗",
+    "rooms": "Zimmer",
+    "usage": {
+      "title": "Nutzung",
+      "rental": "Vermietung",
+      "owner": "Eigennutzung",
+      "flip": "Flip"
+    },
+    "purchase": {
+      "title": "Kaufdetails",
+      "listPrice": "Listpreis",
+      "desiredPrice": "Kaufpreis",
+      "pricePerSqm": "Preis/m²",
+      "size": "Größe",
+      "makler": "Makler",
+      "notar": "Notar",
+      "grundbuch": "Grundbuch",
+      "grest": "GrESt",
+      "otherCosts": "Sonstige Nebenkosten",
+      "rehabCosts": "Renovierungskosten",
+      "addItem": "+ Posten hinzufügen",
+      "itemLabel": "Bezeichnung",
+      "itemTotal": "Gesamt €",
+      "itemDeductible": "Abzugsfähig €",
+      "itemPlaceholder": "z.B. Küche",
+      "runningCosts": "Laufende Kosten (monatlich)",
+      "betriebskosten": "Betriebskosten",
+      "betriebskostenHint": "Monatlich",
+      "reparaturruecklage": "Reparaturrücklage",
+      "reparaturruecklageHint": "Monatliche HV-Umlage",
+      "summaryKaufnebenkosten": "Kaufnebenkosten",
+      "summaryRenovierung": "Renovierung",
+      "summaryGesamtinvestition": "Gesamtinvestition"
+    },
+    "financing": {
+      "title": "Finanzierung",
+      "noFinancing": "Keine Finanzierung",
+      "financed": "Finanziert",
+      "loan1": "Darlehen 1",
+      "loan2": "Darlehen 2",
+      "enableLoan2": "Zweites Darlehen",
+      "amount": "Betrag",
+      "amountHintAuto": "{pct}% des Kaufpreises",
+      "amountHintManual": "Manuell",
+      "rate": "Zinssatz",
+      "term": "Laufzeit",
+      "monthlyPayment": "Rate/Monat",
+      "totalMonthly": "Gesamte Rate",
+      "perMonth": "/Mo",
+      "equity": "Eigenkapital"
+    },
+    "owner": {
+      "title": "Eigennutzung",
+      "maintenance": "Instandhaltung",
+      "maintenanceHint": "% des Kaufpreises",
+      "appreciation": "Wertsteigerung p.a.",
+      "resultsTitle": "Ergebnisse — Eigennutzung",
+      "monthlyOutgoings": "Monatliche Ausgaben",
+      "monthlyLoan": "davon Kredit",
+      "monthlyBetriebskosten": "davon Betriebskosten",
+      "monthlyRepairs": "davon Reparaturen",
+      "wealthChart": "Vermögensentwicklung",
+      "chartEquity": "Eigenkapital",
+      "chartLoanRemaining": "Restschuld",
+      "chartYear": "Jahr {year}",
+      "chartYearShort": "J{year}"
+    },
+    "rental": {
+      "title": "Vermietung",
+      "warmRent": "Warmmiete",
+      "coldRent": "Kaltmiete",
+      "coldRentAuto": "Kaltmiete (auto)",
+      "bkUmlagefaehig": "BK umlagefähig (Mieter)",
+      "bkNichtUmlagefaehig": "BK nicht umlagefähig (Eigentümer)",
+      "vacancy": "Leerstand",
+      "repairReserve": "Reparaturreserve",
+      "repairReserveHint": "Persönliche Reserve (% des Kaufpreises)",
+      "rentGrowth": "Mietsteigerung p.a.",
+      "valueGrowth": "Wertsteigerung p.a.",
+      "resultsTitle": "Ergebnisse — Vermietung",
+      "coldRentMonthly": "Kaltmiete/Monat",
+      "coldRentYearly": "Kaltmiete/Jahr",
+      "cashflowMonthly": "Cashflow/Monat",
+      "cashflowPositive": "positiv",
+      "cashflowNegative": "negativ",
+      "faktor": "Faktor",
+      "faktorSub": "Kaufpreisfaktor",
+      "bruttomietrendite": "Bruttomietrendite",
+      "nettomietrendite": "Nettomietrendite",
+      "eigenkapitalrenditeCashflow": "Cashflow-Rendite EK",
+      "cashOnCash": "Cash-on-cash",
+      "eigenkapitalrenditeTotal": "Gesamtrendite EK",
+      "eigenkapitalrenditeTotalSub": "inkl. Tilgung + Wertsteigerung",
+      "projectionTitle": "Projektion über {years} Jahre",
+      "chartPropertyValue": "Immobilienwert",
+      "chartLoanRemaining": "Restschuld",
+      "chartYearlyRent": "Mieteinnahmen/J",
+      "chartYearlyOutgoings": "Ausgaben/J",
+      "chartCashflow": "Cashflow/J",
+      "chartYear": "Jahr {year}",
+      "chartYearShort": "J{year}"
+    },
+    "flip": {
+      "title": "Flip",
+      "duration": "Flip-Dauer",
+      "durationSuffix": "Monate",
+      "resalePrice": "Erwarteter Verkaufspreis",
+      "resultsTitle": "Ergebnisse — Flip",
+      "purchasePrice": "Kaufpreis",
+      "purchaseCosts": "+ Kaufnebenkosten",
+      "rehabCosts": "+ Sanierungskosten",
+      "holdingCosts": "+ Haltekosten",
+      "totalCost": "= Gesamtkosten",
+      "resalePriceResult": "Verkaufspreis",
+      "minusTotalCost": "- Gesamtkosten",
+      "grossProfit": "= Bruttogewinn",
+      "deductibleCosts": "- Abzugsfähige Kosten",
+      "taxableProfit": "= Zu versteuernder Gewinn",
+      "tax": "- Steuer (30%)",
+      "netProfit": "= Nettogewinn",
+      "disclaimer": "Diese Berechnung ist eine Schätzung und kein Steuerberatung."
+    },
+    "documents": {
+      "title": "Dokumente",
+      "typeLabel": "Typ",
+      "types": ["Exposé", "Energieausweis", "Grundriss", "Provisionsvereinbarung", "Widerrufsformular", "Protokoll", "Kaufanbot", "Kaufvertrag", "Gutachten", "Sonstiges"],
+      "uploading": "Hochladen...",
+      "upload": "+ PDF hochladen",
+      "maxReached": "Max. 10 Dokumente erreicht",
+      "empty": "Noch keine Dokumente. Lade PDFs hoch (Exposé, Energieausweis, etc.).",
+      "deleteTitle": "Löschen",
+      "errorUpload": "Upload fehlgeschlagen",
+      "errorDownload": "Download fehlgeschlagen",
+      "errorDelete": "Löschen fehlgeschlagen"
+    },
+    "footer": {
+      "cancel": "Abbrechen",
+      "saving": "Speichern…",
+      "save": "Speichern"
+    }
+  },
+  "legal": {
+    "back": "← Zurück",
+    "impressum": {
+      "title": "Impressum",
+      "subtitle": "Pflichtangaben gemäß § 5 ECG und § 25 MedienG",
+      "company": {
+        "title": "Angaben zum Unternehmen",
+        "nameLabel": "Name",
+        "nameValue": "Reece Tyrrell",
+        "purposeLabel": "Unternehmensgegenstand",
+        "purposeValue": "Entwicklung und Betrieb einer SaaS-Plattform für Immobilieninvestoren",
+        "legalFormLabel": "Rechtsform",
+        "legalFormValue": "Einzelunternehmer (GmbH in Gründung)"
+      },
+      "contact": {
+        "title": "Kontakt",
+        "addressLabel": "Adresse",
+        "addressValue": "[STRASSE], [PLZ] Wien, Österreich",
+        "emailLabel": "Email"
+      },
+      "vat": {
+        "title": "Umsatzsteuer",
+        "uidLabel": "UID-Nummer",
+        "uidValue": "Wird nach Registrierung ergänzt"
+      },
+      "authority": {
+        "title": "Aufsichtsbehörde",
+        "authorityLabel": "Zuständige Behörde",
+        "authorityValue": "Magistrat der Stadt Wien (Magistratisches Bezirksamt)",
+        "lawLabel": "Anwendbare Rechtsvorschriften",
+        "lawValue": "Gewerbeordnung (GewO), abrufbar unter"
+      },
+      "odr": {
+        "title": "Online-Streitbeilegung",
+        "text1": "Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:",
+        "text2": "Wir sind nicht verpflichtet und nicht bereit, an einem Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen."
+      },
+      "liability": {
+        "title": "Haftung für Inhalte",
+        "text": "Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Die auf dieser Plattform bereitgestellten Renditeberechnungen und Finanzinformationen stellen keine Anlage-, Steuer- oder Rechtsberatung dar und dienen ausschließlich der allgemeinen Information."
+      },
+      "lastUpdated": "Zuletzt aktualisiert: März 2026"
+    },
+    "datenschutz": {
+      "title": "Datenschutzerklärung",
+      "subtitle": "Gemäß Art. 13 und 14 DSGVO (EU 2016/679)",
+      "section1": {
+        "title": "1. Verantwortlicher",
+        "intro": "Verantwortlicher im Sinne der DSGVO ist:",
+        "name": "Reece Tyrrell (IMMIO GmbH in Gründung)",
+        "address": "[STRASSE], [PLZ] Wien, Österreich"
+      },
+      "section2": {
+        "title": "2. Welche Daten wir verarbeiten",
+        "intro": "Wir verarbeiten folgende Kategorien personenbezogener Daten:",
+        "headerCategory": "Kategorie",
+        "headerData": "Daten",
+        "headerPurpose": "Zweck",
+        "rows": [
+          ["Kontodaten", "Email-Adresse, Passwort (gehasht)", "Registrierung & Login"],
+          ["IMMIO-Adresse", "Zugewiesene @mail.immio.at Adresse", "Email-Weiterleitung"],
+          ["Immobiliendaten", "Aus Emails extrahierte Objektdaten (Preis, Größe, Lage etc.)", "Kernfunktion der Plattform"],
+          ["Analysedaten", "Vom Nutzer eingegebene Renditeberechnungen", "Gespeicherte Analysen"],
+          ["Nutzungsdaten", "Log-Daten, IP-Adresse, Browser-Typ", "Sicherheit & Fehlerbehebung"]
+        ]
+      },
+      "section3": {
+        "title": "3. Zwecke und Rechtsgrundlagen der Verarbeitung",
+        "items": [
+          { "purpose": "Bereitstellung der Plattform (Registrierung, Login, Kernfunktionen)", "basis": "Art. 6 Abs. 1 lit. b DSGVO", "basisText": "Vertragserfüllung" },
+          { "purpose": "Empfang und Verarbeitung von Suchagenten-Emails", "basis": "Art. 6 Abs. 1 lit. b DSGVO", "basisText": "Vertragserfüllung" },
+          { "purpose": "Speicherung von Immobiliendaten und Analysen", "basis": "Art. 6 Abs. 1 lit. b DSGVO", "basisText": "Vertragserfüllung" },
+          { "purpose": "Technischer Betrieb, Sicherheit, Fehlerbehebung", "basis": "Art. 6 Abs. 1 lit. f DSGVO", "basisText": "Berechtigtes Interesse" },
+          { "purpose": "Erfüllung gesetzlicher Aufbewahrungspflichten", "basis": "Art. 6 Abs. 1 lit. c DSGVO", "basisText": "Rechtliche Verpflichtung" }
+        ]
+      },
+      "section4": {
+        "title": "4. Auftragsverarbeiter (Art. 28 DSGVO)",
+        "intro": "Wir setzen folgende Dienstleister als Auftragsverarbeiter ein, mit denen Auftragsverarbeitungsverträge (AVV) gemäß Art. 28 DSGVO abgeschlossen wurden oder werden:",
+        "privacyLink": "Datenschutz ↗",
+        "labelLocation": "Standort",
+        "labelRole": "Rolle",
+        "labelSafeguard": "Schutzmaßnahme",
+        "processors": [
+          { "name": "Supabase Inc.", "location": "USA (EU-Region: eu-west-1)", "role": "Datenbankhosting (PostgreSQL), Nutzerauthentifizierung", "safeguard": "EU Standardvertragsklauseln (SCC)", "url": "https://supabase.com/privacy" },
+          { "name": "Twilio SendGrid", "location": "USA", "role": "Empfang und Weiterleitung von Suchagenten-Emails (Inbound Parse)", "safeguard": "EU Standardvertragsklauseln (SCC)", "url": "https://www.twilio.com/en-us/legal/privacy" },
+          { "name": "Vercel Inc.", "location": "USA (CDN-Nodes in der EU)", "role": "Hosting des Frontends (immio.at)", "safeguard": "EU Standardvertragsklauseln (SCC)", "url": "https://vercel.com/legal/privacy-policy" },
+          { "name": "Railway Corp.", "location": "USA", "role": "Hosting des Backends (API)", "safeguard": "EU Standardvertragsklauseln (SCC)", "url": "https://railway.app/legal/privacy" }
+        ],
+        "note": "Alle genannten Anbieter mit Sitz außerhalb der EU/EWR übermitteln Daten auf Basis von EU-Standardvertragsklauseln gemäß Art. 46 Abs. 2 lit. c DSGVO."
+      },
+      "section5": {
+        "title": "5. Speicherdauer",
+        "intro": "Personenbezogene Daten werden nur so lange gespeichert, wie es für die jeweiligen Zwecke erforderlich ist oder gesetzliche Aufbewahrungsfristen bestehen:",
+        "items": [
+          "Kontodaten: bis zur Löschung des Kontos, danach unverzüglich gelöscht",
+          "Immobilien- und Analysedaten: bis zur Kontoauflösung oder auf Nutzerwunsch",
+          "Log-Daten: maximal 90 Tage",
+          "Buchungsrelevante Daten: 7 Jahre gemäß § 132 BAO (österreichisches Steuerrecht)"
+        ]
+      },
+      "section6": {
+        "title": "6. Ihre Rechte (Art. 15–22 DSGVO)",
+        "intro": "Sie haben folgende Rechte bezüglich Ihrer personenbezogenen Daten:",
+        "rights": [
+          ["Auskunft (Art. 15)", "Welche Daten wir über Sie speichern"],
+          ["Berichtigung (Art. 16)", "Korrektur unrichtiger Daten"],
+          ["Löschung (Art. 17)", "Löschung Ihrer Daten (\"Recht auf Vergessenwerden\")"],
+          ["Einschränkung (Art. 18)", "Einschränkung der Verarbeitung"],
+          ["Datenübertragbarkeit (Art. 20)", "Export Ihrer Daten in maschinenlesbarem Format"],
+          ["Widerspruch (Art. 21)", "Widerspruch gegen die Verarbeitung auf Basis berechtigten Interesses"]
+        ],
+        "contactText": "Zur Ausübung Ihrer Rechte wenden Sie sich an:"
+      },
+      "section7": {
+        "title": "7. Beschwerderecht",
+        "intro": "Sie haben das Recht, sich bei der zuständigen Datenschutzbehörde zu beschweren. Für Österreich ist dies:",
+        "authorityName": "Österreichische Datenschutzbehörde",
+        "authorityAddress": "Barichgasse 40–42, 1030 Wien"
+      },
+      "section8": {
+        "title": "8. Cookies",
+        "text": "IMMIO verwendet ausschließlich technisch notwendige Cookies für die Sitzungsverwaltung (Authentifizierungstoken). Es werden keine Tracking-, Werbe- oder Analyse-Cookies eingesetzt. Es sind daher keine Cookie-Einwilligungen erforderlich."
+      },
+      "section9": {
+        "title": "9. Änderungen dieser Datenschutzerklärung",
+        "text": "Wir behalten uns vor, diese Datenschutzerklärung bei Änderungen der Plattform oder der rechtlichen Anforderungen anzupassen. Die jeweils aktuelle Version ist auf dieser Seite verfügbar. Bei wesentlichen Änderungen informieren wir registrierte Nutzer per Email."
+      },
+      "lastUpdated": "Zuletzt aktualisiert: März 2026",
+      "version": "Version 1.0"
+    }
+  },
+  "common": {
+    "loading": "Laden…",
+    "close": "Schließen",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "search": "Suchen",
+    "reset": "Zurücksetzen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "error": "Fehler",
+    "noData": "—",
+    "currency": "€",
+    "sqm": "m²",
+    "rooms": "Zimmer",
+    "roomsShort": "Zi.",
+    "perSqm": "/m²"
+  }
+}

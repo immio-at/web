@@ -3,23 +3,39 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslations, useLocale } from 'next-intl';
 
 const navItems = [
-  { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
-  { label: 'Entdecken', href: '/search', icon: '🔍' },
-  { label: 'Finder', href: '/finder', icon: '⚡' },
-  { label: 'Funnel', href: '/funnel', icon: '📊' },
-  { label: 'Analytics', href: '/analytics', icon: '📈' },
+  { key: 'dashboard' as const, href: '/dashboard', icon: '🏠' },
+  { key: 'search' as const, href: '/search', icon: '🔍' },
+  { key: 'finder' as const, href: '/finder', icon: '⚡' },
+  { key: 'funnel' as const, href: '/funnel', icon: '📊' },
+  { key: 'analytics' as const, href: '/analytics', icon: '📈' },
 ];
 
 export default function NavBar() {
   const pathname = usePathname();
   const router = useRouter();
   const { isAdmin, signOut } = useAuth();
+  const t = useTranslations('nav');
+  const locale = useLocale();
 
   async function handleLogout() {
     await signOut();
     router.push('/');
+  }
+
+  function switchLocale() {
+    const newLocale = locale === 'de' ? 'en' : 'de';
+    // Persist preference
+    localStorage.setItem('immio_locale', newLocale);
+    // Build new path: strip current locale prefix, add new one
+    let path = pathname;
+    if (locale !== 'de' && path.startsWith(`/${locale}`)) {
+      path = path.slice(`/${locale}`.length) || '/';
+    }
+    const newPath = newLocale === 'de' ? path : `/${newLocale}${path}`;
+    router.push(newPath);
   }
 
   return (
@@ -46,18 +62,27 @@ export default function NavBar() {
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
-                  {item.label}
+                  {t(item.key)}
                 </Link>
               );
             })}
           </div>
 
-          {/* Utility area — settings, admin (if applicable), sign out */}
+          {/* Utility area — language, settings, admin, sign out */}
           <div className="flex items-center gap-2">
+
+            {/* Language toggle */}
+            <button
+              onClick={switchLocale}
+              className="text-xs font-medium border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+              title={locale === 'de' ? 'Switch to English' : 'Auf Deutsch wechseln'}
+            >
+              {locale === 'de' ? 'EN' : 'DE'}
+            </button>
 
             <Link
               href="/settings"
-              title="Settings"
+              title={t('settings')}
               className={`text-sm border border-gray-200 rounded-lg px-3 py-1.5 transition-colors ${
                 pathname === '/settings'
                   ? 'bg-blue-50 text-blue-600 border-blue-200'
@@ -77,7 +102,7 @@ export default function NavBar() {
                     : 'text-gray-400 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200 border-gray-200'
                 }`}
               >
-                Admin
+                {t('admin')}
               </Link>
             )}
 
@@ -85,7 +110,7 @@ export default function NavBar() {
               onClick={handleLogout}
               className="text-sm text-gray-500 hover:text-gray-900 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
             >
-              Sign Out
+              {t('signOut')}
             </button>
 
           </div>
@@ -105,7 +130,7 @@ export default function NavBar() {
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
-                {item.icon} {item.label}
+                {item.icon} {t(item.key)}
               </Link>
             );
           })}
@@ -114,7 +139,7 @@ export default function NavBar() {
               href="/admin"
               className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors"
             >
-              ⚡ Admin
+              ⚡ {t('admin')}
             </Link>
           )}
         </div>

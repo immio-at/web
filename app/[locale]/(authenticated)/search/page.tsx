@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { getScrapedListings, saveScrapedListing, ScrapedListing, SavedFilter } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { invalidateCache } from '@/hooks/useProperties';
@@ -51,6 +52,7 @@ function ListingCard({
   onSave: (listing: ScrapedListing) => void;
   saving: boolean;
 }) {
+  const t = useTranslations('search');
   const priceText = formatPrice(listing.price ? parseFloat(String(listing.price)) : null);
   const ppsmText = formatPricePerSqm(
     listing.price ? parseFloat(String(listing.price)) : null,
@@ -95,7 +97,7 @@ function ListingCard({
           {listing.location && <div className="text-xs">📍 {listing.location}</div>}
           <div className="flex items-center gap-3 text-xs">
             {listing.sizeSqm && <span>📏 {Math.round(parseFloat(String(listing.sizeSqm)))} m²</span>}
-            {listing.rooms && <span>🏠 {listing.rooms} Zimmer</span>}
+            {listing.rooms && <span>🏠 {listing.rooms} {t('rooms')}</span>}
           </div>
         </div>
 
@@ -103,7 +105,7 @@ function ListingCard({
         <div className="mt-3 pt-3 border-t border-gray-100">
           {listing.savedByUser ? (
             <div className="w-full py-2 text-center text-sm font-medium text-green-600 bg-green-50 rounded-lg border border-green-200">
-              ✓ Gespeichert
+              ✓ {t('saved')}
             </div>
           ) : (
             <button
@@ -111,7 +113,7 @@ function ListingCard({
               disabled={saving}
               className="w-full py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors"
             >
-              {saving ? 'Speichern...' : '+ Zu meinen Immobilien'}
+              {saving ? t('saving') : t('saveToProperties')}
             </button>
           )}
         </div>
@@ -123,6 +125,7 @@ function ListingCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function EntdeckenPage() {
+  const t = useTranslations('search');
   const { session, loading: authLoading } = useAuth();
   const { filters: savedFilters, create: createFilter, remove: removeFilter } = useSavedFilters();
 
@@ -169,11 +172,11 @@ export default function EntdeckenPage() {
       setTotal(data.total);
       setTotalPages(data.totalPages);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Fehler beim Laden der Inserate');
+      setError(e instanceof Error ? e.message : t('errorLoadingListings'));
     } finally {
       setLoading(false);
     }
-  }, [authLoading, session, applied, page]);
+  }, [authLoading, session, applied, page, t]);
 
   useEffect(() => {
     fetchListings();
@@ -206,14 +209,14 @@ export default function EntdeckenPage() {
     try {
       const created = await createFilter(valuesToSavedFilterDto(filterValues, name));
       setActiveFilterId(created.id);
-      setSaveFilterSuccess(`Filter "${created.name}" gespeichert.`);
+      setSaveFilterSuccess(t('filterSaved', { name: created.name }));
       setTimeout(() => setSaveFilterSuccess(null), 4000);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
       if (msg.includes('403')) {
-        setSaveFilterError('Filter-Limit erreicht (max. 2). Lösche einen bestehenden Filter oder upgrade für mehr.');
+        setSaveFilterError(t('filterLimitReached'));
       } else {
-        setSaveFilterError('Fehler beim Speichern des Filters.');
+        setSaveFilterError(t('filterSaveError'));
       }
     }
   }
@@ -249,10 +252,10 @@ export default function EntdeckenPage() {
 
       {/* Header */}
       <div className="mb-6">
-        <p className="text-[11px] font-mono uppercase tracking-widest text-teal-600 mb-1">Entdecken</p>
-        <h1 className="text-2xl font-light text-gray-900 tracking-tight">Inserate entdecken</h1>
+        <p className="text-[11px] font-mono uppercase tracking-widest text-teal-600 mb-1">{t('label')}</p>
+        <h1 className="text-2xl font-light text-gray-900 tracking-tight">{t('title')}</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Täglich aktualisierte Immobilien von Raiffeisen, s REAL, ÖRAG und RE/MAX.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -291,7 +294,7 @@ export default function EntdeckenPage() {
       {/* Results count */}
       {!loading && (
         <p className="text-sm text-gray-500 mb-4">
-          {total === 0 ? 'Keine Inserate gefunden.' : `${total.toLocaleString('de-AT')} Inserate gefunden`}
+          {total === 0 ? t('noListingsFound') : t('listingsFound', { count: total.toLocaleString('de-AT') })}
         </p>
       )}
 
@@ -330,17 +333,17 @@ export default function EntdeckenPage() {
             disabled={page <= 1 || loading}
             className="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            ← Zurück
+            {t('paginationPrev')}
           </button>
           <span className="text-sm text-gray-500 px-3">
-            Seite {page} von {totalPages}
+            {t('paginationPage', { page, total: totalPages })}
           </span>
           <button
             onClick={() => handlePageChange(page + 1)}
             disabled={page >= totalPages || loading}
             className="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            Weiter →
+            {t('paginationNext')}
           </button>
         </div>
       )}

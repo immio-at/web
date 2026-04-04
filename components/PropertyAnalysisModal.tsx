@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar,
@@ -147,6 +148,7 @@ function blankAnalysis(property: Property): Omit<PropertyAnalysis, 'id' | 'prope
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
 export default function PropertyAnalysisModal({ property, onClose }: Props) {
+  const t = useTranslations('analysis');
   const [analysis, setAnalysis] = useState<PropertyAnalysis | null>(null);
   const [draft, setDraft] = useState<Omit<PropertyAnalysis, 'id' | 'propertyId' | 'dealId' | 'createdAt' | 'updatedAt'>>(blankAnalysis(property));
   const [loading, setLoading] = useState(true);
@@ -156,7 +158,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
   // Documents
   const [documents, setDocuments] = useState<PropertyDocument[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [docLabel, setDocLabel] = useState('Exposé');
+  const [docLabel, setDocLabel] = useState(t('documents.types.0'));
   const [docError, setDocError] = useState<string | null>(null);
 
   // Attach sizeSqm from property for price-per-sqm calculation
@@ -210,13 +212,13 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
         const docs = await getDocuments(property.id);
         setDocuments(docs);
       } catch (e) {
-        setError('Fehler beim Laden der Analyse.');
+        setError(t('errorLoading'));
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [property.id]);
+  }, [property.id, t]);
 
   // ── Field updater ─────────────────────────────────────────────────────────
   function set<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
@@ -250,7 +252,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
       }
       onClose();
     } catch (e) {
-      setError('Fehler beim Speichern.');
+      setError(t('errorSaving'));
     } finally {
       setSaving(false);
     }
@@ -266,7 +268,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
       const doc = await uploadDocument(property.id, file, docLabel);
       setDocuments(prev => [doc, ...prev]);
     } catch (err) {
-      setDocError(err instanceof Error ? err.message : 'Upload fehlgeschlagen');
+      setDocError(err instanceof Error ? err.message : t('documents.errorUpload'));
     } finally {
       setUploading(false);
       e.target.value = ''; // reset file input
@@ -278,7 +280,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
       const url = await getDocumentDownloadUrl(property.id, doc.id);
       window.open(url, '_blank');
     } catch {
-      setDocError('Download fehlgeschlagen');
+      setDocError(t('documents.errorDownload'));
     }
   }
 
@@ -287,7 +289,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
       await deleteDocument(property.id, doc.id);
       setDocuments(prev => prev.filter(d => d.id !== doc.id));
     } catch {
-      setDocError('Löschen fehlgeschlagen');
+      setDocError(t('documents.errorDelete'));
     }
   }
 
@@ -322,6 +324,9 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
   const rentalResults = draft.usageType === 'rental' ? calcRentalResults(calc) : null;
   const flipResults = draft.usageType === 'flip' ? calcFlipResults(calc) : null;
 
+  // Document type options from translations
+  const docTypes = Array.from({ length: 10 }, (_, i) => t(`documents.types.${i}`));
+
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
@@ -333,8 +338,8 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
         {/* ── Header ── */}
         <div className="flex items-start justify-between p-6 border-b border-[#e2e6ed]">
           <div>
-            <p className="text-xs text-[#6b7a99] uppercase tracking-widest mb-1">Analyse</p>
-            <h2 className="text-lg font-semibold text-[#0F1F3D] leading-tight">{property.title ?? 'Immobilie'}</h2>
+            <p className="text-xs text-[#6b7a99] uppercase tracking-widest mb-1">{t('header')}</p>
+            <h2 className="text-lg font-semibold text-[#0F1F3D] leading-tight">{property.title ?? t('defaultPropertyTitle')}</h2>
             {analysis?.dealId && (
               <span className="inline-block mt-1 text-xs font-mono bg-[#f8f9fb] border border-[#e2e6ed] px-2 py-0.5 rounded text-[#6b7a99]">
                 {analysis.dealId}
@@ -345,7 +350,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-[#6b7a99]">Lade Analyse…</div>
+          <div className="p-12 text-center text-[#6b7a99]">{t('loading')}</div>
         ) : (
           <div className="p-6 space-y-8">
 
@@ -358,11 +363,11 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                 <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[#6b7a99]">
                   {property.price && (
                     <span className="font-semibold text-[#0F1F3D]">
-                      € {Math.round(parseFloat(String(property.price))).toLocaleString('de-AT')}
+                      {'\u20AC'} {Math.round(parseFloat(String(property.price))).toLocaleString('de-AT')}
                     </span>
                   )}
                   {sizeSqm && <span>{sizeSqm} m²</span>}
-                  {property.rooms && <span>{String(property.rooms)} Zimmer</span>}
+                  {property.rooms && <span>{String(property.rooms)} {t('rooms')}</span>}
                   {property.location && <span>{property.location}</span>}
                   {property.zipCode && <span>{property.zipCode}</span>}
                 </div>
@@ -373,13 +378,13 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                 rel="noopener noreferrer"
                 className="text-xs text-[#F5A623] hover:underline flex-shrink-0 font-medium"
               >
-                Öffnen ↗
+                {t('openListing')}
               </a>
             </div>
 
             {/* ── Section 1: Nutzung ── */}
             <div>
-              <SectionTitle>Nutzung</SectionTitle>
+              <SectionTitle>{t('usage.title')}</SectionTitle>
               <div className="flex gap-3">
                 {(['rental', 'owner', 'flip'] as const).map(type => (
                   <button
@@ -391,7 +396,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                         : 'bg-white text-[#6b7a99] border-[#e2e6ed] hover:border-[#0F1F3D]'
                     }`}
                   >
-                    {type === 'rental' ? 'Vermietung' : type === 'owner' ? 'Eigennutzung' : 'Flip'}
+                    {type === 'rental' ? t('usage.rental') : type === 'owner' ? t('usage.owner') : t('usage.flip')}
                   </button>
                 ))}
               </div>
@@ -399,42 +404,42 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
 
             {/* ── Section 2: Kaufdetails ── */}
             <div>
-              <SectionTitle>Kaufdetails</SectionTitle>
+              <SectionTitle>{t('purchase.title')}</SectionTitle>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                <NumInput label="Listpreis" value={draft.listPrice} prefix="€" readOnly />
-                <NumInput label="Kaufpreis" value={draft.desiredPrice} onChange={v => set('desiredPrice', v)} prefix="€" />
+                <NumInput label={t('purchase.listPrice')} value={draft.listPrice} prefix={'\u20AC'} readOnly />
+                <NumInput label={t('purchase.desiredPrice')} value={draft.desiredPrice} onChange={v => set('desiredPrice', v)} prefix={'\u20AC'} />
                 <NumInput
-                  label="Preis/m²"
+                  label={t('purchase.pricePerSqm')}
                   value={pricePerSqm ? Math.round(pricePerSqm) : null}
-                  prefix="€"
+                  prefix={'\u20AC'}
                   readOnly
                 />
-                <NumInput label="Größe" value={sizeSqm} prefix="m²" readOnly />
+                <NumInput label={t('purchase.size')} value={sizeSqm} prefix="m²" readOnly />
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                <NumInput label="Makler" value={parseFloat((draft.maklerPct * 100).toFixed(1))} onChange={v => set('maklerPct', (v ?? 0) / 100)} suffix="%" />
-                <NumInput label="Notar" value={parseFloat((draft.notarPct * 100).toFixed(1))} onChange={v => set('notarPct', (v ?? 0) / 100)} suffix="%" />
-                <NumInput label="Grundbuch" value={parseFloat((draft.grundbuchPct * 100).toFixed(1))} onChange={v => set('grundbuchPct', (v ?? 0) / 100)} suffix="%" />
-                <NumInput label="GrESt" value={parseFloat((draft.grunderwerbsteuerPct * 100).toFixed(1))} onChange={v => set('grunderwerbsteuerPct', (v ?? 0) / 100)} suffix="%" />
+                <NumInput label={t('purchase.makler')} value={parseFloat((draft.maklerPct * 100).toFixed(1))} onChange={v => set('maklerPct', (v ?? 0) / 100)} suffix="%" />
+                <NumInput label={t('purchase.notar')} value={parseFloat((draft.notarPct * 100).toFixed(1))} onChange={v => set('notarPct', (v ?? 0) / 100)} suffix="%" />
+                <NumInput label={t('purchase.grundbuch')} value={parseFloat((draft.grundbuchPct * 100).toFixed(1))} onChange={v => set('grundbuchPct', (v ?? 0) / 100)} suffix="%" />
+                <NumInput label={t('purchase.grest')} value={parseFloat((draft.grunderwerbsteuerPct * 100).toFixed(1))} onChange={v => set('grunderwerbsteuerPct', (v ?? 0) / 100)} suffix="%" />
               </div>
 
               <div className="mb-4">
-                <NumInput label="Sonstige Nebenkosten" value={draft.otherPurchaseCosts} onChange={v => set('otherPurchaseCosts', v ?? 0)} prefix="€" />
+                <NumInput label={t('purchase.otherCosts')} value={draft.otherPurchaseCosts} onChange={v => set('otherPurchaseCosts', v ?? 0)} prefix={'\u20AC'} />
               </div>
 
               {/* Renovierungskosten */}
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide">Renovierungskosten</span>
-                  <button onClick={addRehab} className="text-xs text-[#F5A623] hover:underline font-medium">+ Posten hinzufügen</button>
+                  <span className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide">{t('purchase.rehabCosts')}</span>
+                  <button onClick={addRehab} className="text-xs text-[#F5A623] hover:underline font-medium">{t('purchase.addItem')}</button>
                 </div>
                 {draft.rehabCosts.length > 0 && (
                   <div className="space-y-2">
                     <div className={`grid gap-2 text-xs text-[#6b7a99] uppercase tracking-wide px-1 ${draft.usageType === 'flip' ? 'grid-cols-[1fr_120px_120px_24px]' : 'grid-cols-[1fr_120px_24px]'}`}>
-                      <span>Bezeichnung</span>
-                      <span>Gesamt €</span>
-                      {draft.usageType === 'flip' && <span>Abzugsfähig €</span>}
+                      <span>{t('purchase.itemLabel')}</span>
+                      <span>{t('purchase.itemTotal')}</span>
+                      {draft.usageType === 'flip' && <span>{t('purchase.itemDeductible')}</span>}
                       <span />
                     </div>
                     {draft.rehabCosts.map((item, i) => (
@@ -443,7 +448,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                           type="text"
                           value={item.label}
                           onChange={e => updateRehab(i, { label: e.target.value })}
-                          placeholder="z.B. Küche"
+                          placeholder={t('purchase.itemPlaceholder')}
                           className="border border-[#e2e6ed] rounded-lg px-3 py-2 text-sm text-[#0F1F3D] outline-none focus:ring-2 focus:ring-[#F5A623]"
                         />
                         <input
@@ -469,25 +474,25 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
 
               {/* Laufende Kosten */}
               <div className="mb-4">
-                <span className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide block mb-2">Laufende Kosten (monatlich)</span>
+                <span className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide block mb-2">{t('purchase.runningCosts')}</span>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <NumInput label="Betriebskosten" value={draft.ooBetriebskostenMonthly} onChange={v => set('ooBetriebskostenMonthly', v)} prefix="€" hint="Monatlich" />
-                  <NumInput label="Reparaturrücklage" value={draft.reparaturruecklageMon} onChange={v => set('reparaturruecklageMon', v)} prefix="€" hint="Monatliche HV-Umlage" />
+                  <NumInput label={t('purchase.betriebskosten')} value={draft.ooBetriebskostenMonthly} onChange={v => set('ooBetriebskostenMonthly', v)} prefix={'\u20AC'} hint={t('purchase.betriebskostenHint')} />
+                  <NumInput label={t('purchase.reparaturruecklage')} value={draft.reparaturruecklageMon} onChange={v => set('reparaturruecklageMon', v)} prefix={'\u20AC'} hint={t('purchase.reparaturruecklageHint')} />
                 </div>
               </div>
 
               {/* Totals */}
               <div className="flex gap-6 bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl px-4 py-3 text-sm">
                 <div>
-                  <span className="text-[#6b7a99]">Kaufnebenkosten: </span>
+                  <span className="text-[#6b7a99]">{t('purchase.summaryKaufnebenkosten')}: </span>
                   <span className="font-semibold text-[#0F1F3D]">{formatEuro(kaufnebenkosten)}</span>
                 </div>
                 <div>
-                  <span className="text-[#6b7a99]">Renovierung: </span>
+                  <span className="text-[#6b7a99]">{t('purchase.summaryRenovierung')}: </span>
                   <span className="font-semibold text-[#0F1F3D]">{formatEuro(totalRehab)}</span>
                 </div>
                 <div>
-                  <span className="text-[#6b7a99]">Gesamtinvestition: </span>
+                  <span className="text-[#6b7a99]">{t('purchase.summaryGesamtinvestition')}: </span>
                   <span className="font-bold text-[#0F1F3D]">{formatEuro(totalInvestment)}</span>
                 </div>
               </div>
@@ -497,20 +502,20 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
 
             {/* ── Section 3: Finanzierung ── */}
             <div>
-              <SectionTitle>Finanzierung</SectionTitle>
+              <SectionTitle>{t('financing.title')}</SectionTitle>
 
               <div className="flex gap-3 mb-4">
                 <button
                   onClick={() => set('financing', false)}
                   className={`py-2 px-4 rounded-xl text-sm font-medium border transition-all ${!draft.financing ? 'bg-[#0F1F3D] text-white border-[#0F1F3D]' : 'bg-white text-[#6b7a99] border-[#e2e6ed] hover:border-[#0F1F3D]'}`}
                 >
-                  Keine Finanzierung
+                  {t('financing.noFinancing')}
                 </button>
                 <button
                   onClick={() => set('financing', true)}
                   className={`py-2 px-4 rounded-xl text-sm font-medium border transition-all ${draft.financing ? 'bg-[#0F1F3D] text-white border-[#0F1F3D]' : 'bg-white text-[#6b7a99] border-[#e2e6ed] hover:border-[#0F1F3D]'}`}
                 >
-                  Finanziert
+                  {t('financing.financed')}
                 </button>
               </div>
 
@@ -518,18 +523,18 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                 <div className="space-y-4">
                   {/* Loan 1 */}
                   <div>
-                    <p className="text-xs font-medium text-[#6b7a99] mb-2">Darlehen 1</p>
+                    <p className="text-xs font-medium text-[#6b7a99] mb-2">{t('financing.loan1')}</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <NumInput
-                        label="Betrag"
+                        label={t('financing.amount')}
                         value={draft.loan1Amount ?? Math.round(resolvedL1)}
                         onChange={v => set('loan1Amount', v)}
-                        prefix="€"
-                        hint={draft.loan1Amount === null ? `${(draft.loan1AmountPct * 100).toFixed(0)}% des Kaufpreises` : 'Manuell'}
+                        prefix={'\u20AC'}
+                        hint={draft.loan1Amount === null ? t('financing.amountHintAuto', { pct: (draft.loan1AmountPct * 100).toFixed(0) }) : t('financing.amountHintManual')}
                       />
-                      <NumInput label="Zinssatz" value={draft.loan1Rate !== null ? (draft.loan1Rate ?? 0) * 100 : null} onChange={v => set('loan1Rate', v !== null ? v / 100 : null)} suffix="%" />
-                      <NumInput label="Laufzeit" value={draft.loan1TermYears} onChange={v => set('loan1TermYears', v ? Math.round(v) : null)} suffix="J" />
-                      <NumInput label="Rate/Monat" value={Math.round(loan1Monthly)} prefix="€" readOnly />
+                      <NumInput label={t('financing.rate')} value={draft.loan1Rate !== null ? (draft.loan1Rate ?? 0) * 100 : null} onChange={v => set('loan1Rate', v !== null ? v / 100 : null)} suffix="%" />
+                      <NumInput label={t('financing.term')} value={draft.loan1TermYears} onChange={v => set('loan1TermYears', v ? Math.round(v) : null)} suffix="J" />
+                      <NumInput label={t('financing.monthlyPayment')} value={Math.round(loan1Monthly)} prefix={'\u20AC'} readOnly />
                     </div>
                   </div>
 
@@ -541,28 +546,28 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                       onChange={e => set('loan2Enabled', e.target.checked)}
                       className="w-4 h-4 accent-[#F5A623]"
                     />
-                    <span className="text-sm text-[#6b7a99]">Zweites Darlehen</span>
+                    <span className="text-sm text-[#6b7a99]">{t('financing.enableLoan2')}</span>
                   </label>
 
                   {draft.loan2Enabled && (
                     <div>
-                      <p className="text-xs font-medium text-[#6b7a99] mb-2">Darlehen 2</p>
+                      <p className="text-xs font-medium text-[#6b7a99] mb-2">{t('financing.loan2')}</p>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <NumInput label="Betrag" value={draft.loan2Amount} onChange={v => set('loan2Amount', v)} prefix="€" />
-                        <NumInput label="Zinssatz" value={draft.loan2Rate !== null ? (draft.loan2Rate ?? 0) * 100 : null} onChange={v => set('loan2Rate', v !== null ? v / 100 : null)} suffix="%" />
-                        <NumInput label="Laufzeit" value={draft.loan2TermYears} onChange={v => set('loan2TermYears', v ? Math.round(v) : null)} suffix="J" />
-                        <NumInput label="Rate/Monat" value={Math.round(loan2Monthly)} prefix="€" readOnly />
+                        <NumInput label={t('financing.amount')} value={draft.loan2Amount} onChange={v => set('loan2Amount', v)} prefix={'\u20AC'} />
+                        <NumInput label={t('financing.rate')} value={draft.loan2Rate !== null ? (draft.loan2Rate ?? 0) * 100 : null} onChange={v => set('loan2Rate', v !== null ? v / 100 : null)} suffix="%" />
+                        <NumInput label={t('financing.term')} value={draft.loan2TermYears} onChange={v => set('loan2TermYears', v ? Math.round(v) : null)} suffix="J" />
+                        <NumInput label={t('financing.monthlyPayment')} value={Math.round(loan2Monthly)} prefix={'\u20AC'} readOnly />
                       </div>
                     </div>
                   )}
 
                   <div className="flex gap-6 bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl px-4 py-3 text-sm">
                     <div>
-                      <span className="text-[#6b7a99]">Gesamte Rate: </span>
-                      <span className="font-bold text-[#0F1F3D]">{formatEuro(totalMonthlyLoan)}/Mo</span>
+                      <span className="text-[#6b7a99]">{t('financing.totalMonthly')}: </span>
+                      <span className="font-bold text-[#0F1F3D]">{formatEuro(totalMonthlyLoan)}{t('financing.perMonth')}</span>
                     </div>
                     <div>
-                      <span className="text-[#6b7a99]">Eigenkapital: </span>
+                      <span className="text-[#6b7a99]">{t('financing.equity')}: </span>
                       <span className="font-bold text-[#0F1F3D]">{formatEuro(eigenkapital)}</span>
                     </div>
                   </div>
@@ -575,10 +580,10 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
             {/* Eigennutzung */}
             {draft.usageType === 'owner' && (
               <div>
-                <SectionTitle>Eigennutzung</SectionTitle>
+                <SectionTitle>{t('owner.title')}</SectionTitle>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <NumInput label="Instandhaltung" value={draft.ooRepairsPct * 100} onChange={v => set('ooRepairsPct', (v ?? 0) / 100)} suffix="% p.a." hint="% des Kaufpreises" />
-                  <NumInput label="Wertsteigerung p.a." value={draft.ooAppreciationPct * 100} onChange={v => set('ooAppreciationPct', (v ?? 0) / 100)} suffix="%" />
+                  <NumInput label={t('owner.maintenance')} value={draft.ooRepairsPct * 100} onChange={v => set('ooRepairsPct', (v ?? 0) / 100)} suffix="% p.a." hint={t('owner.maintenanceHint')} />
+                  <NumInput label={t('owner.appreciation')} value={draft.ooAppreciationPct * 100} onChange={v => set('ooAppreciationPct', (v ?? 0) / 100)} suffix="%" />
                 </div>
               </div>
             )}
@@ -586,48 +591,48 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
             {/* Vermietung */}
             {draft.usageType === 'rental' && (
               <div>
-                <SectionTitle>Vermietung</SectionTitle>
+                <SectionTitle>{t('rental.title')}</SectionTitle>
                 <div className="space-y-4">
                   {/* Rent type toggle */}
                   <div className="flex items-end gap-4">
                     <div className="flex gap-2">
-                      {(['warm', 'kalt'] as const).map(t => (
+                      {(['warm', 'kalt'] as const).map(rentType => (
                         <button
-                          key={t}
-                          onClick={() => set('rentType', t)}
+                          key={rentType}
+                          onClick={() => set('rentType', rentType)}
                           className={`py-1.5 px-4 rounded-lg text-sm font-medium border transition-all ${
-                            draft.rentType === t
+                            draft.rentType === rentType
                               ? 'bg-[#0F1F3D] text-white border-[#0F1F3D]'
                               : 'bg-white text-[#6b7a99] border-[#e2e6ed] hover:border-[#0F1F3D]'
                           }`}
                         >
-                          {t === 'warm' ? 'Warmmiete' : 'Kaltmiete'}
+                          {rentType === 'warm' ? t('rental.warmRent') : t('rental.coldRent')}
                         </button>
                       ))}
                     </div>
                     <NumInput
-                      label={draft.rentType === 'warm' ? 'Warmmiete' : 'Kaltmiete'}
+                      label={draft.rentType === 'warm' ? t('rental.warmRent') : t('rental.coldRent')}
                       value={draft.rentMonthly}
                       onChange={v => set('rentMonthly', v)}
-                      prefix="€"
+                      prefix={'\u20AC'}
                     />
                     {draft.rentType === 'warm' && (
                       <NumInput
-                        label="Kaltmiete (auto)"
+                        label={t('rental.coldRentAuto')}
                         value={rentalResults ? Math.round(rentalResults.kaltmieteMonthly) : null}
-                        prefix="€"
+                        prefix={'\u20AC'}
                         readOnly
                       />
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <NumInput label="BK umlagefähig (Mieter)" value={draft.bkUmlagefaehig} onChange={v => set('bkUmlagefaehig', v)} prefix="€" />
-                    <NumInput label="BK nicht umlagefähig (Eigentümer)" value={draft.bkNichtUmlagefaehig} onChange={v => set('bkNichtUmlagefaehig', v)} prefix="€" />
-                    <NumInput label="Leerstand" value={draft.vacancyPct * 100} onChange={v => set('vacancyPct', (v ?? 0) / 100)} suffix="%" />
-                    <NumInput label="Reparaturreserve" value={draft.repairsPct * 100} onChange={v => set('repairsPct', (v ?? 0) / 100)} suffix="% p.a." hint="Persönliche Reserve (% des Kaufpreises)" />
-                    <NumInput label="Mietsteigerung p.a." value={draft.rentGrowthPct * 100} onChange={v => set('rentGrowthPct', (v ?? 0) / 100)} suffix="%" />
-                    <NumInput label="Wertsteigerung p.a." value={draft.valueGrowthPct * 100} onChange={v => set('valueGrowthPct', (v ?? 0) / 100)} suffix="%" />
+                    <NumInput label={t('rental.bkUmlagefaehig')} value={draft.bkUmlagefaehig} onChange={v => set('bkUmlagefaehig', v)} prefix={'\u20AC'} />
+                    <NumInput label={t('rental.bkNichtUmlagefaehig')} value={draft.bkNichtUmlagefaehig} onChange={v => set('bkNichtUmlagefaehig', v)} prefix={'\u20AC'} />
+                    <NumInput label={t('rental.vacancy')} value={draft.vacancyPct * 100} onChange={v => set('vacancyPct', (v ?? 0) / 100)} suffix="%" />
+                    <NumInput label={t('rental.repairReserve')} value={draft.repairsPct * 100} onChange={v => set('repairsPct', (v ?? 0) / 100)} suffix="% p.a." hint={t('rental.repairReserveHint')} />
+                    <NumInput label={t('rental.rentGrowth')} value={draft.rentGrowthPct * 100} onChange={v => set('rentGrowthPct', (v ?? 0) / 100)} suffix="%" />
+                    <NumInput label={t('rental.valueGrowth')} value={draft.valueGrowthPct * 100} onChange={v => set('valueGrowthPct', (v ?? 0) / 100)} suffix="%" />
                   </div>
                 </div>
               </div>
@@ -636,10 +641,10 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
             {/* Flip */}
             {draft.usageType === 'flip' && (
               <div>
-                <SectionTitle>Flip</SectionTitle>
+                <SectionTitle>{t('flip.title')}</SectionTitle>
                 <div className="grid grid-cols-2 gap-4">
-                  <NumInput label="Flip-Dauer" value={draft.flipDurationMonths} onChange={v => set('flipDurationMonths', v ? Math.round(v) : null)} suffix="Monate" />
-                  <NumInput label="Erwarteter Verkaufspreis" value={draft.flipResalePrice} onChange={v => set('flipResalePrice', v)} prefix="€" />
+                  <NumInput label={t('flip.duration')} value={draft.flipDurationMonths} onChange={v => set('flipDurationMonths', v ? Math.round(v) : null)} suffix={t('flip.durationSuffix')} />
+                  <NumInput label={t('flip.resalePrice')} value={draft.flipResalePrice} onChange={v => set('flipResalePrice', v)} prefix={'\u20AC'} />
                 </div>
               </div>
             )}
@@ -649,24 +654,24 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
             {/* Owner results */}
             {draft.usageType === 'owner' && ownerResults && (
               <div>
-                <SectionTitle>Ergebnisse — Eigennutzung</SectionTitle>
+                <SectionTitle>{t('owner.resultsTitle')}</SectionTitle>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  <MetricCard label="Monatliche Ausgaben" value={formatEuro(ownerResults.monthlyOutgoings)} />
-                  <MetricCard label="davon Kredit" value={formatEuro(ownerResults.monthlyLoan)} />
-                  <MetricCard label="davon Betriebskosten" value={formatEuro(ownerResults.monthlyBetriebskosten)} />
-                  <MetricCard label="davon Reparaturen" value={formatEuro(ownerResults.monthlyRepairs)} />
+                  <MetricCard label={t('owner.monthlyOutgoings')} value={formatEuro(ownerResults.monthlyOutgoings)} />
+                  <MetricCard label={t('owner.monthlyLoan')} value={formatEuro(ownerResults.monthlyLoan)} />
+                  <MetricCard label={t('owner.monthlyBetriebskosten')} value={formatEuro(ownerResults.monthlyBetriebskosten)} />
+                  <MetricCard label={t('owner.monthlyRepairs')} value={formatEuro(ownerResults.monthlyRepairs)} />
                 </div>
                 {ownerResults.yearlyData.length > 0 && (
                   <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
-                    <p className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide mb-3">Vermögensentwicklung</p>
+                    <p className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide mb-3">{t('owner.wealthChart')}</p>
                     <ResponsiveContainer width="100%" height={220}>
                       <BarChart data={ownerResults.yearlyData} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
-                        <XAxis dataKey="year" tick={{ fontSize: 11 }} tickFormatter={v => `J${v}`} />
+                        <XAxis dataKey="year" tick={{ fontSize: 11 }} tickFormatter={v => t('owner.chartYearShort', { year: v })} />
                         <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${Math.round(v / 1000)}k`} />
-                        <Tooltip formatter={(v) => formatEuro(Number(v ?? 0))} labelFormatter={l => `Jahr ${l}`} />
+                        <Tooltip formatter={(v) => formatEuro(Number(v ?? 0))} labelFormatter={l => t('owner.chartYear', { year: l })} />
                         <Legend wrapperStyle={{ fontSize: 12 }} />
-                        <Bar dataKey="equity" name="Eigenkapital" stackId="a" fill="#16a34a" radius={[0, 0, 0, 0]} />
-                        <Bar dataKey="loanRemaining" name="Restschuld" stackId="a" fill="#e2e6ed" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="equity" name={t('owner.chartEquity')} stackId="a" fill="#16a34a" radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="loanRemaining" name={t('owner.chartLoanRemaining')} stackId="a" fill="#e2e6ed" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -677,33 +682,33 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
             {/* Rental results */}
             {draft.usageType === 'rental' && rentalResults && (
               <div>
-                <SectionTitle>Ergebnisse — Vermietung</SectionTitle>
+                <SectionTitle>{t('rental.resultsTitle')}</SectionTitle>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                  <MetricCard label="Kaltmiete/Monat" value={formatEuro(rentalResults.kaltmieteMonthly)} />
-                  <MetricCard label="Kaltmiete/Jahr" value={formatEuro(rentalResults.kaltmieteYearly)} />
-                  <MetricCard label="Cashflow/Monat" value={formatEuro(rentalResults.cashflowMonthly)} sub={rentalResults.cashflowMonthly >= 0 ? 'positiv' : 'negativ'} />
-                  <MetricCard label="Faktor" value={formatFaktor(rentalResults.faktor)} sub="Kaufpreisfaktor" />
+                  <MetricCard label={t('rental.coldRentMonthly')} value={formatEuro(rentalResults.kaltmieteMonthly)} />
+                  <MetricCard label={t('rental.coldRentYearly')} value={formatEuro(rentalResults.kaltmieteYearly)} />
+                  <MetricCard label={t('rental.cashflowMonthly')} value={formatEuro(rentalResults.cashflowMonthly)} sub={rentalResults.cashflowMonthly >= 0 ? t('rental.cashflowPositive') : t('rental.cashflowNegative')} />
+                  <MetricCard label={t('rental.faktor')} value={formatFaktor(rentalResults.faktor)} sub={t('rental.faktorSub')} />
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  <MetricCard label="Bruttomietrendite" value={formatPct(rentalResults.bruttomietrendite)} />
-                  <MetricCard label="Nettomietrendite" value={formatPct(rentalResults.nettomietrendite)} />
-                  <MetricCard label="Cashflow-Rendite EK" value={formatPct(rentalResults.eigenkapitalrendite_cashflow)} sub="Cash-on-cash" />
-                  <MetricCard label="Gesamtrendite EK" value={formatPct(rentalResults.eigenkapitalrendite_total)} sub="inkl. Tilgung + Wertsteigerung" />
+                  <MetricCard label={t('rental.bruttomietrendite')} value={formatPct(rentalResults.bruttomietrendite)} />
+                  <MetricCard label={t('rental.nettomietrendite')} value={formatPct(rentalResults.nettomietrendite)} />
+                  <MetricCard label={t('rental.eigenkapitalrenditeCashflow')} value={formatPct(rentalResults.eigenkapitalrendite_cashflow)} sub={t('rental.cashOnCash')} />
+                  <MetricCard label={t('rental.eigenkapitalrenditeTotal')} value={formatPct(rentalResults.eigenkapitalrendite_total)} sub={t('rental.eigenkapitalrenditeTotalSub')} />
                 </div>
                 {rentalResults.yearlyData.length > 0 && (
                   <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
-                    <p className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide mb-3">Projektion über {rentalResults.yearlyData.length} Jahre</p>
+                    <p className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide mb-3">{t('rental.projectionTitle', { years: rentalResults.yearlyData.length })}</p>
                     <ResponsiveContainer width="100%" height={240}>
                       <LineChart data={rentalResults.yearlyData} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
-                        <XAxis dataKey="year" tick={{ fontSize: 11 }} tickFormatter={v => `J${v}`} />
+                        <XAxis dataKey="year" tick={{ fontSize: 11 }} tickFormatter={v => t('rental.chartYearShort', { year: v })} />
                         <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${Math.round(v / 1000)}k`} />
-                        <Tooltip formatter={(v) => formatEuro(Number(v ?? 0))} labelFormatter={l => `Jahr ${l}`} />
+                        <Tooltip formatter={(v) => formatEuro(Number(v ?? 0))} labelFormatter={l => t('rental.chartYear', { year: l })} />
                         <Legend wrapperStyle={{ fontSize: 12 }} />
-                        <Line dataKey="propertyValue" name="Immobilienwert" stroke="#0F1F3D" strokeWidth={2} dot={false} />
-                        <Line dataKey="loanRemaining" name="Restschuld" stroke="#6b7a99" strokeWidth={2} dot={false} strokeDasharray="4 2" />
-                        <Line dataKey="yearlyRentIncome" name="Mieteinnahmen/J" stroke="#16a34a" strokeWidth={2} dot={false} />
-                        <Line dataKey="yearlyOutgoings" name="Ausgaben/J" stroke="#dc2626" strokeWidth={2} dot={false} />
-                        <Line dataKey="cashflow" name="Cashflow/J" stroke="#F5A623" strokeWidth={2} dot={false} />
+                        <Line dataKey="propertyValue" name={t('rental.chartPropertyValue')} stroke="#0F1F3D" strokeWidth={2} dot={false} />
+                        <Line dataKey="loanRemaining" name={t('rental.chartLoanRemaining')} stroke="#6b7a99" strokeWidth={2} dot={false} strokeDasharray="4 2" />
+                        <Line dataKey="yearlyRentIncome" name={t('rental.chartYearlyRent')} stroke="#16a34a" strokeWidth={2} dot={false} />
+                        <Line dataKey="yearlyOutgoings" name={t('rental.chartYearlyOutgoings')} stroke="#dc2626" strokeWidth={2} dot={false} />
+                        <Line dataKey="cashflow" name={t('rental.chartCashflow')} stroke="#F5A623" strokeWidth={2} dot={false} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -714,42 +719,42 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
             {/* Flip results */}
             {draft.usageType === 'flip' && flipResults && (
               <div>
-                <SectionTitle>Ergebnisse — Flip</SectionTitle>
+                <SectionTitle>{t('flip.resultsTitle')}</SectionTitle>
                 <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl divide-y divide-[#e2e6ed] px-4">
-                  <ResultRow label="Kaufpreis" value={formatEuro(draft.desiredPrice ?? 0)} />
-                  <ResultRow label="+ Kaufnebenkosten" value={formatEuro(flipResults.kaufnebenkosten)} indent />
-                  <ResultRow label="+ Sanierungskosten" value={formatEuro(flipResults.totalRehab)} indent />
-                  <ResultRow label="+ Haltekosten" value={formatEuro(flipResults.holdingCosts)} indent />
-                  <ResultRow label="= Gesamtkosten" value={formatEuro(flipResults.totalCost)} highlight />
-                  <ResultRow label="Verkaufspreis" value={formatEuro(draft.flipResalePrice ?? 0)} />
-                  <ResultRow label="- Gesamtkosten" value={formatEuro(flipResults.totalCost)} indent />
-                  <ResultRow label="= Bruttogewinn" value={formatEuro(flipResults.grossProfit)} highlight />
-                  <ResultRow label="- Abzugsfähige Kosten" value={formatEuro(flipResults.totalAbzugsfaehig)} indent />
-                  <ResultRow label="= Zu versteuernder Gewinn" value={formatEuro(flipResults.taxableProfit)} />
-                  <ResultRow label="- Steuer (30%)" value={formatEuro(flipResults.tax)} indent />
-                  <ResultRow label="= Nettogewinn" value={formatEuro(flipResults.netProfit)} highlight />
+                  <ResultRow label={t('flip.purchasePrice')} value={formatEuro(draft.desiredPrice ?? 0)} />
+                  <ResultRow label={t('flip.purchaseCosts')} value={formatEuro(flipResults.kaufnebenkosten)} indent />
+                  <ResultRow label={t('flip.rehabCosts')} value={formatEuro(flipResults.totalRehab)} indent />
+                  <ResultRow label={t('flip.holdingCosts')} value={formatEuro(flipResults.holdingCosts)} indent />
+                  <ResultRow label={t('flip.totalCost')} value={formatEuro(flipResults.totalCost)} highlight />
+                  <ResultRow label={t('flip.resalePriceResult')} value={formatEuro(draft.flipResalePrice ?? 0)} />
+                  <ResultRow label={t('flip.minusTotalCost')} value={formatEuro(flipResults.totalCost)} indent />
+                  <ResultRow label={t('flip.grossProfit')} value={formatEuro(flipResults.grossProfit)} highlight />
+                  <ResultRow label={t('flip.deductibleCosts')} value={formatEuro(flipResults.totalAbzugsfaehig)} indent />
+                  <ResultRow label={t('flip.taxableProfit')} value={formatEuro(flipResults.taxableProfit)} />
+                  <ResultRow label={t('flip.tax')} value={formatEuro(flipResults.tax)} indent />
+                  <ResultRow label={t('flip.netProfit')} value={formatEuro(flipResults.netProfit)} highlight />
                 </div>
                 <p className="text-xs text-[#6b7a99] mt-3 flex items-center gap-1">
                   <span>⚠</span>
-                  <span>Diese Berechnung ist eine Schätzung und kein Steuerberatung.</span>
+                  <span>{t('flip.disclaimer')}</span>
                 </p>
               </div>
             )}
 
             {/* ── Documents ── */}
             <div className="pt-6 border-t border-[#e2e6ed]">
-              <h3 className="text-sm font-semibold text-[#0F1F3D] uppercase tracking-wide mb-3">Dokumente</h3>
+              <h3 className="text-sm font-semibold text-[#0F1F3D] uppercase tracking-wide mb-3">{t('documents.title')}</h3>
 
               {/* Upload row */}
               <div className="flex flex-wrap gap-2 items-end mb-3">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-[#6b7a99] font-medium">Typ</label>
+                  <label className="text-xs text-[#6b7a99] font-medium">{t('documents.typeLabel')}</label>
                   <select
                     value={docLabel}
                     onChange={e => setDocLabel(e.target.value)}
                     className="border border-[#e2e6ed] rounded-lg px-3 py-2 text-sm text-[#0F1F3D] bg-white focus:outline-none focus:ring-2 focus:ring-[#F5A623]"
                   >
-                    {['Exposé', 'Energieausweis', 'Grundriss', 'Provisionsvereinbarung', 'Widerrufsformular', 'Protokoll', 'Kaufanbot', 'Kaufvertrag', 'Gutachten', 'Sonstiges'].map(l => (
+                    {docTypes.map(l => (
                       <option key={l} value={l}>{l}</option>
                     ))}
                   </select>
@@ -759,7 +764,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-[#F5A623] text-white hover:bg-[#d4891a]'
                 }`}>
-                  {uploading ? 'Hochladen...' : '+ PDF hochladen'}
+                  {uploading ? t('documents.uploading') : t('documents.upload')}
                   <input
                     type="file"
                     accept=".pdf,application/pdf"
@@ -769,7 +774,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                   />
                 </label>
                 {documents.length >= 10 && (
-                  <span className="text-xs text-[#6b7a99]">Max. 10 Dokumente erreicht</span>
+                  <span className="text-xs text-[#6b7a99]">{t('documents.maxReached')}</span>
                 )}
               </div>
 
@@ -796,7 +801,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                       <button
                         onClick={() => handleDocDelete(doc)}
                         className="text-[#6b7a99] hover:text-red-500 text-xs ml-2 flex-shrink-0"
-                        title="Löschen"
+                        title={t('documents.deleteTitle')}
                       >
                         ✕
                       </button>
@@ -804,7 +809,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-[#6b7a99]">Noch keine Dokumente. Lade PDFs hoch (Exposé, Energieausweis, etc.).</p>
+                <p className="text-xs text-[#6b7a99]">{t('documents.empty')}</p>
               )}
             </div>
 
@@ -819,14 +824,14 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                 onClick={onClose}
                 className="py-2.5 px-6 rounded-xl text-sm font-medium text-[#6b7a99] hover:text-[#0F1F3D] transition-colors"
               >
-                Abbrechen
+                {t('footer.cancel')}
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
                 className="py-2.5 px-8 rounded-xl text-sm font-semibold bg-[#F5A623] text-white hover:bg-[#d4891a] disabled:opacity-50 transition-colors"
               >
-                {saving ? 'Speichern…' : 'Speichern'}
+                {saving ? t('footer.saving') : t('footer.save')}
               </button>
             </div>
 

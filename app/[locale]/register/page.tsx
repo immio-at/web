@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -11,6 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations('auth.register');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
@@ -24,7 +26,7 @@ function RegisterForm() {
   }, [searchParams]);
 
   async function handleRegister() {
-    if (!email || !password) { setError('Please enter your email and password.'); return; }
+    if (!email || !password) { setError(t('errorEmptyFields')); return; }
     setLoading(true);
     setError('');
 
@@ -38,7 +40,7 @@ function RegisterForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || 'Registration failed');
+        setError(data.message || t('errorRegisterFailed'));
         return;
       }
 
@@ -51,7 +53,7 @@ function RegisterForm() {
       }
 
     } catch {
-      setError('Could not connect to server');
+      setError(t('errorConnection'));
     } finally {
       setLoading(false);
     }
@@ -66,8 +68,8 @@ function RegisterForm() {
           IM<span className="text-3xl">M</span>IO
         </Link>
 
-        <h1 className="text-xl font-semibold text-primary mb-1">Zugang beantragen</h1>
-        <p className="text-sm text-gray-500 font-light mb-6">Erstelle dein IMMIO-Konto</p>
+        <h1 className="text-xl font-semibold text-primary mb-1">{t('title')}</h1>
+        <p className="text-sm text-gray-500 font-light mb-6">{t('sub')}</p>
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-5">
@@ -77,31 +79,31 @@ function RegisterForm() {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Email</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('emailLabel')}</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoFocus={!email}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all"
-              placeholder="deine@email.at"
+              placeholder={t('emailPlaceholder')}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Passwort</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('passwordLabel')}</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all"
-              placeholder="••••••••"
+              placeholder={t('passwordPlaceholder')}
             />
           </div>
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">
-              Einladungscode <span className="text-gray-400 font-normal">(optional)</span>
+              {t('inviteLabel')} <span className="text-gray-400 font-normal">({t('inviteOptional')})</span>
             </label>
             <input
               type="text"
@@ -109,10 +111,10 @@ function RegisterForm() {
               onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all font-mono tracking-widest"
-              placeholder="IMMIO-XXXX-XXX"
+              placeholder={t('invitePlaceholder')}
             />
             <p className="text-xs text-gray-400 mt-1.5 font-light">
-              Mit Einladungscode wirst du sofort freigeschaltet.
+              {t('inviteHint')}
             </p>
           </div>
 
@@ -121,14 +123,14 @@ function RegisterForm() {
             disabled={loading}
             className="w-full bg-accent hover:bg-accent-light disabled:opacity-50 text-primary font-semibold text-sm py-2.5 rounded-lg transition-colors mt-2"
           >
-            {loading ? 'Wird erstellt…' : 'Konto erstellen'}
+            {loading ? t('submitting') : t('submit')}
           </button>
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Bereits ein Konto?{' '}
+          {t('haveAccount')}{' '}
           <Link href="/?signin=true" className="text-teal-600 hover:underline font-medium">
-            Anmelden
+            {t('signIn')}
           </Link>
         </p>
 
@@ -141,7 +143,7 @@ export default function RegisterPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400 text-sm">Laden…</p>
+        <p className="text-gray-400 text-sm">{'\u00A0'}</p>
       </div>
     }>
       <RegisterForm />

@@ -5,37 +5,23 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-// ─── Copy type ────────────────────────────────────────────────────────────────
-
-export interface SignInModalCopy {
-  modalTitle: string;
-  modalSub: string;
-  modalEmail: string;
-  modalPassword: string;
-  modalEmailPlaceholder: string;
-  modalPasswordPlaceholder: string;
-  modalSubmit: string;
-  modalSubmitting: string;
-  modalNoAccount: string;
-  modalRegister: string;
-}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface SignInModalProps {
   open: boolean;
   onClose: () => void;
-  t: SignInModalCopy;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function SignInModal({ open, onClose, t }: SignInModalProps) {
+export default function SignInModal({ open, onClose }: SignInModalProps) {
   const router = useRouter();
   const { setAppData } = useAuth();
+  const t = useTranslations('auth.signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -63,7 +49,7 @@ export default function SignInModal({ open, onClose, t }: SignInModalProps) {
   }, [open]);
 
   async function handleLogin() {
-    if (!email || !password) { setError('Bitte Email und Passwort eingeben.'); return; }
+    if (!email || !password) { setError(t('errorEmptyFields')); return; }
     setLoading(true);
     setError('');
 
@@ -77,7 +63,7 @@ export default function SignInModal({ open, onClose, t }: SignInModalProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || 'Login fehlgeschlagen');
+        setError(data.message || t('errorLoginFailed'));
         return;
       }
 
@@ -109,7 +95,7 @@ export default function SignInModal({ open, onClose, t }: SignInModalProps) {
       router.push('/dashboard');
 
     } catch {
-      setError('Verbindung zum Server fehlgeschlagen.');
+      setError(t('errorConnection'));
     } finally {
       setLoading(false);
     }
@@ -133,7 +119,7 @@ export default function SignInModal({ open, onClose, t }: SignInModalProps) {
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-300 hover:text-gray-500 transition-colors text-xl leading-none"
-          aria-label="Schließen"
+          aria-label={t('closeAriaLabel')}
         >
           ✕
         </button>
@@ -141,8 +127,8 @@ export default function SignInModal({ open, onClose, t }: SignInModalProps) {
         {/* Header */}
         <div className="mb-6">
           <p className="text-[11px] font-mono uppercase tracking-widest text-teal-600 mb-1">IMMIO</p>
-          <h2 className="text-xl font-semibold text-primary">{t.modalTitle}</h2>
-          <p className="text-sm text-gray-500 font-light mt-1">{t.modalSub}</p>
+          <h2 className="text-xl font-semibold text-primary">{t('title')}</h2>
+          <p className="text-sm text-gray-500 font-light mt-1">{t('sub')}</p>
         </div>
 
         {/* Error */}
@@ -156,13 +142,13 @@ export default function SignInModal({ open, onClose, t }: SignInModalProps) {
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">
-              {t.modalEmail}
+              {t('emailLabel')}
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={t.modalEmailPlaceholder}
+              placeholder={t('emailPlaceholder')}
               autoFocus
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all"
             />
@@ -170,14 +156,14 @@ export default function SignInModal({ open, onClose, t }: SignInModalProps) {
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">
-              {t.modalPassword}
+              {t('passwordLabel')}
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-              placeholder={t.modalPasswordPlaceholder}
+              placeholder={t('passwordPlaceholder')}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-primary bg-white outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(15,31,61,0.08)] transition-all"
             />
           </div>
@@ -187,15 +173,15 @@ export default function SignInModal({ open, onClose, t }: SignInModalProps) {
             disabled={loading}
             className="w-full bg-primary hover:bg-primary-light disabled:opacity-50 text-white font-medium text-sm py-2.5 rounded-lg transition-colors mt-2"
           >
-            {loading ? t.modalSubmitting : t.modalSubmit}
+            {loading ? t('submitting') : t('submit')}
           </button>
         </div>
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-6">
-          {t.modalNoAccount}{' '}
+          {t('noAccount')}{' '}
           <Link href="/register" className="text-teal-600 hover:underline font-medium">
-            {t.modalRegister}
+            {t('register')}
           </Link>
         </p>
       </div>

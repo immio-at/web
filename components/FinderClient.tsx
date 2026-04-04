@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useProperties } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { SavedFilter } from '@/lib/api';
@@ -9,6 +10,7 @@ import Link from 'next/link';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 
 export default function FinderClient() {
+  const t = useTranslations('finder');
   const { properties: all, loading, update } = useProperties();
   const { filters: savedFilters } = useSavedFilters();
   const [selectedFilter, setSelectedFilter] = useState<SavedFilter | null>(null);
@@ -117,10 +119,10 @@ export default function FinderClient() {
       : dragY < -50 ? 'open' : dragY > 50 ? 'analyse' : null;
 
   const overlayConfig: Record<string, { bg: string; label: string }> = {
-    investigating:  { bg: 'bg-emerald-500', label: 'Investigating' },
-    not_relevant:   { bg: 'bg-rose-500',    label: 'Not Relevant' },
-    open:           { bg: 'bg-blue-500',    label: 'Open Listing' },
-    analyse:        { bg: 'bg-amber-500',   label: 'Analyse' },
+    investigating:  { bg: 'bg-emerald-500', label: t('overlay.investigating') },
+    not_relevant:   { bg: 'bg-rose-500',    label: t('overlay.notRelevant') },
+    open:           { bg: 'bg-blue-500',    label: t('overlay.openListing') },
+    analyse:        { bg: 'bg-amber-500',   label: t('overlay.analyse') },
   };
 
   const overlayOpacity = Math.min(
@@ -135,7 +137,7 @@ export default function FinderClient() {
 
   if (loading) return (
     <div className="flex-1 flex items-center justify-center">
-      <p className="text-gray-400">Loading properties...</p>
+      <p className="text-gray-400">{t('loading')}</p>
     </div>
   );
 
@@ -143,9 +145,9 @@ export default function FinderClient() {
   if (showFilterModal && savedFilters.length > 0 && current === 0) return (
     <div className="flex-1 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 max-w-sm w-full mx-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">Filter wählen</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('filterModal.title')}</h2>
         <p className="text-sm text-gray-500 mb-5">
-          Wähle einen gespeicherten Filter oder starte ohne Einschränkung.
+          {t('filterModal.subtitle')}
         </p>
         <div className="space-y-2 mb-5 max-h-48 overflow-y-auto">
           {savedFilters.map(sf => (
@@ -167,14 +169,14 @@ export default function FinderClient() {
             onClick={() => { setSelectedFilter(null); setShowFilterModal(false); }}
             className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
           >
-            I Feel Lucky
+            {t('filterModal.iFeelLucky')}
           </button>
           {selectedFilter && (
             <button
               onClick={() => setShowFilterModal(false)}
               className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
             >
-              Filter anwenden
+              {t('filterModal.applyFilter')}
             </button>
           )}
         </div>
@@ -185,13 +187,13 @@ export default function FinderClient() {
   if (current >= total) return (
     <div className="flex-1 flex items-center justify-center">
       <div className="text-center px-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">All caught up</h2>
-        <p className="text-gray-500 mb-8">You've reviewed all {total} new properties</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('allCaughtUp.title')}</h2>
+        <p className="text-gray-500 mb-8">{t('allCaughtUp.subtitle', { total })}</p>
         <Link
           href="/dashboard"
           className="bg-slate-700 text-white px-8 py-3 rounded-lg font-medium hover:bg-slate-800 transition-colors"
         >
-          Back to Dashboard
+          {t('allCaughtUp.backToDashboard')}
         </Link>
       </div>
     </div>
@@ -210,17 +212,17 @@ export default function FinderClient() {
             onClick={() => { setSelectedFilter(null); setShowFilterModal(true); setCurrent(0); }}
             className="text-xs text-gray-400 hover:text-gray-600"
           >
-            ändern
+            {t('filterModal.changeFilter')}
           </button>
         </div>
       )}
 
       {/* Directions — single line at top */}
       <div className="flex gap-6 text-xs text-gray-400 text-center mb-4">
-        <span>← Not Relevant</span>
-        <span>↑ Open</span>
-        <span>↓ Analyse</span>
-        <span>→ Investigating</span>
+        <span>{t('directions.left')}</span>
+        <span>{t('directions.up')}</span>
+        <span>{t('directions.down')}</span>
+        <span>{t('directions.right')}</span>
       </div>
 
       {/* Card */}
@@ -284,7 +286,7 @@ export default function FinderClient() {
               )}
               <div className="flex gap-4 text-gray-500">
                 {property.sizeSqm && <span>{property.sizeSqm} m²</span>}
-                {property.rooms && <span>{property.rooms} Zimmer</span>}
+                {property.rooms && <span>{property.rooms} {t('rooms')}</span>}
               </div>
             </div>
           </div>
@@ -295,28 +297,28 @@ export default function FinderClient() {
       <div className="flex gap-4 mt-5">
         <button
           onClick={() => handleAction('not_relevant')}
-          title="Not Relevant"
+          title={t('buttons.notRelevantTitle')}
           className="w-14 h-14 rounded-full bg-white border border-gray-200 text-rose-500 font-bold text-lg hover:bg-rose-50 hover:border-rose-300 transition-colors shadow-sm flex items-center justify-center"
         >
           ✕
         </button>
         <button
           onClick={() => handleAction('analyse')}
-          title="Analyse Property"
+          title={t('buttons.analyseTitle')}
           className="w-14 h-14 rounded-full bg-white border border-gray-200 text-amber-500 font-bold text-lg hover:bg-amber-50 hover:border-amber-300 transition-colors shadow-sm flex items-center justify-center"
         >
           🔍
         </button>
         <button
           onClick={() => handleAction('open')}
-          title="Open Listing"
+          title={t('buttons.openListingTitle')}
           className="w-14 h-14 rounded-full bg-white border border-gray-200 text-blue-500 font-bold text-lg hover:bg-blue-50 hover:border-blue-300 transition-colors shadow-sm flex items-center justify-center"
         >
           ↗
         </button>
         <button
           onClick={() => handleAction('investigating')}
-          title="Investigating"
+          title={t('buttons.investigatingTitle')}
           className="w-14 h-14 rounded-full bg-white border border-gray-200 text-emerald-600 font-bold text-lg hover:bg-emerald-50 hover:border-emerald-300 transition-colors shadow-sm flex items-center justify-center"
         >
           ✓
@@ -324,7 +326,7 @@ export default function FinderClient() {
       </div>
 
       {/* Progress count */}
-      <div className="text-gray-400 text-xs mt-4">{current} of {total} reviewed</div>
+      <div className="text-gray-400 text-xs mt-4">{t('progress', { current, total })}</div>
 
       {/* Analyse modal */}
       {showAnalyseModal && property && (

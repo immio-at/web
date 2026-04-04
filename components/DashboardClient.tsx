@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Property, reportUnavailable } from '@/lib/api';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 import { FUNNEL_STAGES } from '@/lib/constants';
@@ -66,6 +67,7 @@ export default function DashboardClient({
   recentIds?: string[];
   frequentIds?: string[];
 }) {
+  const t = useTranslations('dashboard');
   const [view, setView] = useState<ViewMode>('tiles');
   const [filterValues, setFilterValues] = useState<FilterValues>(EMPTY_FILTERS);
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
@@ -152,7 +154,7 @@ export default function DashboardClient({
       {/* Carousels */}
       {recentProperties.length > 0 && (
         <PropertyCarousel
-          title="Zuletzt angesehen"
+          title={t('carousel.recentlyViewed')}
           properties={recentProperties}
           onInteraction={onInteraction}
           onAnalyse={handleAnalyse}
@@ -160,7 +162,7 @@ export default function DashboardClient({
       )}
       {frequentProperties.length > 0 && (
         <PropertyCarousel
-          title="Am häufigsten angesehen"
+          title={t('carousel.mostViewed')}
           properties={frequentProperties}
           onInteraction={onInteraction}
           onAnalyse={handleAnalyse}
@@ -188,11 +190,11 @@ export default function DashboardClient({
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              {v === 'tiles' ? '⊞ Tiles' : '☰ Table'}
+              {v === 'tiles' ? `${t('viewToggle.tilesIcon')} ${t('viewToggle.tiles')}` : `${t('viewToggle.tableIcon')} ${t('viewToggle.table')}`}
             </button>
           ))}
         </div>
-        <span className="text-sm text-gray-500">{filtered.length} Immobilien</span>
+        <span className="text-sm text-gray-500">{t('propertyCount', { count: filtered.length })}</span>
       </div>
 
       {/* Views */}
@@ -234,6 +236,7 @@ function TilesView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
   onAnalyse: (p: Property) => void;
   onInteraction?: InteractionFn;
 }) {
+  const t = useTranslations('dashboard');
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {properties.map(prop => (
@@ -248,7 +251,7 @@ function TilesView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
       ))}
       {properties.length === 0 && (
         <div className="col-span-3 text-center py-12 text-gray-500">
-          No properties match your filters
+          {t('noMatchingProperties')}
         </div>
       )}
     </div>
@@ -262,6 +265,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
   onAnalyse: (p: Property) => void;
   onInteraction?: InteractionFn;
 }) {
+  const t = useTranslations('dashboard');
   const [loading, setLoading] = useState(false);
 
   const status = property.status || 'new';
@@ -329,7 +333,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
       {isExpired && (
         <div className="mx-4 mt-3 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 font-medium flex items-center gap-1">
           <span>⚠</span>
-          <span>Nicht mehr verfügbar</span>
+          <span>{t('tile.expired')}</span>
         </div>
       )}
 
@@ -345,7 +349,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
           {property.location && <div>📍 {property.location}</div>}
           <div className="flex gap-4">
             {property.sizeSqm && <span>📏 {property.sizeSqm}m²</span>}
-            {property.rooms && <span>🏠 {property.rooms} Zi.</span>}
+            {property.rooms && <span>🏠 {property.rooms} {t('tile.rooms')}</span>}
           </div>
         </div>
 
@@ -365,7 +369,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
           </select>
           <button
             onClick={() => onAnalyse(property)}
-            title="Analyse this property"
+            title={t('tile.analyseTitle')}
             className="p-2 rounded-lg border border-gray-200 text-gray-400 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-colors"
           >
             🔍
@@ -374,7 +378,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
             <button
               onClick={handleReportUnavailable}
               disabled={loading}
-              title="Report as unavailable"
+              title={t('tile.reportUnavailableTitle')}
               className="p-2 rounded-lg border border-gray-200 text-gray-400 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-colors disabled:opacity-30"
             >
               ⚠
@@ -383,7 +387,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
           <button
             onClick={() => handleStatusChange('not_relevant')}
             disabled={loading || status === 'not_relevant'}
-            title="Dismiss — hide this property"
+            title={t('tile.dismissTitle')}
             className="p-2 rounded-lg border border-gray-200 text-gray-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors disabled:opacity-30"
           >
             ✕
@@ -403,6 +407,8 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
   onAnalyse: (p: Property) => void;
   onInteraction?: InteractionFn;
 }) {
+  const t = useTranslations('dashboard');
+
   async function handleReportUnavailable(propertyId: string) {
     onOptimisticUpdate(propertyId, { listingStatus: 'expired' });
     try {
@@ -418,15 +424,15 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left px-4 py-3 font-medium text-gray-700 w-16">Image</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Title</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Price</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">m²</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Rooms</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Location</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">€/m²</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Status</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Date</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700 w-16">{t('table.headerImage')}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{t('table.headerTitle')}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{t('table.headerPrice')}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{t('table.headerSize')}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{t('table.headerRooms')}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{t('table.headerLocation')}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{t('table.headerPricePerSqm')}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{t('table.headerStatus')}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{t('table.headerDate')}</th>
               <th className="text-left px-4 py-3 font-medium text-gray-700 w-20"></th>
             </tr>
           </thead>
@@ -468,7 +474,7 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
                     {/* Expired badge inline under title */}
                     {isExpired && (
                       <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 font-medium">
-                        ⚠ Nicht mehr verfügbar
+                        ⚠ {t('tile.expired')}
                       </span>
                     )}
                   </td>
@@ -491,7 +497,7 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
                       <button
                         onClick={() => onUpdate(prop.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() })}
                         disabled={prop.status === 'not_relevant'}
-                        title="Dismiss"
+                        title={t('table.dismissTitle')}
                         className="text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded px-1 py-0.5 text-xs font-bold leading-none transition-colors disabled:opacity-20"
                       >
                         ✕
@@ -503,7 +509,7 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => onAnalyse(prop)}
-                        title="Analyse this property"
+                        title={t('table.analyseTitle')}
                         className="text-gray-300 hover:text-amber-500 hover:bg-amber-50 rounded p-1 transition-colors"
                       >
                         🔍
@@ -511,7 +517,7 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
                       {!isExpired && (
                         <button
                           onClick={() => handleReportUnavailable(prop.id)}
-                          title="Report as unavailable"
+                          title={t('table.reportUnavailableTitle')}
                           className="text-gray-300 hover:text-amber-500 hover:bg-amber-50 rounded p-1 transition-colors text-xs"
                         >
                           ⚠
@@ -526,7 +532,7 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
         </table>
         {properties.length === 0 && (
           <div className="text-center py-12 text-gray-500">
-            No properties match your filters
+            {t('noMatchingProperties')}
           </div>
         )}
       </div>
@@ -577,6 +583,7 @@ function CarouselCard({ property, onInteraction, onAnalyse }: {
   onInteraction?: InteractionFn;
   onAnalyse: (p: Property) => void;
 }) {
+  const t = useTranslations('dashboard');
   const rawPrice = property.price ? parseFloat(String(property.price)) : null;
   const priceText = rawPrice
     ? '€ ' + Math.round(rawPrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
@@ -609,14 +616,14 @@ function CarouselCard({ property, onInteraction, onAnalyse }: {
         {priceText && <p className="text-xs font-semibold text-blue-600 mt-0.5">{priceText}</p>}
         <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
           {property.sizeSqm && <span>{property.sizeSqm}m²</span>}
-          {property.rooms && <span>{property.rooms} Zi.</span>}
+          {property.rooms && <span>{property.rooms} {t('tile.rooms')}</span>}
           {property.zipCode && <span>{property.zipCode}</span>}
         </div>
         <button
           onClick={() => onAnalyse(property)}
           className="mt-1.5 w-full text-[10px] text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded py-1 transition-colors"
         >
-          🔍 Analyse
+          🔍 {t('carousel.analyse')}
         </button>
       </div>
     </div>

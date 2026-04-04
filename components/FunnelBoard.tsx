@@ -2,14 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
 import { Property, reportUnavailable, delistProperty } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
-
-const NOT_RELEVANT = { key: 'not_relevant', label: 'Not Relevant', variant: 'danger' as const };
-const REPORT_UNAVAILABLE = { key: 'report_unavailable', label: 'Report Unavailable', variant: 'warning' as const };
-const REMOVE_FROM_VIEW = { key: 'delist', label: 'Remove from View', variant: 'danger' as const };
 
 interface PendingMove {
   propertyId: string;
@@ -36,6 +33,7 @@ interface DropdownPortalProps {
 }
 
 function DropdownPortal({ anchorRect, options, onSelect, onClose }: DropdownPortalProps) {
+  const t = useTranslations('funnel');
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,9 +84,9 @@ function DropdownPortal({ anchorRect, options, onSelect, onClose }: DropdownPort
           }}
           className={itemClass(opt, i)}
         >
-          {opt.key === 'not_relevant'       ? '✕ Not Relevant' :
-           opt.key === 'report_unavailable' ? '⚠ Report Unavailable' :
-           opt.key === 'delist'             ? '✕ Remove from View' :
+          {opt.key === 'not_relevant'       ? t('card.notRelevant') :
+           opt.key === 'report_unavailable' ? t('card.reportUnavailable') :
+           opt.key === 'delist'             ? t('card.removeFromView') :
            opt.label}
         </button>
       ))}
@@ -108,35 +106,36 @@ function ConfirmNotRelevantModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations('funnel');
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black bg-opacity-40" onClick={onCancel} />
       <div className="relative bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
         <div className="flex items-center gap-3 mb-3">
           <span className="text-2xl">❌</span>
-          <h2 className="text-lg font-semibold text-gray-900">Mark as Not Relevant?</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('confirmNotRelevant.title')}</h2>
         </div>
         <p className="text-sm text-gray-600 mb-1">
-          This will hide the following property from your funnel:
+          {t('confirmNotRelevant.description')}
         </p>
         <p className="text-sm font-medium text-gray-900 mb-5 line-clamp-2 bg-gray-50 rounded-lg px-3 py-2">
           {propertyTitle}
         </p>
         <p className="text-xs text-gray-400 mb-5">
-          You can still find it later via the Show hidden properties filter on the Dashboard.
+          {t('confirmNotRelevant.hint')}
         </p>
         <div className="flex gap-3">
           <button
             onClick={onCancel}
             className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            {t('confirmNotRelevant.cancel')}
           </button>
           <button
             onClick={onConfirm}
             className="flex-1 px-4 py-2 rounded-lg bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors"
           >
-            Yes, hide it
+            {t('confirmNotRelevant.confirm')}
           </button>
         </div>
       </div>
@@ -147,6 +146,7 @@ function ConfirmNotRelevantModal({
 // ─── Main board ───────────────────────────────────────────────────────────────
 
 export default function FunnelBoard() {
+  const t = useTranslations('funnel');
   const { properties: all, loading, error, update, optimisticUpdate } = useProperties();
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
@@ -241,7 +241,7 @@ export default function FunnelBoard() {
     setDragOverStage(null);
   }
 
-  if (loading) return <div className="text-gray-500 py-12 text-center">Loading funnel...</div>;
+  if (loading) return <div className="text-gray-500 py-12 text-center">{t('loading')}</div>;
   if (error)   return <div className="text-red-500 py-12 text-center">{error}</div>;
 
   return (
@@ -261,7 +261,7 @@ export default function FunnelBoard() {
         />
       )}
 
-      <p className="text-sm text-gray-500 mb-4">{properties.length} properties in funnel</p>
+      <p className="text-sm text-gray-500 mb-4">{t('propertyCount', { count: properties.length })}</p>
 
       <div className="flex gap-4 overflow-x-auto pb-4">
         {FUNNEL_STAGES_DISPLAY.map((stage) => {
@@ -320,7 +320,7 @@ export default function FunnelBoard() {
                   <p className={`text-xs text-center py-4 transition-colors ${
                     isOver ? 'text-blue-400' : 'text-gray-400'
                   }`}>
-                    {isOver ? 'Drop here' : 'No properties'}
+                    {isOver ? t('card.dropHere') : t('card.noProperties')}
                   </p>
                 )}
               </div>
@@ -349,6 +349,7 @@ function FunnelCard({
   onDragStart: (id: string) => void;
   onDragEnd: () => void;
 }) {
+  const t = useTranslations('funnel');
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -357,6 +358,10 @@ function FunnelCard({
 
   const rawPrice = property.price ? parseFloat(String(property.price)) : null;
   const priceText = rawPrice ? formatPrice(rawPrice) : null;
+
+  const NOT_RELEVANT = { key: 'not_relevant', label: t('card.notRelevant'), variant: 'danger' as const };
+  const REPORT_UNAVAILABLE = { key: 'report_unavailable', label: t('card.reportUnavailable'), variant: 'warning' as const };
+  const REMOVE_FROM_VIEW = { key: 'delist', label: t('card.removeFromView'), variant: 'danger' as const };
 
   // All cards get the full stage list so the user can move an expired property
   // to any stage (e.g. they may still want to pursue it despite it being delisted).
@@ -443,7 +448,7 @@ function FunnelCard({
           <div className="flex gap-2 text-xs text-gray-400 mt-0.5">
             {property.sizeSqm && <span>{property.sizeSqm}m²</span>}
             {property.sizeSqm && property.rooms && <span>·</span>}
-            {property.rooms && <span>{String(property.rooms)} Zi.</span>}
+            {property.rooms && <span>{String(property.rooms)} {t('card.rooms')}</span>}
           </div>
         </div>
       </div>
@@ -452,7 +457,7 @@ function FunnelCard({
       {isExpired && (
         <div className="mx-2 mb-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 font-medium flex items-center gap-1">
           <span>⚠</span>
-          <span>Nicht mehr verfügbar</span>
+          <span>{t('card.expired')}</span>
         </div>
       )}
 
@@ -478,12 +483,12 @@ function FunnelCard({
           onClick={openMenu}
           className="flex-1 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded px-2 py-1 hover:bg-gray-50 transition-colors text-left"
         >
-          {isExpired ? 'Optionen ▾' : 'Move ▾'}
+          {isExpired ? t('card.optionsButton') : t('card.moveButton')}
         </button>
 
         <button
           onClick={() => onAnalyse(property)}
-          title="Analyse this property"
+          title={t('card.analyseTitle')}
           className="p-1.5 rounded border border-gray-200 text-gray-400 hover:text-amber-500 hover:border-amber-200 hover:bg-amber-50 transition-colors text-sm leading-none"
         >
           🔍

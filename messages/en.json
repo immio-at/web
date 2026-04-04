@@ -1,0 +1,753 @@
+{
+  "landing": {
+    "nav": {
+      "how": "How it works",
+      "features": "Features",
+      "pricing": "Pricing",
+      "signIn": "Sign in",
+      "cta": "Request early access",
+      "langToggle": "DE"
+    },
+    "hero": {
+      "badge": "Early access — apply now",
+      "h1Line1": "Every property.",
+      "h1Line2": "One platform.",
+      "h1Line3": "No chaos.",
+      "sub": "IMMIO automatically captures listings from Willhaben & Immoscout24 via email, calculates returns in real-time, and guides you through the entire buying process.",
+      "cta": "Request access",
+      "placeholder": "your@email.at",
+      "note": "No credit card · No commitments · 2 weeks Pro free"
+    },
+    "market": {
+      "prefix": "Austrian property market —",
+      "number": "63,000+",
+      "suffix": "active listings on Willhaben & more.",
+      "claim": "IMMIO captures them all."
+    },
+    "problem": {
+      "label": "The problem",
+      "h2a": "Property investment",
+      "h2b": "is structureless",
+      "sub": "Most private investors juggle search agents, Excel, browser tabs and sticky notes. Nothing is connected. Decisions get lost.",
+      "card1Title": "Excel for ROI calculations",
+      "card1Body": "Every property gets its own spreadsheet. Formulas get copied, errors creep in. No comparison possible.",
+      "card2Title": "Search agent emails pile up",
+      "card2Body": "Dozens of notifications daily. Interesting properties get buried in the inbox — often before you ever see them.",
+      "card3Title": "No buying process overview",
+      "card3Body": "From viewing to notary: no pipeline, no overview, no memory of decisions made."
+    },
+    "howItWorks": {
+      "label": "How it works",
+      "h2a": "From email to",
+      "h2b": "buying decision",
+      "sub": "Three steps. No setup. Fully automatic.",
+      "step1Num": "Step 01",
+      "step1Title": "Forward your search agent",
+      "step1Body": "You get a personal IMMIO address. Simply forward your Willhaben and Immoscout24 search agent emails there. No scraping, no terms violations.",
+      "step1Chip": "user_xxx@mail.immio.at",
+      "step2Num": "Step 02",
+      "step2Title": "Automatic extraction",
+      "step2Body": "IMMIO parses every email and extracts price, size, location, rooms and the original listing link — automatically, in seconds.",
+      "step2Chip": "9 fields structured",
+      "step3Num": "Step 03",
+      "step3Title": "Analyse & decide",
+      "step3Body": "Dashboard, ROI calculator, buying funnel and Finder in one portal. All data stays attached to the property.",
+      "step3Chip": "ROI in real-time"
+    },
+    "features": {
+      "label": "Features",
+      "h2a": "Everything you need.",
+      "h2b": "Nothing you don't.",
+      "sub": "Four modules that work together — from first email to purchase completion.",
+      "feat1Tag": "Dashboard",
+      "feat1Title": "All properties at a glance",
+      "feat1Body": "Tile and table view, instant search, filter by platform, price and size. All data from your search agents — structured on one screen.",
+      "feat1Pills": ["Tile view", "Table view", "Instant search", "€/m²"],
+      "feat2Tag": "ROI Calculator",
+      "feat2Title": "ROI — rental, owner-occupied, flip",
+      "feat2Body": "Purchase costs, financing, cashflow, gross/net rental yield, return on equity. All calculations locally in the browser — no server latency.",
+      "feat2Pills": ["Rental", "Owner-occupied", "Flip", "Charts"],
+      "feat3Tag": "Buying Funnel",
+      "feat3Title": "From viewing to notary",
+      "feat3Body": "Kanban board with 8 stages. Drag & drop, average prices per column. Every property guided through the process.",
+      "feat3Pills": ["8 stages", "Drag & drop", "Price stats"],
+      "feat4Tag": "Finder",
+      "feat4Title": "Quick decisions by swipe",
+      "feat4Body": "Tinder-like interface for rapid pre-selection. Left: not relevant. Right: interested. Down: open analysis. Up: original listing.",
+      "feat4Pills": ["Swipe UI", "Optimistic updates", "Instant"]
+    },
+    "pricing": {
+      "label": "Pricing",
+      "h2a": "Transparent.",
+      "h2b": "No surprises.",
+      "sub": "All plans start with 2 weeks of Pro — free, no credit card.",
+      "tier1": {
+        "name": "Free",
+        "price": "0",
+        "cadence": "forever",
+        "features": [
+          { "included": true, "text": "Manual entries" },
+          { "included": true, "text": "Up to 5 properties" },
+          { "included": false, "text": "Email parsing" },
+          { "included": false, "text": "Buying funnel" },
+          { "included": false, "text": "ROI calculator" },
+          { "included": false, "text": "Finder" }
+        ],
+        "cta": "Start free"
+      },
+      "tier2": {
+        "name": "Light",
+        "price": "29",
+        "cents": ".99",
+        "cadence": "/month · or €329/year",
+        "badge": "Recommended",
+        "features": [
+          { "included": true, "text": "Email parsing" },
+          { "included": true, "text": "20 search agents" },
+          { "included": true, "text": "Buying funnel" },
+          { "included": true, "text": "ROI calculator" },
+          { "included": true, "text": "Finder" },
+          { "included": false, "text": "Analytics & map" }
+        ],
+        "cta": "Request early access"
+      },
+      "tier3": {
+        "name": "Pro",
+        "price": "39",
+        "cents": ".99",
+        "cadence": "/month · or €429/year",
+        "features": [
+          { "included": true, "text": "Everything in Light" },
+          { "included": true, "text": "Unlimited search agents" },
+          { "included": true, "text": "Analytics dashboard" },
+          { "included": true, "text": "Intelligent map" },
+          { "included": true, "text": "Priority support" },
+          { "included": true, "text": "Early feature access" }
+        ],
+        "cta": "Apply for Pro"
+      }
+    },
+    "footer": {
+      "privacy": "Privacy Policy",
+      "imprint": "Imprint",
+      "contact": "Contact",
+      "copy": "© 2026 IMMIO GmbH (in formation)"
+    },
+    "sessionExpired": "Your session expired. Please sign in again."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "search": "Discover",
+    "finder": "Finder",
+    "funnel": "Funnel",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "admin": "Admin",
+    "signOut": "Sign Out"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Welcome back",
+      "sub": "Sign in to your IMMIO account",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "emailPlaceholder": "your@email.at",
+      "passwordPlaceholder": "••••••••",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "noAccount": "Don't have an account?",
+      "register": "Register",
+      "closeAriaLabel": "Close",
+      "errorEmptyFields": "Please enter your email and password.",
+      "errorLoginFailed": "Login failed",
+      "errorConnection": "Could not connect to server."
+    },
+    "register": {
+      "title": "Request access",
+      "sub": "Create your IMMIO account",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "inviteLabel": "Invite code",
+      "inviteOptional": "optional",
+      "invitePlaceholder": "IMMIO-XXXX-XXX",
+      "inviteHint": "With an invite code your account is approved instantly.",
+      "submit": "Create account",
+      "submitting": "Creating…",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "closeAriaLabel": "Close",
+      "errorEmptyFields": "Please enter your email and password.",
+      "errorRegisterFailed": "Registration failed",
+      "errorConnection": "Could not connect to server.",
+      "emailPlaceholder": "your@email.at",
+      "passwordPlaceholder": "••••••••"
+    },
+    "pending": {
+      "title": "Your account is pending approval",
+      "description": "Thanks for registering. We review each account personally before granting access. You'll receive an email once your account is approved — usually within 24 hours.",
+      "whatNextTitle": "What happens next",
+      "step1": "We review your registration",
+      "step2": "You receive an approval email",
+      "step3": "Sign back in to access IMMIO",
+      "contact": "Questions? Contact us at",
+      "signOut": "Sign out"
+    }
+  },
+  "dashboard": {
+    "loading": "Loading properties...",
+    "urlImport": {
+      "label": "Import listing by URL",
+      "placeholder": "https://www.willhaben.at/iad/immobilien/d/...",
+      "importing": "Importing...",
+      "import": "Import",
+      "supportedPlatforms": "Supported: Willhaben. More platforms coming soon.",
+      "successMessage": "\"{title}\" imported and moved to Investigating.",
+      "errorUnknown": "Unknown error",
+      "defaultTitle": "Listing"
+    },
+    "carousel": {
+      "recentlyViewed": "Recently viewed",
+      "mostViewed": "Most frequently viewed",
+      "analyse": "Analyse"
+    },
+    "viewToggle": {
+      "tiles": "Tiles",
+      "tilesIcon": "⊞",
+      "table": "Table",
+      "tableIcon": "☰"
+    },
+    "propertyCount": "{count} properties",
+    "noMatchingProperties": "No properties match your filters",
+    "tile": {
+      "expired": "No longer available",
+      "rooms": "rooms",
+      "analyseTitle": "Analyse this property",
+      "reportUnavailableTitle": "Report as unavailable",
+      "dismissTitle": "Dismiss — hide this property"
+    },
+    "table": {
+      "headerImage": "Image",
+      "headerTitle": "Title",
+      "headerPrice": "Price",
+      "headerSize": "m²",
+      "headerRooms": "Rooms",
+      "headerLocation": "Location",
+      "headerPricePerSqm": "€/m²",
+      "headerStatus": "Status",
+      "headerDate": "Date",
+      "dismissTitle": "Dismiss",
+      "analyseTitle": "Analyse this property",
+      "reportUnavailableTitle": "Report as unavailable"
+    }
+  },
+  "search": {
+    "label": "Discover",
+    "title": "Discover listings",
+    "subtitle": "Daily updated properties from Raiffeisen, s REAL, ÖRAG and RE/MAX.",
+    "rooms": "rooms",
+    "saved": "Saved",
+    "saving": "Saving...",
+    "saveToProperties": "+ Add to my properties",
+    "noListingsFound": "No listings found.",
+    "listingsFound": "{count} listings found",
+    "errorLoadingListings": "Error loading listings",
+    "filterSaved": "Filter \"{name}\" saved.",
+    "filterLimitReached": "Filter limit reached (max. 2). Delete an existing filter or upgrade for more.",
+    "filterSaveError": "Error saving filter.",
+    "paginationPrev": "← Previous",
+    "paginationNext": "Next →",
+    "paginationPage": "Page {page} of {total}"
+  },
+  "finder": {
+    "loading": "Loading properties...",
+    "filterModal": {
+      "title": "Choose filter",
+      "subtitle": "Select a saved filter or start without restrictions.",
+      "iFeelLucky": "I Feel Lucky",
+      "applyFilter": "Apply filter",
+      "changeFilter": "change"
+    },
+    "allCaughtUp": {
+      "title": "All caught up",
+      "subtitle": "You've reviewed all {total} new properties",
+      "backToDashboard": "Back to Dashboard"
+    },
+    "directions": {
+      "left": "← Not Relevant",
+      "up": "↑ Open",
+      "down": "↓ Analyse",
+      "right": "→ Investigating"
+    },
+    "overlay": {
+      "investigating": "Investigating",
+      "notRelevant": "Not Relevant",
+      "openListing": "Open Listing",
+      "analyse": "Analyse"
+    },
+    "buttons": {
+      "notRelevantTitle": "Not Relevant",
+      "analyseTitle": "Analyse Property",
+      "openListingTitle": "Open Listing",
+      "investigatingTitle": "Investigating"
+    },
+    "progress": "{current} of {total} reviewed",
+    "rooms": "rooms"
+  },
+  "funnel": {
+    "title": "Buy Funnel",
+    "subtitle": "Track your properties through the acquisition process",
+    "loading": "Loading funnel...",
+    "propertyCount": "{count} properties in funnel",
+    "stages": {
+      "new": "New",
+      "investigating": "Investigating",
+      "interested": "Interested",
+      "visitBooked": "Visit Booked",
+      "visited": "Visited",
+      "offerMade": "Offer Made",
+      "parked": "Parked",
+      "won": "Won",
+      "notRelevant": "Not Relevant"
+    },
+    "card": {
+      "rooms": "rooms",
+      "expired": "No longer available",
+      "moveButton": "Move ▾",
+      "optionsButton": "Options ▾",
+      "analyseTitle": "Analyse this property",
+      "notRelevant": "✕ Not Relevant",
+      "reportUnavailable": "⚠ Report Unavailable",
+      "removeFromView": "✕ Remove from View",
+      "dropHere": "Drop here",
+      "noProperties": "No properties"
+    },
+    "confirmNotRelevant": {
+      "title": "Mark as Not Relevant?",
+      "description": "This will hide the following property from your funnel:",
+      "hint": "You can still find it later via the Show hidden properties filter on the Dashboard.",
+      "cancel": "Cancel",
+      "confirm": "Yes, hide it"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "immioEmail": {
+      "title": "Your IMMIO Email Address",
+      "description": "Use this address when subscribing to search agents on Willhaben, Immoscout24, and other platforms.",
+      "loading": "Loading...",
+      "copied": "✓ Copied",
+      "copy": "Copy",
+      "account": "Account: {email}"
+    },
+    "password": {
+      "title": "Change Password",
+      "newPasswordLabel": "New Password",
+      "newPasswordPlaceholder": "Min. 8 characters",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "Repeat new password",
+      "errorMinLength": "Password must be at least 8 characters.",
+      "errorMismatch": "Passwords do not match.",
+      "success": "Password updated successfully.",
+      "updating": "Updating...",
+      "submit": "Update Password"
+    },
+    "subscription": {
+      "title": "Subscription",
+      "description": "Subscription management coming soon — upgrade, downgrade, and billing will be available here."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Notification preferences coming soon — configure push notifications and email digests here."
+    },
+    "gdpr": {
+      "title": "GDPR & Privacy",
+      "description": "Data export, right to erasure, and privacy controls coming soon."
+    }
+  },
+  "analytics": {
+    "label": "Analytics",
+    "title": "Market Analysis & Statistics",
+    "description": "The analytics dashboard is in development. Soon you'll find market trends, price histories and portfolio evaluations here.",
+    "comingSoon": "Coming soon"
+  },
+  "admin": {
+    "label": "Admin",
+    "title": "Administration",
+    "loading": "Loading…",
+    "errorLoading": "Error loading data.",
+    "errorConnection": "Connection to server failed.",
+    "stats": {
+      "totalUsers": "Total users",
+      "pending": "Pending",
+      "inviteCodesAvailable": "Invite codes available"
+    },
+    "pendingApprovals": {
+      "title": "Pending approvals",
+      "registered": "Registered {date}",
+      "code": "Code: {code}",
+      "approve": "Approve"
+    },
+    "allUsers": {
+      "title": "All users",
+      "headerEmail": "Email",
+      "headerImmioEmail": "IMMIO Email",
+      "headerRegistered": "Registered",
+      "headerStatus": "Status",
+      "headerAction": "Action",
+      "statusActive": "Active",
+      "statusPending": "Pending",
+      "revoke": "Revoke",
+      "approve": "Approve"
+    },
+    "inviteCodes": {
+      "title": "Invite codes",
+      "placeholder": "IMMIO-XXXX-XXX",
+      "create": "Create",
+      "usedBy": "Used by {email} · {date}",
+      "available": "Available",
+      "empty": "No invite codes created yet."
+    }
+  },
+  "filter": {
+    "keyword": "Search term",
+    "keywordPlaceholder": "Title, location, description...",
+    "location": "Postcode / State",
+    "locationPlaceholder": "e.g. 1010, Wien, NÖ",
+    "priceFrom": "Price from (€)",
+    "priceFromPlaceholder": "e.g. 200000",
+    "priceTo": "Price to (€)",
+    "priceToPlaceholder": "e.g. 500000",
+    "pricePerSqmFrom": "€/m² from",
+    "pricePerSqmFromPlaceholder": "e.g. 3000",
+    "pricePerSqmTo": "€/m² to",
+    "pricePerSqmToPlaceholder": "e.g. 6000",
+    "sizeFrom": "Size from (m²)",
+    "sizeFromPlaceholder": "e.g. 50",
+    "sizeTo": "Size to (m²)",
+    "sizeToPlaceholder": "e.g. 120",
+    "roomsFrom": "Rooms from",
+    "roomsFromPlaceholder": "e.g. 2",
+    "roomsTo": "Rooms to",
+    "roomsToPlaceholder": "e.g. 4",
+    "sort": {
+      "listedDate": "Newest first",
+      "price": "Price",
+      "pricePerSqm": "Price/m²",
+      "size": "Size",
+      "rooms": "Rooms"
+    },
+    "sortAscending": "Ascending",
+    "sortDescending": "Descending",
+    "savedFilters": "Saved filters",
+    "filter": "Filter",
+    "deleteTitle": "Delete",
+    "showHidden": "Show without price",
+    "search": "Search",
+    "reset": "Reset",
+    "saveFilter": "Save filter",
+    "saveModal": {
+      "title": "Save filter",
+      "description": "Name your filter or leave empty for an automatic name.",
+      "placeholder": "e.g. Vienna Investment",
+      "cancel": "Cancel",
+      "save": "Save"
+    }
+  },
+  "analysis": {
+    "header": "Analysis",
+    "defaultPropertyTitle": "Property",
+    "loading": "Loading analysis…",
+    "errorLoading": "Error loading analysis.",
+    "errorSaving": "Error saving.",
+    "openListing": "Open ↗",
+    "rooms": "rooms",
+    "usage": {
+      "title": "Usage type",
+      "rental": "Rental",
+      "owner": "Owner-occupied",
+      "flip": "Flip"
+    },
+    "purchase": {
+      "title": "Purchase details",
+      "listPrice": "List price",
+      "desiredPrice": "Purchase price",
+      "pricePerSqm": "Price/m²",
+      "size": "Size",
+      "makler": "Agent fee",
+      "notar": "Notary",
+      "grundbuch": "Land registry",
+      "grest": "Transfer tax",
+      "otherCosts": "Other purchase costs",
+      "rehabCosts": "Renovation costs",
+      "addItem": "+ Add item",
+      "itemLabel": "Description",
+      "itemTotal": "Total €",
+      "itemDeductible": "Deductible €",
+      "itemPlaceholder": "e.g. Kitchen",
+      "runningCosts": "Running costs (monthly)",
+      "betriebskosten": "Operating costs",
+      "betriebskostenHint": "Monthly",
+      "reparaturruecklage": "Repair reserve",
+      "reparaturruecklageHint": "Monthly HOA levy",
+      "summaryKaufnebenkosten": "Purchase costs",
+      "summaryRenovierung": "Renovation",
+      "summaryGesamtinvestition": "Total investment"
+    },
+    "financing": {
+      "title": "Financing",
+      "noFinancing": "No financing",
+      "financed": "Financed",
+      "loan1": "Loan 1",
+      "loan2": "Loan 2",
+      "enableLoan2": "Second loan",
+      "amount": "Amount",
+      "amountHintAuto": "{pct}% of purchase price",
+      "amountHintManual": "Manual",
+      "rate": "Interest rate",
+      "term": "Term",
+      "monthlyPayment": "Payment/month",
+      "totalMonthly": "Total payment",
+      "perMonth": "/mo",
+      "equity": "Equity"
+    },
+    "owner": {
+      "title": "Owner-occupied",
+      "maintenance": "Maintenance",
+      "maintenanceHint": "% of purchase price",
+      "appreciation": "Appreciation p.a.",
+      "resultsTitle": "Results — Owner-occupied",
+      "monthlyOutgoings": "Monthly outgoings",
+      "monthlyLoan": "of which loan",
+      "monthlyBetriebskosten": "of which operating costs",
+      "monthlyRepairs": "of which repairs",
+      "wealthChart": "Wealth development",
+      "chartEquity": "Equity",
+      "chartLoanRemaining": "Remaining loan",
+      "chartYear": "Year {year}",
+      "chartYearShort": "Y{year}"
+    },
+    "rental": {
+      "title": "Rental",
+      "warmRent": "Warm rent",
+      "coldRent": "Cold rent",
+      "coldRentAuto": "Cold rent (auto)",
+      "bkUmlagefaehig": "Recoverable costs (tenant)",
+      "bkNichtUmlagefaehig": "Non-recoverable costs (owner)",
+      "vacancy": "Vacancy",
+      "repairReserve": "Repair reserve",
+      "repairReserveHint": "Personal reserve (% of purchase price)",
+      "rentGrowth": "Rent growth p.a.",
+      "valueGrowth": "Value growth p.a.",
+      "resultsTitle": "Results — Rental",
+      "coldRentMonthly": "Cold rent/month",
+      "coldRentYearly": "Cold rent/year",
+      "cashflowMonthly": "Cashflow/month",
+      "cashflowPositive": "positive",
+      "cashflowNegative": "negative",
+      "faktor": "Factor",
+      "faktorSub": "Price-to-rent ratio",
+      "bruttomietrendite": "Gross rental yield",
+      "nettomietrendite": "Net rental yield",
+      "eigenkapitalrenditeCashflow": "Cash-on-cash return",
+      "cashOnCash": "Cash-on-cash",
+      "eigenkapitalrenditeTotal": "Total return on equity",
+      "eigenkapitalrenditeTotalSub": "incl. amortization + appreciation",
+      "projectionTitle": "Projection over {years} years",
+      "chartPropertyValue": "Property value",
+      "chartLoanRemaining": "Remaining loan",
+      "chartYearlyRent": "Rental income/yr",
+      "chartYearlyOutgoings": "Outgoings/yr",
+      "chartCashflow": "Cashflow/yr",
+      "chartYear": "Year {year}",
+      "chartYearShort": "Y{year}"
+    },
+    "flip": {
+      "title": "Flip",
+      "duration": "Flip duration",
+      "durationSuffix": "months",
+      "resalePrice": "Expected resale price",
+      "resultsTitle": "Results — Flip",
+      "purchasePrice": "Purchase price",
+      "purchaseCosts": "+ Purchase costs",
+      "rehabCosts": "+ Renovation costs",
+      "holdingCosts": "+ Holding costs",
+      "totalCost": "= Total costs",
+      "resalePriceResult": "Resale price",
+      "minusTotalCost": "- Total costs",
+      "grossProfit": "= Gross profit",
+      "deductibleCosts": "- Deductible costs",
+      "taxableProfit": "= Taxable profit",
+      "tax": "- Tax (30%)",
+      "netProfit": "= Net profit",
+      "disclaimer": "This calculation is an estimate and does not constitute tax advice."
+    },
+    "documents": {
+      "title": "Documents",
+      "typeLabel": "Type",
+      "types": ["Exposé", "Energy certificate", "Floor plan", "Commission agreement", "Withdrawal form", "Protocol", "Purchase offer", "Purchase contract", "Appraisal", "Other"],
+      "uploading": "Uploading...",
+      "upload": "+ Upload PDF",
+      "maxReached": "Max. 10 documents reached",
+      "empty": "No documents yet. Upload PDFs (exposé, energy certificate, etc.).",
+      "deleteTitle": "Delete",
+      "errorUpload": "Upload failed",
+      "errorDownload": "Download failed",
+      "errorDelete": "Delete failed"
+    },
+    "footer": {
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "save": "Save"
+    }
+  },
+  "legal": {
+    "back": "← Back",
+    "impressum": {
+      "title": "Imprint",
+      "subtitle": "Mandatory disclosures pursuant to § 5 ECG and § 25 MedienG",
+      "company": {
+        "title": "Company information",
+        "nameLabel": "Name",
+        "nameValue": "Reece Tyrrell",
+        "purposeLabel": "Business purpose",
+        "purposeValue": "Development and operation of a SaaS platform for property investors",
+        "legalFormLabel": "Legal form",
+        "legalFormValue": "Sole proprietor (GmbH in formation)"
+      },
+      "contact": {
+        "title": "Contact",
+        "addressLabel": "Address",
+        "addressValue": "[STREET], [ZIP] Vienna, Austria",
+        "emailLabel": "Email"
+      },
+      "vat": {
+        "title": "VAT",
+        "uidLabel": "VAT ID",
+        "uidValue": "To be added after registration"
+      },
+      "authority": {
+        "title": "Supervisory authority",
+        "authorityLabel": "Responsible authority",
+        "authorityValue": "Municipal District Office of the City of Vienna",
+        "lawLabel": "Applicable regulations",
+        "lawValue": "Trade Regulation Act (GewO), available at"
+      },
+      "odr": {
+        "title": "Online dispute resolution",
+        "text1": "The European Commission provides a platform for online dispute resolution (ODR):",
+        "text2": "We are neither obligated nor willing to participate in dispute resolution proceedings before a consumer arbitration board."
+      },
+      "liability": {
+        "title": "Liability for content",
+        "text": "As a service provider, we are responsible for our own content on these pages in accordance with general laws pursuant to § 7 (1) TMG. The return calculations and financial information provided on this platform do not constitute investment, tax or legal advice and serve solely for general information purposes."
+      },
+      "lastUpdated": "Last updated: March 2026"
+    },
+    "datenschutz": {
+      "title": "Privacy Policy",
+      "subtitle": "Pursuant to Art. 13 and 14 GDPR (EU 2016/679)",
+      "section1": {
+        "title": "1. Data controller",
+        "intro": "The data controller within the meaning of the GDPR is:",
+        "name": "Reece Tyrrell (IMMIO GmbH in formation)",
+        "address": "[STREET], [ZIP] Vienna, Austria"
+      },
+      "section2": {
+        "title": "2. Data we process",
+        "intro": "We process the following categories of personal data:",
+        "headerCategory": "Category",
+        "headerData": "Data",
+        "headerPurpose": "Purpose",
+        "rows": [
+          ["Account data", "Email address, password (hashed)", "Registration & login"],
+          ["IMMIO address", "Assigned @mail.immio.at address", "Email forwarding"],
+          ["Property data", "Property data extracted from emails (price, size, location, etc.)", "Core platform functionality"],
+          ["Analysis data", "User-entered return calculations", "Saved analyses"],
+          ["Usage data", "Log data, IP address, browser type", "Security & troubleshooting"]
+        ]
+      },
+      "section3": {
+        "title": "3. Purposes and legal bases of processing",
+        "items": [
+          { "purpose": "Provision of the platform (registration, login, core features)", "basis": "Art. 6(1)(b) GDPR", "basisText": "Contract performance" },
+          { "purpose": "Receipt and processing of search agent emails", "basis": "Art. 6(1)(b) GDPR", "basisText": "Contract performance" },
+          { "purpose": "Storage of property data and analyses", "basis": "Art. 6(1)(b) GDPR", "basisText": "Contract performance" },
+          { "purpose": "Technical operation, security, troubleshooting", "basis": "Art. 6(1)(f) GDPR", "basisText": "Legitimate interest" },
+          { "purpose": "Fulfilment of legal retention obligations", "basis": "Art. 6(1)(c) GDPR", "basisText": "Legal obligation" }
+        ]
+      },
+      "section4": {
+        "title": "4. Data processors (Art. 28 GDPR)",
+        "intro": "We use the following service providers as data processors, with whom data processing agreements (DPAs) pursuant to Art. 28 GDPR have been or will be concluded:",
+        "privacyLink": "Privacy ↗",
+        "labelLocation": "Location",
+        "labelRole": "Role",
+        "labelSafeguard": "Safeguard",
+        "processors": [
+          { "name": "Supabase Inc.", "location": "USA (EU region: eu-west-1)", "role": "Database hosting (PostgreSQL), user authentication", "safeguard": "EU Standard Contractual Clauses (SCC)", "url": "https://supabase.com/privacy" },
+          { "name": "Twilio SendGrid", "location": "USA", "role": "Receipt and forwarding of search agent emails (Inbound Parse)", "safeguard": "EU Standard Contractual Clauses (SCC)", "url": "https://www.twilio.com/en-us/legal/privacy" },
+          { "name": "Vercel Inc.", "location": "USA (CDN nodes in the EU)", "role": "Frontend hosting (immio.at)", "safeguard": "EU Standard Contractual Clauses (SCC)", "url": "https://vercel.com/legal/privacy-policy" },
+          { "name": "Railway Corp.", "location": "USA", "role": "Backend hosting (API)", "safeguard": "EU Standard Contractual Clauses (SCC)", "url": "https://railway.app/legal/privacy" }
+        ],
+        "note": "All providers based outside the EU/EEA transfer data on the basis of EU Standard Contractual Clauses pursuant to Art. 46(2)(c) GDPR."
+      },
+      "section5": {
+        "title": "5. Retention period",
+        "intro": "Personal data is only stored for as long as necessary for the respective purposes or as required by statutory retention periods:",
+        "items": [
+          "Account data: until account deletion, then promptly deleted",
+          "Property and analysis data: until account closure or at user request",
+          "Log data: maximum 90 days",
+          "Accounting-relevant data: 7 years pursuant to § 132 BAO (Austrian tax law)"
+        ]
+      },
+      "section6": {
+        "title": "6. Your rights (Art. 15–22 GDPR)",
+        "intro": "You have the following rights regarding your personal data:",
+        "rights": [
+          ["Access (Art. 15)", "What data we store about you"],
+          ["Rectification (Art. 16)", "Correction of inaccurate data"],
+          ["Erasure (Art. 17)", "Deletion of your data (\"right to be forgotten\")"],
+          ["Restriction (Art. 18)", "Restriction of processing"],
+          ["Data portability (Art. 20)", "Export of your data in machine-readable format"],
+          ["Objection (Art. 21)", "Objection to processing based on legitimate interest"]
+        ],
+        "contactText": "To exercise your rights, contact:"
+      },
+      "section7": {
+        "title": "7. Right to lodge a complaint",
+        "intro": "You have the right to lodge a complaint with the competent data protection authority. For Austria, this is:",
+        "authorityName": "Austrian Data Protection Authority",
+        "authorityAddress": "Barichgasse 40–42, 1030 Vienna"
+      },
+      "section8": {
+        "title": "8. Cookies",
+        "text": "IMMIO exclusively uses technically necessary cookies for session management (authentication tokens). No tracking, advertising or analytics cookies are used. Therefore, no cookie consent is required."
+      },
+      "section9": {
+        "title": "9. Changes to this privacy policy",
+        "text": "We reserve the right to amend this privacy policy in the event of changes to the platform or legal requirements. The current version is always available on this page. In the case of material changes, we will inform registered users by email."
+      },
+      "lastUpdated": "Last updated: March 2026",
+      "version": "Version 1.0"
+    }
+  },
+  "common": {
+    "loading": "Loading…",
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "search": "Search",
+    "reset": "Reset",
+    "back": "Back",
+    "next": "Next",
+    "error": "Error",
+    "noData": "—",
+    "currency": "€",
+    "sqm": "m²",
+    "rooms": "rooms",
+    "roomsShort": "rm.",
+    "perSqm": "/m²"
+  }
+}

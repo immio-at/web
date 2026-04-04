@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { SavedFilter, CreateSavedFilterDto } from '@/lib/api';
 import { resolveBundesland, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
 
@@ -111,12 +112,12 @@ export function isFilterActive(v: FilterValues): boolean {
 
 // ─── Sort options ────────────────────────────────────────────────────────────
 
-const SORT_OPTIONS = [
-  { value: 'listedDate', label: 'Neueste zuerst' },
-  { value: 'price', label: 'Preis' },
-  { value: 'pricePerSqm', label: 'Preis/m²' },
-  { value: 'size', label: 'Größe' },
-  { value: 'rooms', label: 'Zimmer' },
+const SORT_OPTION_KEYS = [
+  { value: 'listedDate', labelKey: 'sort.listedDate' as const },
+  { value: 'price', labelKey: 'sort.price' as const },
+  { value: 'pricePerSqm', labelKey: 'sort.pricePerSqm' as const },
+  { value: 'size', labelKey: 'sort.size' as const },
+  { value: 'rooms', labelKey: 'sort.rooms' as const },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -144,6 +145,7 @@ export default function FilterBar({
   onDeleteFilter,
   activeFilterId,
 }: FilterBarProps) {
+  const t = useTranslations('filter');
   const [showSavedDropdown, setShowSavedDropdown] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveName, setSaveName] = useState('');
@@ -185,22 +187,22 @@ export default function FilterBar({
           {/* Line 1: Keyword + Location */}
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
-              <label className={labelClass}>Suchbegriff</label>
+              <label className={labelClass}>{t('keyword')}</label>
               <input
                 type="text"
                 value={values.keyword}
                 onChange={set('keyword')}
-                placeholder="Titel, Ort, Beschreibung..."
+                placeholder={t('keywordPlaceholder')}
                 className={`${inputClass} w-full`}
               />
             </div>
             <div className="flex flex-col gap-1 min-w-[200px]">
-              <label className={labelClass}>PLZ / Bundesland</label>
+              <label className={labelClass}>{t('location')}</label>
               <input
                 type="text"
                 value={values.location}
                 onChange={set('location')}
-                placeholder="z.B. 1010, Wien, NÖ"
+                placeholder={t('locationPlaceholder')}
                 className={`${inputClass} w-full`}
               />
             </div>
@@ -209,40 +211,40 @@ export default function FilterBar({
           {/* Line 2: Price + Price/m² */}
           <div className="flex flex-wrap gap-3 items-end mt-3">
             <div className="flex flex-col gap-1">
-              <label className={labelClass}>Preis von (€)</label>
-              <input type="number" value={values.minPrice} onChange={set('minPrice')} placeholder="z.B. 200000" className={`${inputClass} w-36`} />
+              <label className={labelClass}>{t('priceFrom')}</label>
+              <input type="number" value={values.minPrice} onChange={set('minPrice')} placeholder={t('priceFromPlaceholder')} className={`${inputClass} w-36`} />
             </div>
             <div className="flex flex-col gap-1">
-              <label className={labelClass}>Preis bis (€)</label>
-              <input type="number" value={values.maxPrice} onChange={set('maxPrice')} placeholder="z.B. 500000" className={`${inputClass} w-36`} />
+              <label className={labelClass}>{t('priceTo')}</label>
+              <input type="number" value={values.maxPrice} onChange={set('maxPrice')} placeholder={t('priceToPlaceholder')} className={`${inputClass} w-36`} />
             </div>
             <div className="flex flex-col gap-1">
-              <label className={labelClass}>€/m² von</label>
-              <input type="number" value={values.minPricePerSqm} onChange={set('minPricePerSqm')} placeholder="z.B. 3000" className={`${inputClass} w-32`} />
+              <label className={labelClass}>{t('pricePerSqmFrom')}</label>
+              <input type="number" value={values.minPricePerSqm} onChange={set('minPricePerSqm')} placeholder={t('pricePerSqmFromPlaceholder')} className={`${inputClass} w-32`} />
             </div>
             <div className="flex flex-col gap-1">
-              <label className={labelClass}>€/m² bis</label>
-              <input type="number" value={values.maxPricePerSqm} onChange={set('maxPricePerSqm')} placeholder="z.B. 6000" className={`${inputClass} w-32`} />
+              <label className={labelClass}>{t('pricePerSqmTo')}</label>
+              <input type="number" value={values.maxPricePerSqm} onChange={set('maxPricePerSqm')} placeholder={t('pricePerSqmToPlaceholder')} className={`${inputClass} w-32`} />
             </div>
           </div>
 
           {/* Line 3: Size + Rooms */}
           <div className="flex flex-wrap gap-3 items-end mt-3">
             <div className="flex flex-col gap-1">
-              <label className={labelClass}>Fläche von (m²)</label>
-              <input type="number" value={values.minSize} onChange={set('minSize')} placeholder="z.B. 50" className={`${inputClass} w-28`} />
+              <label className={labelClass}>{t('sizeFrom')}</label>
+              <input type="number" value={values.minSize} onChange={set('minSize')} placeholder={t('sizeFromPlaceholder')} className={`${inputClass} w-28`} />
             </div>
             <div className="flex flex-col gap-1">
-              <label className={labelClass}>Fläche bis (m²)</label>
-              <input type="number" value={values.maxSize} onChange={set('maxSize')} placeholder="z.B. 120" className={`${inputClass} w-28`} />
+              <label className={labelClass}>{t('sizeTo')}</label>
+              <input type="number" value={values.maxSize} onChange={set('maxSize')} placeholder={t('sizeToPlaceholder')} className={`${inputClass} w-28`} />
             </div>
             <div className="flex flex-col gap-1">
-              <label className={labelClass}>Zimmer von</label>
-              <input type="number" value={values.minRooms} onChange={set('minRooms')} placeholder="z.B. 2" step="0.5" className={`${inputClass} w-24`} />
+              <label className={labelClass}>{t('roomsFrom')}</label>
+              <input type="number" value={values.minRooms} onChange={set('minRooms')} placeholder={t('roomsFromPlaceholder')} step="0.5" className={`${inputClass} w-24`} />
             </div>
             <div className="flex flex-col gap-1">
-              <label className={labelClass}>Zimmer bis</label>
-              <input type="number" value={values.maxRooms} onChange={set('maxRooms')} placeholder="z.B. 4" step="0.5" className={`${inputClass} w-24`} />
+              <label className={labelClass}>{t('roomsTo')}</label>
+              <input type="number" value={values.maxRooms} onChange={set('maxRooms')} placeholder={t('roomsToPlaceholder')} step="0.5" className={`${inputClass} w-24`} />
             </div>
           </div>
 
@@ -251,13 +253,13 @@ export default function FilterBar({
             {/* Sort */}
             <div className="flex items-center gap-1">
               <select value={values.sortBy} onChange={set('sortBy')} className={`${inputClass}`}>
-                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {SORT_OPTION_KEYS.map(o => <option key={o.value} value={o.value}>{t(o.labelKey)}</option>)}
               </select>
               <button
                 type="button"
                 onClick={() => onChange({ ...values, sortOrder: values.sortOrder === 'asc' ? 'desc' : 'asc' })}
                 className="px-2 py-2 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-gray-50"
-                title={values.sortOrder === 'asc' ? 'Aufsteigend' : 'Absteigend'}
+                title={values.sortOrder === 'asc' ? t('sortAscending') : t('sortDescending')}
               >
                 {values.sortOrder === 'asc' ? '↑' : '↓'}
               </button>
@@ -273,8 +275,8 @@ export default function FilterBar({
                 >
                   <span className="truncate text-xs">
                     {activeFilterId
-                      ? savedFilters.find(f => f.id === activeFilterId)?.name ?? 'Filter'
-                      : 'Gespeicherte Filter'}
+                      ? savedFilters.find(f => f.id === activeFilterId)?.name ?? t('filter')
+                      : t('savedFilters')}
                   </span>
                   <span className="text-gray-400 text-xs">▾</span>
                 </button>
@@ -298,7 +300,7 @@ export default function FilterBar({
                             type="button"
                             onClick={e => { e.stopPropagation(); onDeleteFilter(sf.id); }}
                             className="ml-2 text-gray-400 hover:text-red-500 text-xs flex-shrink-0"
-                            title="Löschen"
+                            title={t('deleteTitle')}
                           >
                             ✕
                           </button>
@@ -318,7 +320,7 @@ export default function FilterBar({
                 onChange={e => onChange({ ...values, showHidden: e.target.checked })}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              Ohne Preis anzeigen
+              {t('showHidden')}
             </label>
 
             {/* Spacer */}
@@ -329,7 +331,7 @@ export default function FilterBar({
               type="submit"
               className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
             >
-              Suchen
+              {t('search')}
             </button>
 
             {isFilterActive(values) && (
@@ -338,7 +340,7 @@ export default function FilterBar({
                 onClick={onReset}
                 className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                Zurücksetzen
+                {t('reset')}
               </button>
             )}
 
@@ -348,7 +350,7 @@ export default function FilterBar({
                 onClick={() => setShowSaveModal(true)}
                 className="px-4 py-2 text-sm text-teal-600 hover:text-teal-700 hover:bg-teal-50 border border-teal-200 rounded-lg transition-colors"
               >
-                Filter speichern
+                {t('saveFilter')}
               </button>
             )}
           </div>
@@ -359,16 +361,16 @@ export default function FilterBar({
       {showSaveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 max-w-sm w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Filter speichern</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">{t('saveModal.title')}</h3>
             <p className="text-sm text-gray-500 mb-4">
-              Gib deinem Filter einen Namen oder lass das Feld leer für einen automatischen Namen.
+              {t('saveModal.description')}
             </p>
             <input
               ref={saveInputRef}
               type="text"
               value={saveName}
               onChange={e => setSaveName(e.target.value)}
-              placeholder="z.B. Wien Investment"
+              placeholder={t('saveModal.placeholder')}
               maxLength={150}
               className={`${inputClass} w-full mb-4`}
               onKeyDown={e => { if (e.key === 'Enter') handleSaveSubmit(); }}
@@ -378,13 +380,13 @@ export default function FilterBar({
                 onClick={() => { setShowSaveModal(false); setSaveName(''); }}
                 className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                Abbrechen
+                {t('saveModal.cancel')}
               </button>
               <button
                 onClick={handleSaveSubmit}
                 className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
               >
-                Speichern
+                {t('saveModal.save')}
               </button>
             </div>
           </div>

@@ -1,9 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 export default function PendingPage() {
   const router = useRouter();
+  const t = useTranslations('auth.pending');
 
   function handleSignOut() {
     localStorage.removeItem('accessToken');
@@ -26,27 +28,26 @@ export default function PendingPage() {
             </svg>
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Your account is pending approval
+            {t('title')}
           </h2>
           <p className="text-gray-600 text-sm leading-relaxed">
-            Thanks for registering. We review each account personally before granting access.
-            You'll receive an email once your account is approved — usually within 24 hours.
+            {t('description')}
           </p>
         </div>
 
         <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-            What happens next
+            {t('whatNextTitle')}
           </p>
           <ul className="text-sm text-gray-600 space-y-1">
-            <li>• We review your registration</li>
-            <li>• You receive an approval email</li>
-            <li>• Sign back in to access IMMIO</li>
+            <li>{'\u2022'} {t('step1')}</li>
+            <li>{'\u2022'} {t('step2')}</li>
+            <li>{'\u2022'} {t('step3')}</li>
           </ul>
         </div>
 
         <p className="text-xs text-gray-500 mb-4">
-          Questions? Contact us at{' '}
+          {t('contact')}{' '}
           <a href="mailto:hello@immio.at" className="text-blue-600 hover:underline">
             hello@immio.at
           </a>
@@ -56,7 +57,7 @@ export default function PendingPage() {
           onClick={handleSignOut}
           className="text-sm text-gray-500 hover:text-gray-700 underline"
         >
-          Sign out
+          {t('signOut')}
         </button>
       </div>
     </div>

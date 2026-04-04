@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useProperties, invalidateCache } from '@/hooks/useProperties';
 import { importFromUrl } from '@/lib/api';
 import { useInteractionTracker } from '@/hooks/useInteractionTracker';
 import DashboardClient from '@/components/DashboardClient';
 
 export default function DashboardPage() {
+  const t = useTranslations('dashboard');
   const { properties, loading, error, update, optimisticUpdate } = useProperties();
   const { track, getRecent, getMost } = useInteractionTracker();
   const [, setInteractionTick] = useState(0); // force re-render on interaction
@@ -30,12 +32,12 @@ export default function DashboardPage() {
     setImportSuccess(null);
     try {
       const result = await importFromUrl(importUrl.trim(), 'investigating');
-      setImportSuccess(`"${result.property.title || 'Inserat'}" importiert und in Investigating verschoben.`);
+      setImportSuccess(t('urlImport.successMessage', { title: result.property.title || t('urlImport.defaultTitle') }));
       setImportUrl('');
       invalidateCache();
       setTimeout(() => setImportSuccess(null), 5000);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Unbekannter Fehler';
+      const msg = e instanceof Error ? e.message : t('urlImport.errorUnknown');
       setImportError(msg);
     } finally {
       setImporting(false);
@@ -45,7 +47,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <p className="text-gray-600">Loading properties...</p>
+        <p className="text-gray-600">{t('loading')}</p>
       </div>
     );
   }
@@ -60,13 +62,13 @@ export default function DashboardPage() {
 
       {/* URL Import */}
       <form onSubmit={handleImportUrl} className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
-        <label className="text-xs text-gray-500 font-medium block mb-2">Inserat per URL importieren</label>
+        <label className="text-xs text-gray-500 font-medium block mb-2">{t('urlImport.label')}</label>
         <div className="flex gap-3">
           <input
             type="url"
             value={importUrl}
             onChange={e => setImportUrl(e.target.value)}
-            placeholder="https://www.willhaben.at/iad/immobilien/d/..."
+            placeholder={t('urlImport.placeholder')}
             className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={importing}
           />
@@ -75,10 +77,10 @@ export default function DashboardPage() {
             disabled={importing || !importUrl.trim()}
             className="px-5 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
           >
-            {importing ? 'Importieren...' : 'Importieren'}
+            {importing ? t('urlImport.importing') : t('urlImport.import')}
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-1.5">Unterstützt: Willhaben. Weitere Plattformen folgen.</p>
+        <p className="text-xs text-gray-400 mt-1.5">{t('urlImport.supportedPlatforms')}</p>
         {importSuccess && (
           <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2.5">
             <p className="text-green-800 text-sm">✓ {importSuccess}</p>
