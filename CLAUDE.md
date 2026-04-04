@@ -133,11 +133,13 @@ components/
 
 lib/
 ├── api.ts                      ← All backend API call functions + TypeScript interfaces
+├── austria-plz-bundesland.ts   ← Austrian postcode ↔ Bundesland mapping (2221 PLZ, 9 states)
+├── austria-plz-bundesland.json ← Raw dataset (77KB, imported at build time)
 └── supabaseClient.ts           ← Supabase client singleton
 
 Scraped listings API (in lib/api.ts):
 - `ScrapedListing` interface — id, platform, title, price, sizeSqm, rooms, location, zipCode, imageUrl, savedByUser
-- `getScrapedListings(filter)` — GET /scraped-listings with optional platform/zipCode/minPrice/maxPrice/page
+- `getScrapedListings(filter)` — GET /scraped-listings with keyword/postcodes/price/size/rooms/hideNullPrice/sort
 - `saveScrapedListing(id)` — POST /scraped-listings/:id/save → creates Property in user's funnel
 ```
 
@@ -219,21 +221,19 @@ Set in Vercel dashboard — never commit to git.
 ---
 
 ## TODO — Active Work Queue (Priority Order)
-1. **First-login onboarding modal** — display immioEmail prominently with copy button
-   + "Show me how" drawer with Gmail/Outlook/Apple Mail step-by-step setup guide
-   + Re-accessible from NavBar/Settings at any time
-2. **Seeded example property on first login** — prevent blank dashboard for new users
-3. **Staging environment** — coordinate with backend Railway staging setup
-4. **Finder + Funnel sort/filter bar** — sort by price/size/date, filter by district/range
-5. **Document uploads (Exposés)** — PDFs per property via Supabase Storage
-6. **Garbled characters fix** — some titles show `ß□` encoding edge case
-7. **Kontakt page** — simple contact form
-8. **Anna's landing page copy** — hero headline and problem section are placeholder
+1. **OAuth social login — Google** — Supabase OAuth + frontend buttons
+2. **First-login onboarding modal** — display immioEmail + email forwarding setup guide
+3. **Finder + Funnel sort/filter bar** — sort by price/size/date, filter by district/range
+4. **Garbled characters fix** — some titles show `ß□` encoding edge case
+5. **Kontakt page** — simple contact form
+6. **Anna's landing page copy** — hero headline and problem section are placeholder
 
 ## Entdecken Page (`/search`)
-Browse scraped listings from Raiffeisen, s REAL, and ÖRAG.
-- Filter bar: platform, PLZ, min/max price
-- Grid of listing cards with image, platform badge, price, location, size/rooms
+Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
+- Unified FilterBar: keyword + PLZ/Bundesland, price + €/m², size + rooms
+- Null-price listings hidden by default ("Ohne Preis anzeigen" toggle)
+- Saved filter management (save/load/delete with naming modal)
+- Grid of listing cards with image, platform badge, price, price/m², location, size/rooms
 - "Zu meinen Immobilien" save button — calls POST /scraped-listings/:id/save
 - Saving a listing invalidates the `useProperties` cache so Dashboard/Funnel update immediately
 - Pagination: 20 per page, Zurück/Weiter controls
@@ -242,3 +242,4 @@ Browse scraped listings from Raiffeisen, s REAL, and ÖRAG.
 - Cache invalidation via server push — 30s TTL polling in place, revisit post-MVP
 - Impressum address — replace placeholder before public launch (needs GmbH registration)
 - `TERMINAL_STAGES` duplicated in backend and frontend — update both if changed
+- Interaction tracking in localStorage — migrate to backend table for cross-device persistence
