@@ -51,20 +51,22 @@ git push origin main           # Vercel auto-deploys on push to main
 
 ### Route Structure
 ```
-app/
-├── page.tsx                        ← Landing page (public) — Sign In + Register modals
-├── impressum/page.tsx              ← Austrian ECG compliant (public)
-├── datenschutz/page.tsx            ← GDPR compliant (public)
-├── register/page.tsx               ← Reads ?email= query param, pre-fills email field
-└── (authenticated)/                ← Route group — all protected pages
-    ├── layout.tsx                  ← Wraps all authenticated pages with NavBar
-    ├── dashboard/page.tsx          ← Tile + table view, search, filter, sort
-    ├── funnel/page.tsx             ← Drag-and-drop kanban, 8 stages
-    ├── finder/page.tsx             ← Tinder-style swipe UI
+app/[locale]/                        ← All routes under locale segment (de default, en)
+├── page.tsx                         ← Landing page (public) — Sign In + Register modals
+├── layout.tsx                       ← Locale layout with NextIntlClientProvider
+├── impressum/page.tsx               ← Austrian ECG compliant (public)
+├── datenschutz/page.tsx             ← GDPR compliant (public)
+├── register/page.tsx                ← Reads ?email= query param, pre-fills email field
+├── pending/page.tsx                 ← Pending approval page
+└── (authenticated)/                 ← Route group — all protected pages
+    ├── layout.tsx                   ← Wraps all authenticated pages with NavBar
+    ├── dashboard/page.tsx           ← Tile + table view, search, filter, sort
+    ├── funnel/page.tsx              ← Drag-and-drop kanban, 8 stages
+    ├── finder/page.tsx              ← Tinder-style swipe UI
     ├── settings/page.tsx
-    ├── search/page.tsx             ← Entdecken — browse scraped listings, filter + save to funnel
-    ├── analytics/page.tsx          ← Coming Soon
-    └── admin/page.tsx              ← User management, invite codes
+    ├── search/page.tsx              ← Entdecken — browse scraped listings, filter + save to funnel
+    ├── analytics/page.tsx           ← Coming Soon
+    └── admin/page.tsx               ← User management, invite codes
 ```
 
 ### Critical Architectural Rules
@@ -104,9 +106,23 @@ Do not create a `/login` route. Session expiry redirects to `/?signin=true`.
 - `optimisticUpdate()` patches arbitrary `Property` fields in cache instantly
 
 **Route group layout**
-- `app/(authenticated)/layout.tsx` wraps all protected pages with NavBar
-- Public pages sit directly in `app/` — no middleware required
+- `app/[locale]/(authenticated)/layout.tsx` wraps all protected pages with NavBar
+- Public pages sit in `app/[locale]/` — locale detection via middleware
 - Guard: redirect to `/?signin=true` if no session
+
+**i18n (next-intl)**
+- Two locales: `de` (default, no URL prefix), `en` (`/en/` prefix)
+- Config: `i18n/routing.ts`, `i18n/request.ts`, `i18n/navigation.ts`
+- Middleware: `middleware.ts` — locale detection and prefix management
+- Translation files: `messages/de.json`, `messages/en.json` — 14 namespaces, 850+ strings
+- All components use `useTranslations('namespace')` for client components
+- Legal pages use `getTranslations('namespace')` for server components
+- Navigation uses `Link`, `useRouter`, `usePathname` from `@/i18n/navigation` (not `next/navigation`)
+- NavBar has DE/EN toggle button — uses `router.replace(pathname, { locale })` to switch
+- Locale preference persisted to `localStorage` key `immio_locale`
+- Funnel stage names use `funnel.stages.*` namespace — shared between FunnelBoard and DashboardClient
+- Stage key mapping: snake_case DB keys (`visit_booked`) → camelCase i18n keys (`visitBooked`) via `STAGE_I18N_KEY`
+- **When adding new strings**: add to BOTH `messages/de.json` and `messages/en.json`
 
 ---
 
@@ -135,7 +151,17 @@ lib/
 ├── api.ts                      ← All backend API call functions + TypeScript interfaces
 ├── austria-plz-bundesland.ts   ← Austrian postcode ↔ Bundesland mapping (2221 PLZ, 9 states)
 ├── austria-plz-bundesland.json ← Raw dataset (77KB, imported at build time)
+├── constants.ts                ← Funnel stage definitions (FUNNEL_STAGES, FUNNEL_STAGES_DISPLAY)
 └── supabaseClient.ts           ← Supabase client singleton
+
+i18n/
+├── routing.ts                  ← Locale config (de default, en, localePrefix: 'as-needed')
+├── request.ts                  ← Server-side message loading
+└── navigation.ts               ← Locale-aware Link, useRouter, usePathname
+
+messages/
+├── de.json                     ← German translations (14 namespaces, ~32KB)
+└── en.json                     ← English translations (14 namespaces, ~31KB)
 
 Scraped listings API (in lib/api.ts):
 - `ScrapedListing` interface — id, platform, title, price, sizeSqm, rooms, location, zipCode, imageUrl, savedByUser
