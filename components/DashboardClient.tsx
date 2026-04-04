@@ -4,6 +4,7 @@ import { useState, useMemo, useRef } from 'react';
 import { Property, reportUnavailable } from '@/lib/api';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 import { FUNNEL_STAGES } from '@/lib/constants';
+import FilterBar, { FilterValues, EMPTY_FILTERS, resolvePostcodes } from '@/components/FilterBar';
 
 type InteractionFn = (id: string) => void;
 
@@ -46,25 +47,6 @@ const STATUS_BADGE: Record<string, string> = {
   not_relevant:  'bg-rose-100 text-rose-700',
 };
 
-interface Filters {
-  search: string;
-  priceMin: string;
-  priceMax: string;
-  sizeMin: string;
-  sizeMax: string;
-  postcode: string;
-  showHidden: boolean;
-}
-
-const defaultFilters: Filters = {
-  search: '',
-  priceMin: '',
-  priceMax: '',
-  sizeMin: '',
-  sizeMax: '',
-  postcode: '',
-  showHidden: false,
-};
 
 type UpdateFn = (id: string, data: { status?: string; notes?: string; movedToStageAt?: string }) => Promise<void>;
 type OptimisticUpdateFn = (id: string, data: Partial<Property>) => void;
@@ -85,9 +67,7 @@ export default function DashboardClient({
   frequentIds?: string[];
 }) {
   const [view, setView] = useState<ViewMode>('tiles');
-  const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState('newest');
-  const [filters, setFilters] = useState<Filters>(defaultFilters);
+  const [filterValues, setFilterValues] = useState<FilterValues>(EMPTY_FILTERS);
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
 
   // Build carousel data from property IDs
@@ -111,49 +91,61 @@ export default function DashboardClient({
     setAnalyseProperty(p);
   }
 
-  function updateFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  }
-
   const filtered = useMemo(() => {
+    const f = filterValues;
+    const postcodes = resolvePostcodes(f.location);
+    const sortFieldMap: Record<string, string> = {
+      price: 'price', pricePerSqm: 'pricePerSqm', size: 'sizeSqm', rooms: 'rooms', listedDate: 'emailReceivedAt',
+    };
+
     return properties.filter(p => {
-      if (p.status === 'not_relevant' && !filters.showHidden) return false;
+      if (p.status === 'not_relevant') return false;
       if (p.status === 'delisted') return false;
 
       const price = p.price ? parseFloat(String(p.price)) : null;
       const size = p.sizeSqm ?? null;
+      const rooms = p.rooms ? parseFloat(String(p.rooms)) : null;
+      const ppsm = (price && size && size > 0) ? price / size : null;
 
-      if (filters.search) {
-        const s = filters.search.toLowerCase();
+      // Hide null-price by default
+      if (!f.showHidden && price == null) return false;
+
+      // Keyword
+      if (f.keyword) {
+        const s = f.keyword.toLowerCase();
         if (!p.title?.toLowerCase().includes(s) &&
-            !p.location?.toLowerCase().includes(s)) return false;
+            !p.location?.toLowerCase().includes(s) &&
+            !(p as any).snippet?.toLowerCase().includes(s)) return false;
       }
-      if (filters.priceMin && price && price < parseFloat(filters.priceMin)) return false;
-      if (filters.priceMax && price && price > parseFloat(filters.priceMax)) return false;
-      if (filters.sizeMin && size && size < parseFloat(filters.sizeMin)) return false;
-      if (filters.sizeMax && size && size > parseFloat(filters.sizeMax)) return false;
-      if (filters.postcode && !p.zipCode?.startsWith(filters.postcode)) return false;
+      // Postcodes
+      if (postcodes.length > 0 && (!p.zipCode || !postcodes.includes(p.zipCode))) return false;
+      // Price
+      if (f.minPrice && (price == null || price < parseFloat(f.minPrice))) return false;
+      if (f.maxPrice && (price == null || price > parseFloat(f.maxPrice))) return false;
+      // Price per sqm
+      if (f.minPricePerSqm && (ppsm == null || ppsm < parseFloat(f.minPricePerSqm))) return false;
+      if (f.maxPricePerSqm && (ppsm == null || ppsm > parseFloat(f.maxPricePerSqm))) return false;
+      // Size
+      if (f.minSize && (size == null || size < parseFloat(f.minSize))) return false;
+      if (f.maxSize && (size == null || size > parseFloat(f.maxSize))) return false;
+      // Rooms
+      if (f.minRooms && (rooms == null || rooms < parseFloat(f.minRooms))) return false;
+      if (f.maxRooms && (rooms == null || rooms > parseFloat(f.maxRooms))) return false;
       return true;
     }).sort((a, b) => {
-      const aPrice = a.price ? parseFloat(String(a.price)) : 0;
-      const bPrice = b.price ? parseFloat(String(b.price)) : 0;
-      const aSize = a.sizeSqm ?? 0;
-      const bSize = b.sizeSqm ?? 0;
-      switch (sortBy) {
-        case 'status':     return (a.status || '').localeCompare(b.status || '');
-        case 'price_asc':  return aPrice - bPrice;
-        case 'price_desc': return bPrice - aPrice;
-        case 'size_asc':   return aSize - bSize;
-        case 'size_desc':  return bSize - aSize;
-        case 'oldest':     return new Date(a.emailReceivedAt).getTime() - new Date(b.emailReceivedAt).getTime();
-        default:           return new Date(b.emailReceivedAt).getTime() - new Date(a.emailReceivedAt).getTime();
-      }
-    });
-  }, [properties, filters, sortBy]);
+      const dir = f.sortOrder === 'asc' ? 1 : -1;
+      const field = sortFieldMap[f.sortBy] ?? 'emailReceivedAt';
 
-  const activeFilterCount = ['priceMin', 'priceMax', 'sizeMin', 'sizeMax', 'postcode']
-    .filter(k => filters[k as keyof Filters] !== '').length
-    + (filters.showHidden ? 1 : 0);
+      const aVal = field === 'emailReceivedAt' ? new Date(a.emailReceivedAt).getTime()
+        : field === 'pricePerSqm' ? ((a.price && a.sizeSqm) ? parseFloat(String(a.price)) / a.sizeSqm : 0)
+        : parseFloat(String((a as any)[field] ?? 0)) || 0;
+      const bVal = field === 'emailReceivedAt' ? new Date(b.emailReceivedAt).getTime()
+        : field === 'pricePerSqm' ? ((b.price && b.sizeSqm) ? parseFloat(String(b.price)) / b.sizeSqm : 0)
+        : parseFloat(String((b as any)[field] ?? 0)) || 0;
+
+      return (aVal - bVal) * dir;
+    });
+  }, [properties, filterValues]);
 
   return (
     <div>
@@ -175,122 +167,32 @@ export default function DashboardClient({
         />
       )}
 
-      {/* Sub-nav */}
-      <div className="flex flex-col gap-3 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex gap-1">
-            {(['tiles', 'table'] as ViewMode[]).map(v => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
-                  view === v
-                    ? 'bg-slate-700 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {v === 'tiles' ? '⊞ Tiles' : '☰ Table'}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-3">
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white"
+      {/* Filter bar */}
+      <FilterBar
+        values={filterValues}
+        onChange={setFilterValues}
+        onSearch={() => {}} // Dashboard applies filters live via useMemo
+        onReset={() => setFilterValues(EMPTY_FILTERS)}
+      />
+
+      {/* View toggle + count */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-1">
+          {(['tiles', 'table'] as ViewMode[]).map(v => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
+                view === v
+                  ? 'bg-slate-700 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
             >
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-              <option value="status">Status</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-              <option value="size_asc">Size: Small to Large</option>
-              <option value="size_desc">Size: Large to Small</option>
-            </select>
-            <span className="text-sm text-gray-500">{filtered.length} properties</span>
-          </div>
+              {v === 'tiles' ? '⊞ Tiles' : '☰ Table'}
+            </button>
+          ))}
         </div>
-
-        {/* Search + filter toggle */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Search by location, title..."
-            value={filters.search}
-            onChange={e => updateFilter('search', e.target.value)}
-            className="flex-1 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
-          />
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors flex items-center gap-2 ${
-              activeFilterCount > 0
-                ? 'bg-slate-700 text-white border-slate-700'
-                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            ⚙ Filters
-            {activeFilterCount > 0 && (
-              <span className="bg-white text-slate-700 text-xs font-bold px-1.5 py-0.5 rounded-full">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Filter panel */}
-        {showFilters && (
-          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Filters</h3>
-              <button
-                onClick={() => setFilters(defaultFilters)}
-                className="text-xs text-gray-500 hover:text-gray-900"
-              >
-                Clear all
-              </button>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Min Price (€)</label>
-                <input type="number" placeholder="0" value={filters.priceMin}
-                  onChange={e => updateFilter('priceMin', e.target.value)}
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Max Price (€)</label>
-                <input type="number" placeholder="Any" value={filters.priceMax}
-                  onChange={e => updateFilter('priceMax', e.target.value)}
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Min Size (m²)</label>
-                <input type="number" placeholder="0" value={filters.sizeMin}
-                  onChange={e => updateFilter('sizeMin', e.target.value)}
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Max Size (m²)</label>
-                <input type="number" placeholder="Any" value={filters.sizeMax}
-                  onChange={e => updateFilter('sizeMax', e.target.value)}
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Postcode</label>
-                <input type="text" placeholder="e.g. 1010" value={filters.postcode}
-                  onChange={e => updateFilter('postcode', e.target.value)}
-                  className="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" />
-              </div>
-              <div className="flex items-end pb-1">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" checked={filters.showHidden}
-                    onChange={e => updateFilter('showHidden', e.target.checked)}
-                    className="rounded border-gray-300 text-slate-700 focus:ring-slate-300" />
-                  <span className="text-xs font-medium text-gray-700">Show hidden properties</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        )}
+        <span className="text-sm text-gray-500">{filtered.length} Immobilien</span>
       </div>
 
       {/* Views */}

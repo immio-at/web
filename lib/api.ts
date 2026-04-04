@@ -228,8 +228,8 @@ export interface ScrapedListingsResponse {
 }
 
 export interface ScrapedListingsFilter {
-  platform?: string;
-  zipCode?: string;
+  keyword?: string;
+  postcodes?: string[];
   minPrice?: number;
   maxPrice?: number;
   minPricePerSqm?: number;
@@ -238,6 +238,7 @@ export interface ScrapedListingsFilter {
   maxSize?: number;
   minRooms?: number;
   maxRooms?: number;
+  hideNullPrice?: boolean;
   sortBy?: string;
   sortOrder?: string;
   page?: number;
@@ -246,8 +247,8 @@ export interface ScrapedListingsFilter {
 export async function getScrapedListings(filter: ScrapedListingsFilter = {}): Promise<ScrapedListingsResponse> {
   const token = await getAuthToken();
   const params = new URLSearchParams();
-  if (filter.platform) params.set('platform', filter.platform);
-  if (filter.zipCode) params.set('zipCode', filter.zipCode);
+  if (filter.keyword) params.set('keyword', filter.keyword);
+  if (filter.postcodes?.length) params.set('postcodes', filter.postcodes.join(','));
   if (filter.minPrice !== undefined) params.set('minPrice', String(filter.minPrice));
   if (filter.maxPrice !== undefined) params.set('maxPrice', String(filter.maxPrice));
   if (filter.minPricePerSqm !== undefined) params.set('minPricePerSqm', String(filter.minPricePerSqm));
@@ -256,6 +257,7 @@ export async function getScrapedListings(filter: ScrapedListingsFilter = {}): Pr
   if (filter.maxSize !== undefined) params.set('maxSize', String(filter.maxSize));
   if (filter.minRooms !== undefined) params.set('minRooms', String(filter.minRooms));
   if (filter.maxRooms !== undefined) params.set('maxRooms', String(filter.maxRooms));
+  if (filter.hideNullPrice === false) params.set('hideNullPrice', 'false');
   if (filter.sortBy) params.set('sortBy', filter.sortBy);
   if (filter.sortOrder) params.set('sortOrder', filter.sortOrder);
   if (filter.page) params.set('page', String(filter.page));

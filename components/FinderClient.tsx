@@ -4,7 +4,7 @@ import { useState, useRef, useMemo } from 'react';
 import { useProperties } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { SavedFilter } from '@/lib/api';
-import { savedFilterToValues } from '@/components/FilterBar';
+import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
 import Link from 'next/link';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 
@@ -31,7 +31,8 @@ export default function FinderClient() {
       if (v.maxSize && size != null && size > parseFloat(v.maxSize)) return false;
       if (v.minRooms && rooms != null && rooms < parseFloat(v.minRooms)) return false;
       if (v.maxRooms && rooms != null && rooms > parseFloat(v.maxRooms)) return false;
-      if (v.zipCode && p.zipCode && !p.zipCode.startsWith(v.zipCode)) return false;
+      const postcodes = resolvePostcodes(v.location);
+      if (postcodes.length > 0 && (!p.zipCode || !postcodes.includes(p.zipCode))) return false;
       return true;
     });
   }, [all, selectedFilter]);

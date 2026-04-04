@@ -11,6 +11,7 @@ import FilterBar, {
   savedFilterToValues,
   valuesToSavedFilterDto,
   isFilterActive,
+  resolvePostcodes,
 } from '@/components/FilterBar';
 
 // ─── Platform display names ───────────────────────────────────────────────────
@@ -147,9 +148,10 @@ export default function EntdeckenPage() {
     try {
       setLoading(true);
       setError(null);
+      const postcodes = resolvePostcodes(applied.location);
       const data = await getScrapedListings({
-        platform: applied.platform || undefined,
-        zipCode: applied.zipCode || undefined,
+        keyword: applied.keyword || undefined,
+        postcodes: postcodes.length > 0 ? postcodes : undefined,
         minPrice: applied.minPrice ? parseFloat(applied.minPrice) : undefined,
         maxPrice: applied.maxPrice ? parseFloat(applied.maxPrice) : undefined,
         minPricePerSqm: applied.minPricePerSqm ? parseFloat(applied.minPricePerSqm) : undefined,
@@ -158,6 +160,7 @@ export default function EntdeckenPage() {
         maxSize: applied.maxSize ? parseFloat(applied.maxSize) : undefined,
         minRooms: applied.minRooms ? parseFloat(applied.minRooms) : undefined,
         maxRooms: applied.maxRooms ? parseFloat(applied.maxRooms) : undefined,
+        hideNullPrice: !applied.showHidden,
         sortBy: applied.sortBy || undefined,
         sortOrder: applied.sortOrder || undefined,
         page,
