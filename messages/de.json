@@ -141,9 +141,9 @@
     "finder": "Finder",
     "funnel": "Funnel",
     "analytics": "Analytics",
-    "settings": "Settings",
+    "settings": "Einstellungen",
     "admin": "Admin",
-    "signOut": "Sign Out"
+    "signOut": "Abmelden"
   },
   "auth": {
     "signIn": {
@@ -183,25 +183,25 @@
       "passwordPlaceholder": "••••••••"
     },
     "pending": {
-      "title": "Your account is pending approval",
-      "description": "Thanks for registering. We review each account personally before granting access. You'll receive an email once your account is approved — usually within 24 hours.",
-      "whatNextTitle": "What happens next",
-      "step1": "We review your registration",
-      "step2": "You receive an approval email",
-      "step3": "Sign back in to access IMMIO",
-      "contact": "Questions? Contact us at",
-      "signOut": "Sign out"
+      "title": "Dein Konto wartet auf Freischaltung",
+      "description": "Danke für deine Registrierung. Wir prüfen jedes Konto persönlich, bevor wir den Zugang freigeben. Du erhältst eine Email, sobald dein Konto freigeschaltet wurde — in der Regel innerhalb von 24 Stunden.",
+      "whatNextTitle": "Wie geht es weiter",
+      "step1": "Wir prüfen deine Registrierung",
+      "step2": "Du erhältst eine Bestätigungs-Email",
+      "step3": "Melde dich erneut an, um IMMIO zu nutzen",
+      "contact": "Fragen? Kontaktiere uns unter",
+      "signOut": "Abmelden"
     }
   },
   "dashboard": {
-    "loading": "Loading properties...",
+    "loading": "Immobilien werden geladen…",
     "urlImport": {
       "label": "Inserat per URL importieren",
       "placeholder": "https://www.willhaben.at/iad/immobilien/d/...",
       "importing": "Importieren...",
       "import": "Importieren",
       "supportedPlatforms": "Unterstützt: Willhaben. Weitere Plattformen folgen.",
-      "successMessage": "\"{title}\" importiert und in Investigating verschoben.",
+      "successMessage": "\"{title}\" importiert und in In Prüfung verschoben.",
       "errorUnknown": "Unbekannter Fehler",
       "defaultTitle": "Inserat"
     },
@@ -211,33 +211,33 @@
       "analyse": "Analyse"
     },
     "viewToggle": {
-      "tiles": "Tiles",
+      "tiles": "Kacheln",
       "tilesIcon": "⊞",
-      "table": "Table",
+      "table": "Tabelle",
       "tableIcon": "☰"
     },
     "propertyCount": "{count} Immobilien",
-    "noMatchingProperties": "No properties match your filters",
+    "noMatchingProperties": "Keine Immobilien entsprechen deinen Filtern",
     "tile": {
       "expired": "Nicht mehr verfügbar",
       "rooms": "Zi.",
-      "analyseTitle": "Analyse this property",
-      "reportUnavailableTitle": "Report as unavailable",
-      "dismissTitle": "Dismiss — hide this property"
+      "analyseTitle": "Diese Immobilie analysieren",
+      "reportUnavailableTitle": "Als nicht verfügbar melden",
+      "dismissTitle": "Ausblenden — diese Immobilie verstecken"
     },
     "table": {
-      "headerImage": "Image",
-      "headerTitle": "Title",
-      "headerPrice": "Price",
+      "headerImage": "Bild",
+      "headerTitle": "Titel",
+      "headerPrice": "Preis",
       "headerSize": "m²",
-      "headerRooms": "Rooms",
-      "headerLocation": "Location",
+      "headerRooms": "Zimmer",
+      "headerLocation": "Ort",
       "headerPricePerSqm": "€/m²",
       "headerStatus": "Status",
-      "headerDate": "Date",
-      "dismissTitle": "Dismiss",
-      "analyseTitle": "Analyse this property",
-      "reportUnavailableTitle": "Report as unavailable"
+      "headerDate": "Datum",
+      "dismissTitle": "Ausblenden",
+      "analyseTitle": "Diese Immobilie analysieren",
+      "reportUnavailableTitle": "Als nicht verfügbar melden"
     }
   },
   "search": {
@@ -259,109 +259,109 @@
     "paginationPage": "Seite {page} von {total}"
   },
   "finder": {
-    "loading": "Loading properties...",
+    "loading": "Immobilien werden geladen…",
     "filterModal": {
       "title": "Filter wählen",
       "subtitle": "Wähle einen gespeicherten Filter oder starte ohne Einschränkung.",
-      "iFeelLucky": "I Feel Lucky",
+      "iFeelLucky": "Auf gut Glück",
       "applyFilter": "Filter anwenden",
       "changeFilter": "ändern"
     },
     "allCaughtUp": {
-      "title": "All caught up",
-      "subtitle": "You've reviewed all {total} new properties",
-      "backToDashboard": "Back to Dashboard"
+      "title": "Alles erledigt",
+      "subtitle": "Du hast alle {total} neuen Immobilien durchgesehen",
+      "backToDashboard": "Zurück zum Dashboard"
     },
     "directions": {
-      "left": "← Not Relevant",
-      "up": "↑ Open",
+      "left": "← Nicht relevant",
+      "up": "↑ Öffnen",
       "down": "↓ Analyse",
-      "right": "→ Investigating"
+      "right": "→ In Prüfung"
     },
     "overlay": {
-      "investigating": "Investigating",
-      "notRelevant": "Not Relevant",
-      "openListing": "Open Listing",
+      "investigating": "In Prüfung",
+      "notRelevant": "Nicht relevant",
+      "openListing": "Inserat öffnen",
       "analyse": "Analyse"
     },
     "buttons": {
-      "notRelevantTitle": "Not Relevant",
-      "analyseTitle": "Analyse Property",
-      "openListingTitle": "Open Listing",
-      "investigatingTitle": "Investigating"
+      "notRelevantTitle": "Nicht relevant",
+      "analyseTitle": "Immobilie analysieren",
+      "openListingTitle": "Inserat öffnen",
+      "investigatingTitle": "In Prüfung"
     },
-    "progress": "{current} of {total} reviewed",
+    "progress": "{current} von {total} durchgesehen",
     "rooms": "Zimmer"
   },
   "funnel": {
-    "title": "Buy Funnel",
-    "subtitle": "Track your properties through the acquisition process",
-    "loading": "Loading funnel...",
-    "propertyCount": "{count} properties in funnel",
+    "title": "Kaufprozess",
+    "subtitle": "Verfolge deine Immobilien durch den Kaufprozess",
+    "loading": "Funnel wird geladen…",
+    "propertyCount": "{count} Immobilien im Funnel",
     "stages": {
-      "new": "New",
-      "investigating": "Investigating",
-      "interested": "Interested",
-      "visitBooked": "Visit Booked",
-      "visited": "Visited",
-      "offerMade": "Offer Made",
-      "parked": "Parked",
-      "won": "Won",
-      "notRelevant": "Not Relevant"
+      "new": "Neu",
+      "investigating": "In Prüfung",
+      "interested": "Interessiert",
+      "visitBooked": "Besichtigung geplant",
+      "visited": "Besichtigt",
+      "offerMade": "Angebot gelegt",
+      "parked": "Geparkt",
+      "won": "Gewonnen",
+      "notRelevant": "Nicht relevant"
     },
     "card": {
       "rooms": "Zi.",
       "expired": "Nicht mehr verfügbar",
-      "moveButton": "Move ▾",
+      "moveButton": "Verschieben ▾",
       "optionsButton": "Optionen ▾",
-      "analyseTitle": "Analyse this property",
-      "notRelevant": "✕ Not Relevant",
-      "reportUnavailable": "⚠ Report Unavailable",
-      "removeFromView": "✕ Remove from View",
-      "dropHere": "Drop here",
-      "noProperties": "No properties"
+      "analyseTitle": "Diese Immobilie analysieren",
+      "notRelevant": "✕ Nicht relevant",
+      "reportUnavailable": "⚠ Als nicht verfügbar melden",
+      "removeFromView": "✕ Aus Ansicht entfernen",
+      "dropHere": "Hier ablegen",
+      "noProperties": "Keine Immobilien"
     },
     "confirmNotRelevant": {
-      "title": "Mark as Not Relevant?",
-      "description": "This will hide the following property from your funnel:",
-      "hint": "You can still find it later via the Show hidden properties filter on the Dashboard.",
-      "cancel": "Cancel",
-      "confirm": "Yes, hide it"
+      "title": "Als nicht relevant markieren?",
+      "description": "Folgende Immobilie wird aus deinem Funnel ausgeblendet:",
+      "hint": "Du kannst sie später über den Filter 'Ausgeblendete Immobilien anzeigen' im Dashboard wiederfinden.",
+      "cancel": "Abbrechen",
+      "confirm": "Ja, ausblenden"
     }
   },
   "settings": {
-    "title": "Settings",
+    "title": "Einstellungen",
     "immioEmail": {
-      "title": "Your IMMIO Email Address",
-      "description": "Use this address when subscribing to search agents on Willhaben, Immoscout24, and other platforms.",
-      "loading": "Loading...",
-      "copied": "✓ Copied",
-      "copy": "Copy",
-      "account": "Account: {email}"
+      "title": "Deine IMMIO-Email-Adresse",
+      "description": "Verwende diese Adresse, wenn du Suchagenten auf Willhaben, Immoscout24 und anderen Plattformen einrichtest.",
+      "loading": "Laden…",
+      "copied": "✓ Kopiert",
+      "copy": "Kopieren",
+      "account": "Konto: {email}"
     },
     "password": {
-      "title": "Change Password",
-      "newPasswordLabel": "New Password",
-      "newPasswordPlaceholder": "Min. 8 characters",
-      "confirmPasswordLabel": "Confirm Password",
-      "confirmPasswordPlaceholder": "Repeat new password",
-      "errorMinLength": "Password must be at least 8 characters.",
-      "errorMismatch": "Passwords do not match.",
-      "success": "Password updated successfully.",
-      "updating": "Updating...",
-      "submit": "Update Password"
+      "title": "Passwort ändern",
+      "newPasswordLabel": "Neues Passwort",
+      "newPasswordPlaceholder": "Mind. 8 Zeichen",
+      "confirmPasswordLabel": "Passwort bestätigen",
+      "confirmPasswordPlaceholder": "Neues Passwort wiederholen",
+      "errorMinLength": "Das Passwort muss mindestens 8 Zeichen lang sein.",
+      "errorMismatch": "Die Passwörter stimmen nicht überein.",
+      "success": "Passwort erfolgreich aktualisiert.",
+      "updating": "Wird aktualisiert…",
+      "submit": "Passwort aktualisieren"
     },
     "subscription": {
-      "title": "Subscription",
-      "description": "Subscription management coming soon — upgrade, downgrade, and billing will be available here."
+      "title": "Abonnement",
+      "description": "Abonnementverwaltung kommt bald — Upgrade, Downgrade und Abrechnung werden hier verfügbar sein."
     },
     "notifications": {
-      "title": "Notifications",
-      "description": "Notification preferences coming soon — configure push notifications and email digests here."
+      "title": "Benachrichtigungen",
+      "description": "Benachrichtigungseinstellungen kommen bald — konfiguriere Push-Benachrichtigungen und Email-Zusammenfassungen hier."
     },
     "gdpr": {
-      "title": "GDPR & Privacy",
-      "description": "Data export, right to erasure, and privacy controls coming soon."
+      "title": "DSGVO & Datenschutz",
+      "description": "Datenexport, Recht auf Löschung und Datenschutzeinstellungen kommen bald."
     }
   },
   "analytics": {

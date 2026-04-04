@@ -8,6 +8,13 @@ import { useProperties } from '@/hooks/useProperties';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
 
+// Map snake_case stage keys to camelCase translation keys
+const STAGE_I18N_KEY: Record<string, string> = {
+  new: 'new', investigating: 'investigating', interested: 'interested',
+  visit_booked: 'visitBooked', visited: 'visited', offer_made: 'offerMade',
+  parked: 'parked', won: 'won', not_relevant: 'notRelevant',
+};
+
 interface PendingMove {
   propertyId: string;
   propertyTitle: string;
@@ -288,7 +295,7 @@ export default function FunnelBoard() {
               onDrop={(e) => handleDrop(e, stage.key)}
             >
               <div className={`${stage.header} rounded-t-lg px-3 pt-2 pb-2`}>
-                <span className={labelStyle}>{stage.label}</span>
+                <span className={labelStyle}>{t(`stages.${STAGE_I18N_KEY[stage.key] ?? stage.key}`)}</span>
                 <div className={`flex gap-2 text-xs mt-1 ${summaryStyle}`}>
                   <span className="font-medium">#{stageProps.length}</span>
                   <span className="opacity-40">·</span>
@@ -370,7 +377,7 @@ function FunnelCard({
   const moveOptions: DropdownOption[] = [
     ...stages
       .filter(s => s.key !== property.status)
-      .map(s => ({ key: s.key, label: s.label, variant: 'default' as const })),
+      .map(s => ({ key: s.key, label: t(`stages.${STAGE_I18N_KEY[s.key] ?? s.key}`), variant: 'default' as const })),
     ...(isExpired
       ? [REMOVE_FROM_VIEW]
       : [REPORT_UNAVAILABLE]

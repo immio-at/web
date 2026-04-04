@@ -5,6 +5,12 @@ import { useTranslations } from 'next-intl';
 import { Property, reportUnavailable } from '@/lib/api';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 import { FUNNEL_STAGES } from '@/lib/constants';
+
+const STAGE_I18N_KEY: Record<string, string> = {
+  new: 'new', investigating: 'investigating', interested: 'interested',
+  visit_booked: 'visitBooked', visited: 'visited', offer_made: 'offerMade',
+  parked: 'parked', won: 'won', not_relevant: 'notRelevant',
+};
 import FilterBar, { FilterValues, EMPTY_FILTERS, resolvePostcodes } from '@/components/FilterBar';
 
 type InteractionFn = (id: string) => void;
@@ -266,6 +272,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
   onInteraction?: InteractionFn;
 }) {
   const t = useTranslations('dashboard');
+  const tStages = useTranslations('funnel.stages');
   const [loading, setLoading] = useState(false);
 
   const status = property.status || 'new';
@@ -276,7 +283,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
     ? '€ ' + Math.round(rawPrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
     : '';
 
-  const stageLabel = FUNNEL_STAGES.find(s => s.key === status)?.label ?? 'New';
+  const stageLabel = tStages(STAGE_I18N_KEY[status] ?? status);
 
   async function handleStatusChange(newStatus: string) {
     if (newStatus !== 'not_relevant') onInteraction?.(property.id);
@@ -363,7 +370,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
           >
             {FUNNEL_STAGES.filter(s => s.key !== 'not_relevant').map(stage => (
               <option key={stage.key} value={stage.key}>
-                {stage.label}
+                {tStages(STAGE_I18N_KEY[stage.key] ?? stage.key)}
               </option>
             ))}
           </select>
@@ -408,6 +415,7 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
   onInteraction?: InteractionFn;
 }) {
   const t = useTranslations('dashboard');
+  const tStages = useTranslations('funnel.stages');
 
   async function handleReportUnavailable(propertyId: string) {
     onOptimisticUpdate(propertyId, { listingStatus: 'expired' });
@@ -491,7 +499,7 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
                         className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-300 ${STATUS_BADGE[prop.status ?? ''] ?? 'bg-gray-100 text-gray-600'}`}
                       >
                         {FUNNEL_STAGES.filter(s => s.key !== 'not_relevant').map(stage => (
-                          <option key={stage.key} value={stage.key}>{stage.label}</option>
+                          <option key={stage.key} value={stage.key}>{tStages(STAGE_I18N_KEY[stage.key] ?? stage.key)}</option>
                         ))}
                       </select>
                       <button
