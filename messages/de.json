@@ -160,7 +160,9 @@
       "closeAriaLabel": "Schließen",
       "errorEmptyFields": "Bitte Email und Passwort eingeben.",
       "errorLoginFailed": "Login fehlgeschlagen",
-      "errorConnection": "Verbindung zum Server fehlgeschlagen."
+      "errorConnection": "Verbindung zum Server fehlgeschlagen.",
+      "orContinueWith": "oder",
+      "googleSignIn": "Mit Google anmelden"
     },
     "register": {
       "title": "Zugang beantragen",

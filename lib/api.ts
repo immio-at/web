@@ -185,6 +185,22 @@ export async function delistProperty(id: string): Promise<void> {
   return handleResponse(response);
 }
 
+// ─── OAuth Callback ──────────────────────────────────────────────────────────
+
+export async function oauthCallback(accessToken: string): Promise<{
+  userId: string;
+  email: string;
+  immioEmail: string;
+  approved: boolean;
+  isAdmin: boolean;
+}> {
+  const response = await fetch(`${API_URL}/auth/oauth-callback`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${accessToken}` },
+  });
+  return handleResponse(response);
+}
+
 // ─── Import from URL ─────────────────────────────────────────────────────────
 
 export async function importFromUrl(url: string, status?: string): Promise<{ message: string; property: Property }> {

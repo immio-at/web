@@ -160,7 +160,9 @@
       "closeAriaLabel": "Close",
       "errorEmptyFields": "Please enter your email and password.",
       "errorLoginFailed": "Login failed",
-      "errorConnection": "Could not connect to server."
+      "errorConnection": "Could not connect to server.",
+      "orContinueWith": "or",
+      "googleSignIn": "Sign in with Google"
     },
     "register": {
       "title": "Request access",
