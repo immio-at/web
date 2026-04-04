@@ -1,9 +1,8 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
 
 const navItems = [
   { key: 'dashboard' as const, href: '/dashboard', icon: '🏠' },
@@ -27,15 +26,8 @@ export default function NavBar() {
 
   function switchLocale() {
     const newLocale = locale === 'de' ? 'en' : 'de';
-    // Persist preference
     localStorage.setItem('immio_locale', newLocale);
-    // Build new path: strip current locale prefix, add new one
-    let path = pathname;
-    if (locale !== 'de' && path.startsWith(`/${locale}`)) {
-      path = path.slice(`/${locale}`.length) || '/';
-    }
-    const newPath = newLocale === 'de' ? path : `/${newLocale}${path}`;
-    router.push(newPath);
+    router.replace(pathname, { locale: newLocale });
   }
 
   return (
