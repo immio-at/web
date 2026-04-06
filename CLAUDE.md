@@ -124,6 +124,15 @@ Do not create a `/login` route. Session expiry redirects to `/?signin=true`.
 - Stage key mapping: snake_case DB keys (`visit_booked`) → camelCase i18n keys (`visitBooked`) via `STAGE_I18N_KEY`
 - **When adding new strings**: add to BOTH `messages/de.json` and `messages/en.json`
 
+**Google OAuth sign-in**
+- "Sign in with Google" button in SignInModal
+- Flow: `supabase.auth.signInWithOAuth({ provider: 'google' })` → Google → Supabase callback → `/auth/callback`
+- Callback page (`app/[locale]/auth/callback/page.tsx`): gets session, calls `POST /auth/oauth-callback` to provision/retrieve Prisma user, sets AuthContext, redirects to dashboard
+- First-time OAuth users auto-provisioned (approved: true, immioEmail generated)
+- Google consent screen shows Supabase domain (normal — custom domains is paid feature)
+- Config: Google Cloud Console OAuth credentials + Supabase Authentication → Providers → Google
+- Supabase URL Configuration: Site URL = `https://immio.at`, Redirect URLs include `https://immio.at/auth/callback`
+
 ---
 
 ## Key Components
@@ -227,6 +236,7 @@ The `Property` interface includes:
 API functions include:
 - `getProperties()`, `updateProperty()`, `reportUnavailable()`, `delistProperty()`
 - `createAnalysis()`, `getAnalyses()`, `updateAnalysis()`, `deleteAnalysis()`
+- `oauthCallback(accessToken)` — provisions/retrieves OAuth user after Google sign-in
 
 ---
 
@@ -247,8 +257,7 @@ Set in Vercel dashboard — never commit to git.
 ---
 
 ## TODO — Active Work Queue (Priority Order)
-1. **OAuth social login — Google** — Supabase OAuth + frontend buttons
-2. **First-login onboarding modal** — display immioEmail + email forwarding setup guide
+1. **First-login onboarding modal** — display immioEmail + email forwarding setup guide
 3. **Finder + Funnel sort/filter bar** — sort by price/size/date, filter by district/range
 4. **Garbled characters fix** — some titles show `ß□` encoding edge case
 5. **Kontakt page** — simple contact form
