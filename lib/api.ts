@@ -299,6 +299,39 @@ export async function getRecentlyViewed(limit: number = 20): Promise<Property[]>
   return handleResponse(response);
 }
 
+// ─── Analytics ───────────────────────────────────────────────────────────────
+
+export interface AnalyticsSummary {
+  properties: {
+    total: number;
+    totalValue: number;
+    avgPrice: number;
+    expiredCount: number;
+  };
+  funnelDistribution: { stage: string; count: number }[];
+  interactionCounts: {
+    byType: { type: string; count: number }[];
+    total: number;
+    last7Days: number;
+    last30Days: number;
+  };
+  analysisCounts: {
+    byType: { type: string; count: number }[];
+    total: number;
+  };
+  activityTimeline: { date: string; count: number }[];
+  milestones: { key: string; label: string; value: number }[];
+}
+
+export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/analytics/summary`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  return handleResponse(response);
+}
+
 // ─── Scraped Listings ─────────────────────────────────────────────────────────
 
 export interface ScrapedListing {

@@ -398,9 +398,44 @@
   },
   "analytics": {
     "label": "Analytics",
-    "title": "Marktanalyse & Statistiken",
-    "description": "Das Analytics-Dashboard ist in Entwicklung. Hier findest du bald Markttrends, Preisverläufe und Auswertungen deines Portfolios.",
-    "comingSoon": "Demnächst verfügbar"
+    "title": "Dein Überblick",
+    "loading": "Daten werden geladen…",
+    "error": "Fehler beim Laden der Analytics",
+    "portfolio": {
+      "title": "Portfolio",
+      "total": "Inserate gesamt",
+      "totalValue": "Gesamtwert",
+      "avgPrice": "Ø Preis",
+      "expired": "Abgelaufen"
+    },
+    "activity": {
+      "title": "Aktivität",
+      "total": "Interaktionen gesamt",
+      "last7": "Letzte 7 Tage",
+      "last30": "Letzte 30 Tage",
+      "views": "Aufrufe",
+      "analyses": "Analysen",
+      "urlClicks": "Link-Klicks",
+      "statusChanges": "Statusänderungen"
+    },
+    "funnel": {
+      "title": "Funnel Verteilung"
+    },
+    "analysesBreakdown": {
+      "title": "Analysen nach Typ",
+      "owner": "Eigennutzung",
+      "rental": "Vermietung",
+      "flip": "Flip",
+      "none": "Noch keine Analysen erstellt."
+    },
+    "timeline": {
+      "title": "Aktivität (30 Tage)",
+      "noData": "Noch keine Aktivität."
+    },
+    "milestones": {
+      "title": "Meilensteine",
+      "none": "Starte mit der Suche, um deine ersten Meilensteine zu erreichen."
+    }
   },
   "admin": {
     "label": "Admin",
