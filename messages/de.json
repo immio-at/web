@@ -232,18 +232,11 @@
     },
     "sourcesTile": {
       "title": "Quellen",
-      "titleHealthy": "Quellen — Alles aktiv",
-      "setupPrompt": "E-Mail Weiterleitung einrichten",
-      "setupBody": "Verbinde deine Willhaben- und ImmoScout24-Suchagenten mit IMMIO, um Inserate automatisch zu empfangen.",
-      "setupCta": "Einrichtungsanleitung →",
-      "yourEmail": "Deine IMMIO-Adresse",
-      "nudge": "Noch kein {platform}? Jetzt einrichten →",
-      "guideCta": "Anleitung ansehen →",
-      "lastReceived": "Zuletzt",
-      "notConfigured": "Nicht eingerichtet",
-      "forwardHint": "Leite deine Suchagenten von Willhaben, ImmoScout24 & Co. an diese Adresse weiter:",
+      "forwardHint": "Suchagenten-Emails automatisch an diese Adresse weiterleiten:",
       "copy": "Kopieren",
-      "copied": "Kopiert!"
+      "copied": "Kopiert!",
+      "notConfigured": "Nicht eingerichtet",
+      "scrapedHint": "Durchsucht außerdem {count} weitere Immobilienportale, darunter {names}."
     },
     "carousels": {
       "newArrivals": "Neu eingetroffen",

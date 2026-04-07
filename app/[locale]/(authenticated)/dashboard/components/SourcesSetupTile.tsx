@@ -14,29 +14,11 @@ const PLATFORM_LABELS: Record<string, string> = {
   immmo: 'immmo.at',
 };
 
-function EmailCopyBlock({ immioEmail, t }: { immioEmail: string; t: (key: string) => string }) {
-  const [copied, setCopied] = useState(false);
+const SCRAPED_SOURCES = ['Raiffeisen Immobilien', 's REAL', 'ÖRAG', 'RE/MAX'];
 
-  function handleCopy() {
-    navigator.clipboard.writeText(immioEmail);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  return (
-    <div className="mt-auto pt-3 border-t border-gray-100">
-      <p className="text-xs text-gray-400 mb-2">{t('forwardHint')}</p>
-      <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2">
-        <p className="text-sm font-mono font-medium text-gray-900 select-all truncate flex-1">{immioEmail}</p>
-        <button
-          onClick={handleCopy}
-          className="flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded bg-teal-600 hover:bg-teal-700 text-white transition-colors"
-        >
-          {copied ? t('copied') : t('copy')}
-        </button>
-      </div>
-    </div>
-  );
+function pickRandom(arr: string[], count: number): string[] {
+  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
 }
 
 export default function SourcesSetupTile({
@@ -47,6 +29,14 @@ export default function SourcesSetupTile({
   immioEmail: string | null;
 }) {
   const t = useTranslations('dashboard.sourcesTile');
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    if (!immioEmail) return;
+    navigator.clipboard.writeText(immioEmail);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   const platformStatus = useMemo(() => {
     const now = Date.now();
@@ -76,88 +66,61 @@ export default function SourcesSetupTile({
     return result;
   }, [properties]);
 
-  const activePlatforms = KNOWN_PLATFORMS.filter(p => platformStatus[p].active);
-  const inactivePlatforms = KNOWN_PLATFORMS.filter(p => !platformStatus[p].active);
-  const hasAnyEmail = properties.some(p => KNOWN_PLATFORMS.includes(p.platform));
-  const allActive = inactivePlatforms.length === 0;
-
-  // State A — new user
-  if (!hasAnyEmail) {
-    return (
-      <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
-        <div>
-          <h3 className="text-base font-semibold text-gray-900 mb-2">{t('setupPrompt')}</h3>
-          <p className="text-sm text-gray-500 mb-4">{t('setupBody')}</p>
-        </div>
-        {immioEmail && <EmailCopyBlock immioEmail={immioEmail} t={t} />}
-      </div>
-    );
-  }
-
-  // State C — all healthy
-  if (allActive) {
-    return (
-      <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
-        <div>
-          <h3 className="text-base font-semibold text-gray-900 mb-4">{t('titleHealthy')}</h3>
-          <div className="space-y-3">
-            {KNOWN_PLATFORMS.map(platform => (
-              <div key={platform} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-500 text-sm">✓</span>
-                  <span className="text-sm text-gray-700">{PLATFORM_LABELS[platform]}</span>
-                </div>
-                {platformStatus[platform].lastReceived && (
-                  <span className="text-xs text-gray-400">
-                    {new Date(platformStatus[platform].lastReceived!).toLocaleDateString('de-AT')}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-        {immioEmail && <EmailCopyBlock immioEmail={immioEmail} t={t} />}
-      </div>
-    );
-  }
-
-  // State B — partial
-  const firstInactive = inactivePlatforms[0];
+  // Pick 3 random scraped sources for the tagline (stable per render)
+  const highlightedScraped = useMemo(() => pickRandom(SCRAPED_SOURCES, 3), []);
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
-      <div>
-        <h3 className="text-base font-semibold text-gray-900 mb-4">{t('title')}</h3>
-        <div className="space-y-3">
-          {KNOWN_PLATFORMS.map(platform => (
-            <div key={platform} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {platformStatus[platform].active ? (
-                  <span className="text-green-500 text-sm">✓</span>
-                ) : (
-                  <span className="text-amber-400 text-sm">○</span>
-                )}
-                <span className="text-sm text-gray-700">{PLATFORM_LABELS[platform]}</span>
-              </div>
-              {platformStatus[platform].active && platformStatus[platform].lastReceived ? (
-                <span className="text-xs text-gray-400">
-                  {new Date(platformStatus[platform].lastReceived!).toLocaleDateString('de-AT')}
-                </span>
-              ) : (
-                <span className="text-xs text-gray-400">{t('notConfigured')}</span>
-              )}
-            </div>
-          ))}
-        </div>
+      <h3 className="text-base font-semibold text-gray-900 mb-3">{t('title')}</h3>
 
-        {firstInactive && (
-          <p className="text-sm text-teal-600 mt-4">
-            {t('nudge', { platform: PLATFORM_LABELS[firstInactive] })}
-          </p>
-        )}
+      {/* Email forwarding section */}
+      {immioEmail && (
+        <div className="mb-4">
+          <p className="text-sm text-gray-500 mb-2">{t('forwardHint')}</p>
+          <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2">
+            <p className="text-sm font-mono font-medium text-gray-900 select-all truncate flex-1">{immioEmail}</p>
+            <button
+              onClick={handleCopy}
+              className="flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded bg-teal-600 hover:bg-teal-700 text-white transition-colors"
+            >
+              {copied ? t('copied') : t('copy')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Platform status list */}
+      <div className="space-y-2 flex-1">
+        {KNOWN_PLATFORMS.map(platform => (
+          <div key={platform} className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {platformStatus[platform].active ? (
+                <span className="text-green-500 text-sm">✓</span>
+              ) : (
+                <span className="text-amber-400 text-sm">○</span>
+              )}
+              <span className="text-sm text-gray-700">{PLATFORM_LABELS[platform]}</span>
+            </div>
+            {platformStatus[platform].active && platformStatus[platform].lastReceived ? (
+              <span className="text-xs text-gray-400">
+                {new Date(platformStatus[platform].lastReceived!).toLocaleDateString('de-AT')}
+              </span>
+            ) : (
+              <span className="text-xs text-gray-400">{t('notConfigured')}</span>
+            )}
+          </div>
+        ))}
       </div>
 
-      {immioEmail && <EmailCopyBlock immioEmail={immioEmail} t={t} />}
+      {/* Scraped sources tagline */}
+      <div className="mt-3 pt-3 border-t border-gray-100">
+        <p className="text-xs text-gray-400">
+          {t('scrapedHint', {
+            count: SCRAPED_SOURCES.length,
+            names: highlightedScraped.join(', '),
+          })}
+        </p>
+      </div>
     </div>
   );
 }

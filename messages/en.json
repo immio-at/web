@@ -232,18 +232,11 @@
     },
     "sourcesTile": {
       "title": "Sources",
-      "titleHealthy": "Sources — All active",
-      "setupPrompt": "Set up email forwarding",
-      "setupBody": "Connect your Willhaben and ImmoScout24 search agents with IMMIO to receive listings automatically.",
-      "setupCta": "Setup guide →",
-      "yourEmail": "Your IMMIO address",
-      "nudge": "No {platform} yet? Set it up now →",
-      "guideCta": "View guide →",
-      "lastReceived": "Last received",
-      "notConfigured": "Not configured",
-      "forwardHint": "Forward your search agents from Willhaben, ImmoScout24 & others to this address:",
+      "forwardHint": "Auto-forward search agent emails to this address:",
       "copy": "Copy",
-      "copied": "Copied!"
+      "copied": "Copied!",
+      "notConfigured": "Not configured",
+      "scrapedHint": "Also searching {count} other property portals including {names}."
     },
     "carousels": {
       "newArrivals": "New arrivals",
