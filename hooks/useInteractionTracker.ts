@@ -1,82 +1,55 @@
 /**
  * useInteractionTracker
  *
- * Tracks user interactions with properties in localStorage.
+ * Tracks user interactions with properties via the backend API.
  * An "interaction" is any engagement: opening the URL, opening the analysis modal,
- * changing status, reporting unavailable, etc.
+ * or changing status (excluding not_relevant dismiss).
  *
- * Stores: { [propertyId]: { count: number, lastInteractedAt: number (epoch ms) } }
- *
- * Tech debt: migrate to backend table for cross-device persistence.
+ * Fires POST /properties/:id/interactions — fire-and-forget, non-blocking.
+ * Recently viewed data is fetched via GET /properties/recently-viewed.
  */
 
 import { useCallback, useRef } from 'react';
+import {
+  trackInteraction as apiTrackInteraction,
+  getRecentlyViewed as apiGetRecentlyViewed,
+  Property,
+} from '@/lib/api';
 
-const STORAGE_KEY = 'immio_property_interactions';
+export type InteractionType = 'view' | 'analysis' | 'url_click' | 'status_change';
 
-interface InteractionRecord {
-  count: number;
-  lastInteractedAt: number;
-}
-
-type InteractionMap = Record<string, InteractionRecord>;
-
-function loadInteractions(): InteractionMap {
-  if (typeof window === 'undefined') return {};
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveInteractions(data: InteractionMap) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {
-    // Storage full or unavailable — silently ignore
-  }
-}
-
-export function trackInteraction(propertyId: string) {
-  const data = loadInteractions();
-  const existing = data[propertyId];
-  data[propertyId] = {
-    count: (existing?.count ?? 0) + 1,
-    lastInteractedAt: Date.now(),
-  };
-  saveInteractions(data);
-}
-
-export function getRecentlyInteracted(limit: number = 15): string[] {
-  const data = loadInteractions();
-  return Object.entries(data)
-    .sort(([, a], [, b]) => b.lastInteractedAt - a.lastInteractedAt)
-    .slice(0, limit)
-    .map(([id]) => id);
-}
-
-export function getMostInteracted(limit: number = 15): string[] {
-  const data = loadInteractions();
-  return Object.entries(data)
-    .filter(([, r]) => r.count > 1) // only show properties interacted with more than once
-    .sort(([, a], [, b]) => b.count - a.count || b.lastInteractedAt - a.lastInteractedAt)
-    .slice(0, limit)
-    .map(([id]) => id);
+export function trackInteraction(propertyId: string, type: InteractionType = 'view') {
+  // Fire-and-forget — don't block UI on tracking
+  apiTrackInteraction(propertyId, type).catch(() => {
+    // Silently ignore tracking failures
+  });
 }
 
 export function useInteractionTracker() {
-  // Use ref to avoid re-renders on every interaction
-  const dataRef = useRef<InteractionMap>(loadInteractions());
+  // Use ref to debounce rapid duplicate interactions on the same property
+  const recentRef = useRef<Map<string, number>>(new Map());
 
-  const track = useCallback((propertyId: string) => {
-    trackInteraction(propertyId);
-    dataRef.current = loadInteractions();
+  const track = useCallback((propertyId: string, type: InteractionType = 'view') => {
+    // Debounce: skip if same property tracked within last 2 seconds
+    const key = `${propertyId}:${type}`;
+    const now = Date.now();
+    const lastTracked = recentRef.current.get(key);
+    if (lastTracked && now - lastTracked < 2000) return;
+    recentRef.current.set(key, now);
+
+    trackInteraction(propertyId, type);
   }, []);
 
-  const getRecent = useCallback((limit: number = 15) => getRecentlyInteracted(limit), []);
-  const getMost = useCallback((limit: number = 15) => getMostInteracted(limit), []);
+  const getRecentlyViewed = useCallback(
+    async (limit: number = 20): Promise<Property[]> => {
+      try {
+        return await apiGetRecentlyViewed(limit);
+      } catch {
+        return [];
+      }
+    },
+    [],
+  );
 
-  return { track, getRecent, getMost };
+  return { track, getRecentlyViewed };
 }

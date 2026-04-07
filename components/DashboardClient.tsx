@@ -13,7 +13,7 @@ const STAGE_I18N_KEY: Record<string, string> = {
 };
 import FilterBar, { FilterValues, EMPTY_FILTERS, resolvePostcodes } from '@/components/FilterBar';
 
-type InteractionFn = (id: string) => void;
+type InteractionFn = (id: string, type?: 'view' | 'analysis' | 'url_click' | 'status_change') => void;
 
 type ViewMode = 'tiles' | 'table';
 
@@ -63,39 +63,21 @@ export default function DashboardClient({
   onUpdate,
   onOptimisticUpdate,
   onInteraction,
-  recentIds,
-  frequentIds,
+  recentlyViewed,
 }: {
   properties: Property[];
   onUpdate: UpdateFn;
   onOptimisticUpdate: OptimisticUpdateFn;
   onInteraction?: InteractionFn;
-  recentIds?: string[];
-  frequentIds?: string[];
+  recentlyViewed?: Property[];
 }) {
   const t = useTranslations('dashboard');
   const [view, setView] = useState<ViewMode>('tiles');
   const [filterValues, setFilterValues] = useState<FilterValues>(EMPTY_FILTERS);
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
 
-  // Build carousel data from property IDs
-  const propMap = useMemo(() => {
-    const m = new Map<string, Property>();
-    properties.forEach(p => m.set(p.id, p));
-    return m;
-  }, [properties]);
-
-  const recentProperties = useMemo(
-    () => (recentIds ?? []).map(id => propMap.get(id)).filter((p): p is Property => !!p),
-    [recentIds, propMap],
-  );
-  const frequentProperties = useMemo(
-    () => (frequentIds ?? []).map(id => propMap.get(id)).filter((p): p is Property => !!p),
-    [frequentIds, propMap],
-  );
-
   function handleAnalyse(p: Property) {
-    onInteraction?.(p.id);
+    onInteraction?.(p.id, 'analysis');
     setAnalyseProperty(p);
   }
 
@@ -158,18 +140,10 @@ export default function DashboardClient({
   return (
     <div>
       {/* Carousels */}
-      {recentProperties.length > 0 && (
+      {recentlyViewed && recentlyViewed.length > 0 && (
         <PropertyCarousel
           title={t('carousel.recentlyViewed')}
-          properties={recentProperties}
-          onInteraction={onInteraction}
-          onAnalyse={handleAnalyse}
-        />
-      )}
-      {frequentProperties.length > 0 && (
-        <PropertyCarousel
-          title={t('carousel.mostViewed')}
-          properties={frequentProperties}
+          properties={recentlyViewed}
           onInteraction={onInteraction}
           onAnalyse={handleAnalyse}
         />
@@ -286,7 +260,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
   const stageLabel = tStages(STAGE_I18N_KEY[status] ?? status);
 
   async function handleStatusChange(newStatus: string) {
-    if (newStatus !== 'not_relevant') onInteraction?.(property.id);
+    if (newStatus !== 'not_relevant') onInteraction?.(property.id, 'status_change');
     setLoading(true);
     await onUpdate(property.id, {
       status: newStatus,
@@ -315,7 +289,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
       )}
 
       {/* Image */}
-      <a href={property.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => onInteraction?.(property.id)}>
+      <a href={property.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => onInteraction?.(property.id, 'url_click')}>
         <div className="relative overflow-hidden bg-gray-200 rounded-t-lg" style={{ height: '192px' }}>
           {property.imageUrl ? (
             <img
@@ -346,7 +320,7 @@ function TileCard({ property, onUpdate, onOptimisticUpdate, onAnalyse, onInterac
 
       {/* Details */}
       <div className="p-4">
-        <a href={property.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => onInteraction?.(property.id)}>
+        <a href={property.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => onInteraction?.(property.id, 'url_click')}>
           <h3 className="font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors line-clamp-2">
             {property.title}
           </h3>
@@ -495,7 +469,7 @@ function TableView({ properties, onUpdate, onOptimisticUpdate, onAnalyse, onInte
                     <div className="flex items-center gap-1">
                       <select
                         defaultValue={prop.status ?? 'new'}
-                        onChange={e => { if (e.target.value !== 'not_relevant') onInteraction?.(prop.id); onUpdate(prop.id, { status: e.target.value, movedToStageAt: new Date().toISOString() }); }}
+                        onChange={e => { if (e.target.value !== 'not_relevant') onInteraction?.(prop.id, 'status_change'); onUpdate(prop.id, { status: e.target.value, movedToStageAt: new Date().toISOString() }); }}
                         className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-300 ${STATUS_BADGE[prop.status ?? ''] ?? 'bg-gray-100 text-gray-600'}`}
                       >
                         {FUNNEL_STAGES.filter(s => s.key !== 'not_relevant').map(stage => (
@@ -604,7 +578,7 @@ function CarouselCard({ property, onInteraction, onAnalyse }: {
         href={property.sourceUrl}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => onInteraction?.(property.id)}
+        onClick={() => onInteraction?.(property.id, 'url_click')}
       >
         <div className="relative h-28 bg-gray-100">
           {property.imageUrl ? (

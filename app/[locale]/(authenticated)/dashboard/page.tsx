@@ -1,21 +1,30 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useProperties, invalidateCache } from '@/hooks/useProperties';
-import { importFromUrl } from '@/lib/api';
+import { importFromUrl, Property } from '@/lib/api';
 import { useInteractionTracker } from '@/hooks/useInteractionTracker';
 import DashboardClient from '@/components/DashboardClient';
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
   const { properties, loading, error, update, optimisticUpdate } = useProperties();
-  const { track, getRecent, getMost } = useInteractionTracker();
-  const [, setInteractionTick] = useState(0); // force re-render on interaction
+  const { track, getRecentlyViewed } = useInteractionTracker();
 
-  const handleInteraction = useCallback((id: string) => {
-    track(id);
-    setInteractionTick(t => t + 1); // trigger re-render so carousels update
+  // Recently viewed properties from backend
+  const [recentlyViewed, setRecentlyViewed] = useState<Property[]>([]);
+
+  // Fetch recently viewed on mount and after interactions
+  const [interactionTick, setInteractionTick] = useState(0);
+  useEffect(() => {
+    getRecentlyViewed(15).then(setRecentlyViewed);
+  }, [getRecentlyViewed, interactionTick]);
+
+  const handleInteraction = useCallback((id: string, type?: 'view' | 'analysis' | 'url_click' | 'status_change') => {
+    track(id, type ?? 'view');
+    // Refresh recently viewed after a short delay to allow backend write
+    setTimeout(() => setInteractionTick(t => t + 1), 500);
   }, [track]);
 
   // URL import state
@@ -56,7 +65,7 @@ export default function DashboardPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-red-800">⚠️ {error}</p>
+          <p className="text-red-800">{error}</p>
         </div>
       )}
 
@@ -83,7 +92,7 @@ export default function DashboardPage() {
         <p className="text-xs text-gray-400 mt-1.5">{t('urlImport.supportedPlatforms')}</p>
         {importSuccess && (
           <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2.5">
-            <p className="text-green-800 text-sm">✓ {importSuccess}</p>
+            <p className="text-green-800 text-sm">{importSuccess}</p>
           </div>
         )}
         {importError && (
@@ -98,8 +107,7 @@ export default function DashboardPage() {
         onUpdate={update}
         onOptimisticUpdate={optimisticUpdate}
         onInteraction={handleInteraction}
-        recentIds={getRecent(15)}
-        frequentIds={getMost(15)}
+        recentlyViewed={recentlyViewed}
       />
     </div>
   );

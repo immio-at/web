@@ -216,6 +216,48 @@ export async function importFromUrl(url: string, status?: string): Promise<{ mes
   return handleResponse(response);
 }
 
+// ─── Interactions ─────────────────────────────────────────────────────────────
+
+export async function trackInteraction(
+  propertyId: string,
+  type: 'view' | 'analysis' | 'url_click' | 'status_change',
+): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${propertyId}/interactions`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ type }),
+  });
+  await handleResponse(response);
+}
+
+export async function trackInteractionBatch(
+  interactions: { propertyId: string; type: 'view' | 'analysis' | 'url_click' | 'status_change' }[],
+): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/interactions/batch`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ interactions }),
+  });
+  await handleResponse(response);
+}
+
+export async function getRecentlyViewed(limit: number = 20): Promise<Property[]> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/recently-viewed?limit=${limit}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  return handleResponse(response);
+}
+
 // ─── Scraped Listings ─────────────────────────────────────────────────────────
 
 export interface ScrapedListing {
