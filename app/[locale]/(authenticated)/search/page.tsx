@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { getScrapedListings, saveScrapedListing, ScrapedListing, SavedFilter } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { invalidateCache } from '@/hooks/useProperties';
@@ -40,6 +41,38 @@ function formatPricePerSqm(price: number | null, size: number | null) {
   const ppsm = Math.round(price / size);
   return '€ ' + ppsm.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '/m²';
 }
+
+// ─── Build FilterValues from URL search params ──────────────────────────────
+
+function filterValuesFromParams(params: URLSearchParams): FilterValues {
+  return {
+    keyword: params.get('keyword') ?? '',
+    location: params.get('postcodes') ?? '',
+    minPrice: params.get('minPrice') ?? '',
+    maxPrice: params.get('maxPrice') ?? '',
+    minPricePerSqm: params.get('minPricePerSqm') ?? '',
+    maxPricePerSqm: params.get('maxPricePerSqm') ?? '',
+    minSize: params.get('minSize') ?? '',
+    maxSize: params.get('maxSize') ?? '',
+    minRooms: params.get('minRooms') ?? '',
+    maxRooms: params.get('maxRooms') ?? '',
+    sortBy: params.get('sortBy') ?? 'listedDate',
+    sortOrder: params.get('sortOrder') ?? 'desc',
+    showHidden: false,
+  };
+}
+
+function hasAnyParam(params: URLSearchParams): boolean {
+  return !!(
+    params.get('keyword') || params.get('postcodes') ||
+    params.get('minPrice') || params.get('maxPrice') ||
+    params.get('minPricePerSqm') || params.get('maxPricePerSqm') ||
+    params.get('minSize') || params.get('maxSize') ||
+    params.get('minRooms') || params.get('maxRooms')
+  );
+}
+
+type ViewMode = 'grid' | 'table';
 
 // ─── Listing card ─────────────────────────────────────────────────────────────
 
@@ -122,18 +155,91 @@ function ListingCard({
   );
 }
 
+// ─── Table row ───────────────────────────────────────────────────────────────
+
+function ListingTableRow({
+  listing,
+  onSave,
+  saving,
+  odd,
+}: {
+  listing: ScrapedListing;
+  onSave: (listing: ScrapedListing) => void;
+  saving: boolean;
+  odd: boolean;
+}) {
+  const t = useTranslations('search');
+  const priceText = formatPrice(listing.price ? parseFloat(String(listing.price)) : null) ?? '—';
+  const ppsmText = formatPricePerSqm(
+    listing.price ? parseFloat(String(listing.price)) : null,
+    listing.sizeSqm ? parseFloat(String(listing.sizeSqm)) : null,
+  ) ?? '—';
+
+  return (
+    <tr className={`border-b border-gray-100 hover:bg-gray-50 ${odd ? 'bg-gray-50/50' : ''}`}>
+      <td className="px-4 py-2">
+        <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer">
+          <div className="relative rounded overflow-hidden bg-gray-100 hover:opacity-80 transition-opacity cursor-pointer" style={{ width: '48px', height: '48px' }}>
+            {listing.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={listing.imageUrl} alt={listing.title ?? ''} className="w-full h-full object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />
+            ) : (
+              <span className="text-xl flex items-center justify-center h-full">🏠</span>
+            )}
+          </div>
+        </a>
+      </td>
+      <td className="px-4 py-2 max-w-xs">
+        <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-gray-900 hover:text-blue-600 font-medium text-sm line-clamp-2">
+          {listing.title ?? '—'}
+        </a>
+      </td>
+      <td className="px-4 py-2 font-semibold text-blue-600 text-sm whitespace-nowrap">{priceText}</td>
+      <td className="px-4 py-2 text-sm whitespace-nowrap">{listing.sizeSqm ? `${Math.round(parseFloat(String(listing.sizeSqm)))}m²` : '—'}</td>
+      <td className="px-4 py-2 text-sm whitespace-nowrap">{listing.rooms || '—'}</td>
+      <td className="px-4 py-2 text-sm whitespace-nowrap">{listing.location || '—'}</td>
+      <td className="px-4 py-2 text-sm whitespace-nowrap text-gray-500">{ppsmText}</td>
+      <td className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{platformLabel(listing.platform)}</td>
+      <td className="px-4 py-2">
+        {listing.savedByUser ? (
+          <span className="text-green-600 text-xs font-medium">✓ {t('saved')}</span>
+        ) : (
+          <button
+            onClick={() => onSave(listing)}
+            disabled={saving}
+            className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 whitespace-nowrap"
+          >
+            {saving ? t('saving') : '+ ' + t('saveToProperties')}
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function EntdeckenPage() {
   const t = useTranslations('search');
+  const searchParams = useSearchParams();
   const { session, loading: authLoading } = useAuth();
   const { filters: savedFilters, create: createFilter, remove: removeFilter } = useSavedFilters();
 
+  // Read initial view mode from URL
+  const [view, setView] = useState<ViewMode>(
+    searchParams.get('view') === 'table' ? 'table' : 'grid',
+  );
+
+  // Build initial filter values from URL params
+  const initialFromUrl = filterValuesFromParams(searchParams);
+  const hasUrlParams = hasAnyParam(searchParams);
+
   // Filter state
-  const [filterValues, setFilterValues] = useState<FilterValues>(EMPTY_FILTERS);
-  const [applied, setApplied] = useState<FilterValues>(EMPTY_FILTERS);
+  const [filterValues, setFilterValues] = useState<FilterValues>(initialFromUrl);
+  const [applied, setApplied] = useState<FilterValues>(initialFromUrl);
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [initialSearchDone, setInitialSearchDone] = useState(false);
 
   // Data state
   const [listings, setListings] = useState<ScrapedListing[]>([]);
@@ -144,7 +250,6 @@ export default function EntdeckenPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveFilterError, setSaveFilterError] = useState<string | null>(null);
   const [saveFilterSuccess, setSaveFilterSuccess] = useState<string | null>(null);
-
 
   const fetchListings = useCallback(async () => {
     if (authLoading || !session) return;
@@ -171,6 +276,7 @@ export default function EntdeckenPage() {
       setListings(data.data);
       setTotal(data.total);
       setTotalPages(data.totalPages);
+      setInitialSearchDone(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : t('errorLoadingListings'));
     } finally {
@@ -254,9 +360,6 @@ export default function EntdeckenPage() {
       <div className="mb-6">
         <p className="text-[11px] font-mono uppercase tracking-widest text-teal-600 mb-1">{t('label')}</p>
         <h1 className="text-2xl font-light text-gray-900 tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {t('subtitle')}
-        </p>
       </div>
 
       {/* Filter bar */}
@@ -287,42 +390,106 @@ export default function EntdeckenPage() {
       {/* Error */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-red-800 text-sm">⚠️ {error}</p>
+          <p className="text-red-800 text-sm">{error}</p>
         </div>
       )}
 
-      {/* Results count */}
+      {/* Results count + view toggle */}
       {!loading && (
-        <p className="text-sm text-gray-500 mb-4">
-          {total === 0 ? t('noListingsFound') : t('listingsFound', { count: total.toLocaleString('de-AT') })}
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-gray-500">
+            {total === 0 ? t('noListingsFound') : t('listingsFound', { count: total.toLocaleString('de-AT') })}
+          </p>
+          <div className="flex gap-1">
+            {(['grid', 'table'] as ViewMode[]).map(v => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  view === v
+                    ? 'bg-slate-700 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {v === 'grid' ? `⊞ ${t('viewGrid')}` : `☰ ${t('viewTable')}`}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
-      {/* Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
-              <div className="h-48 bg-gray-100" />
-              <div className="p-4 space-y-2">
-                <div className="h-4 bg-gray-100 rounded w-3/4" />
-                <div className="h-4 bg-gray-100 rounded w-1/2" />
-                <div className="h-8 bg-gray-100 rounded mt-3" />
+      {/* Grid view */}
+      {view === 'grid' && (
+        loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
+                <div className="h-48 bg-gray-100" />
+                <div className="p-4 space-y-2">
+                  <div className="h-4 bg-gray-100 rounded w-3/4" />
+                  <div className="h-4 bg-gray-100 rounded w-1/2" />
+                  <div className="h-8 bg-gray-100 rounded mt-3" />
+                </div>
               </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {listings.map(listing => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                onSave={handleSave}
+                saving={savingId === listing.id}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Table view */}
+      {view === 'table' && (
+        loading ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-400 animate-pulse">
+            {t('loading') ?? 'Loading...'}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="text-left px-4 py-3 font-medium text-gray-700 w-16">{t('tableImage')}</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-700">{t('tableTitle')}</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-700">{t('tablePrice')}</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-700">{t('tableSize')}</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-700">{t('tableRooms')}</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-700">{t('tableLocation')}</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-700">{t('tablePricePerSqm')}</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-700">{t('tableSource')}</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-700 w-32"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {listings.map((listing, i) => (
+                    <ListingTableRow
+                      key={listing.id}
+                      listing={listing}
+                      onSave={handleSave}
+                      saving={savingId === listing.id}
+                      odd={i % 2 !== 0}
+                    />
+                  ))}
+                </tbody>
+              </table>
+              {listings.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  {t('noListingsFound')}
+                </div>
+              )}
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {listings.map(listing => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              onSave={handleSave}
-              saving={savingId === listing.id}
-            />
-          ))}
-        </div>
+          </div>
+        )
       )}
 
       {/* Pagination */}
