@@ -197,49 +197,50 @@
   },
   "dashboard": {
     "loading": "Loading properties...",
-    "urlImport": {
-      "label": "Import listing by URL",
-      "placeholder": "https://www.willhaben.at/iad/immobilien/d/...",
-      "importing": "Importing...",
-      "import": "Import",
-      "supportedPlatforms": "Supported: Willhaben. More platforms coming soon.",
-      "successMessage": "\"{title}\" imported and moved to Investigating.",
-      "errorUnknown": "Unknown error",
-      "defaultTitle": "Listing"
+    "funnelTile": {
+      "title": "Funnel",
+      "activeDeals": "Active deals",
+      "totalValue": "Total value",
+      "expiredCount": "Expired",
+      "cta": "Go to Funnel →",
+      "empty": "No deals yet. Start by discovering properties."
     },
-    "carousel": {
-      "recentlyViewed": "Recently viewed",
-      "mostViewed": "Most frequently viewed",
-      "analyse": "Analyse"
+    "analyticsTile": {
+      "title": "Analytics",
+      "comingSoon": "Coming Soon",
+      "totalSaved": "Saved properties",
+      "cta": "Go to Analytics →"
     },
-    "viewToggle": {
-      "tiles": "Tiles",
-      "tilesIcon": "⊞",
+    "browseTile": {
+      "title": "Discover properties",
+      "search": "Search",
+      "finder": "Finder",
       "table": "Table",
-      "tableIcon": "☰"
+      "lastFilter": "Last used",
+      "urlImport": "Import listing by URL",
+      "importSuccess": "\"{title}\" imported.",
+      "importError": "Import failed."
     },
-    "propertyCount": "{count} properties",
-    "noMatchingProperties": "No properties match your filters",
-    "tile": {
-      "expired": "No longer available",
-      "rooms": "rooms",
-      "analyseTitle": "Analyse this property",
-      "reportUnavailableTitle": "Report as unavailable",
-      "dismissTitle": "Dismiss — hide this property"
+    "sourcesTile": {
+      "title": "Sources",
+      "titleHealthy": "Sources — All active",
+      "setupPrompt": "Set up email forwarding",
+      "setupBody": "Connect your Willhaben and ImmoScout24 search agents with IMMIO to receive listings automatically.",
+      "setupCta": "Setup guide →",
+      "yourEmail": "Your IMMIO address",
+      "nudge": "No {platform} yet? Set it up now →",
+      "guideCta": "View guide →",
+      "lastReceived": "Last received",
+      "notConfigured": "Not configured"
     },
-    "table": {
-      "headerImage": "Image",
-      "headerTitle": "Title",
-      "headerPrice": "Price",
-      "headerSize": "m²",
-      "headerRooms": "Rooms",
-      "headerLocation": "Location",
-      "headerPricePerSqm": "€/m²",
-      "headerStatus": "Status",
-      "headerDate": "Date",
-      "dismissTitle": "Dismiss",
-      "analyseTitle": "Analyse this property",
-      "reportUnavailableTitle": "Report as unavailable"
+    "carousels": {
+      "newArrivals": "New arrivals",
+      "recentlyViewed": "Recently viewed",
+      "recommended": "Recommended for you",
+      "newArrivalsEmpty": "No listings yet. Set up your email forwarding.",
+      "recentlyViewedEmpty": "No recently viewed listings yet.",
+      "recommendedLocked": "Add listings to your funnel to get personalised recommendations.",
+      "analyse": "Analyse"
     }
   },
   "search": {

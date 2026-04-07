@@ -2,15 +2,19 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { useProperties, invalidateCache } from '@/hooks/useProperties';
-import { importFromUrl, Property } from '@/lib/api';
+import { useProperties } from '@/hooks/useProperties';
+import { Property } from '@/lib/api';
 import { useInteractionTracker } from '@/hooks/useInteractionTracker';
+import { useSavedFilters } from '@/hooks/useSavedFilters';
+import { useAuth } from '@/context/AuthContext';
 import DashboardClient from '@/components/DashboardClient';
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
-  const { properties, loading, error, update, optimisticUpdate } = useProperties();
+  const { properties, loading, error } = useProperties();
   const { track, getRecentlyViewed } = useInteractionTracker();
+  const { filters } = useSavedFilters();
+  const { immioEmail } = useAuth();
 
   // Recently viewed properties from backend
   const [recentlyViewed, setRecentlyViewed] = useState<Property[]>([]);
@@ -18,7 +22,7 @@ export default function DashboardPage() {
   // Fetch recently viewed on mount and after interactions
   const [interactionTick, setInteractionTick] = useState(0);
   useEffect(() => {
-    getRecentlyViewed(15).then(setRecentlyViewed);
+    getRecentlyViewed(20).then(setRecentlyViewed);
   }, [getRecentlyViewed, interactionTick]);
 
   const handleInteraction = useCallback((id: string, type?: 'view' | 'analysis' | 'url_click' | 'status_change') => {
@@ -27,31 +31,10 @@ export default function DashboardPage() {
     setTimeout(() => setInteractionTick(t => t + 1), 500);
   }, [track]);
 
-  // URL import state
-  const [importUrl, setImportUrl] = useState('');
-  const [importing, setImporting] = useState(false);
-  const [importSuccess, setImportSuccess] = useState<string | null>(null);
-  const [importError, setImportError] = useState<string | null>(null);
-
-  async function handleImportUrl(e: React.FormEvent) {
-    e.preventDefault();
-    if (!importUrl.trim()) return;
-    setImporting(true);
-    setImportError(null);
-    setImportSuccess(null);
-    try {
-      const result = await importFromUrl(importUrl.trim(), 'investigating');
-      setImportSuccess(t('urlImport.successMessage', { title: result.property.title || t('urlImport.defaultTitle') }));
-      setImportUrl('');
-      invalidateCache();
-      setTimeout(() => setImportSuccess(null), 5000);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : t('urlImport.errorUnknown');
-      setImportError(msg);
-    } finally {
-      setImporting(false);
-    }
-  }
+  // Most recently updated saved filter
+  const lastFilter = filters.length > 0
+    ? filters.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0]
+    : null;
 
   if (loading) {
     return (
@@ -69,45 +52,12 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* URL Import */}
-      <form onSubmit={handleImportUrl} className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
-        <label className="text-xs text-gray-500 font-medium block mb-2">{t('urlImport.label')}</label>
-        <div className="flex gap-3">
-          <input
-            type="url"
-            value={importUrl}
-            onChange={e => setImportUrl(e.target.value)}
-            placeholder={t('urlImport.placeholder')}
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={importing}
-          />
-          <button
-            type="submit"
-            disabled={importing || !importUrl.trim()}
-            className="px-5 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            {importing ? t('urlImport.importing') : t('urlImport.import')}
-          </button>
-        </div>
-        <p className="text-xs text-gray-400 mt-1.5">{t('urlImport.supportedPlatforms')}</p>
-        {importSuccess && (
-          <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2.5">
-            <p className="text-green-800 text-sm">{importSuccess}</p>
-          </div>
-        )}
-        {importError && (
-          <div className="mt-2 bg-red-50 border border-red-200 rounded-lg p-2.5">
-            <p className="text-red-800 text-sm">{importError}</p>
-          </div>
-        )}
-      </form>
-
       <DashboardClient
         properties={properties}
-        onUpdate={update}
-        onOptimisticUpdate={optimisticUpdate}
         onInteraction={handleInteraction}
         recentlyViewed={recentlyViewed}
+        immioEmail={immioEmail}
+        lastFilter={lastFilter}
       />
     </div>
   );

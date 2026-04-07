@@ -197,49 +197,50 @@
   },
   "dashboard": {
     "loading": "Immobilien werden geladen…",
-    "urlImport": {
-      "label": "Inserat per URL importieren",
-      "placeholder": "https://www.willhaben.at/iad/immobilien/d/...",
-      "importing": "Importieren...",
-      "import": "Importieren",
-      "supportedPlatforms": "Unterstützt: Willhaben. Weitere Plattformen folgen.",
-      "successMessage": "\"{title}\" importiert und in In Prüfung verschoben.",
-      "errorUnknown": "Unbekannter Fehler",
-      "defaultTitle": "Inserat"
+    "funnelTile": {
+      "title": "Funnel",
+      "activeDeals": "Aktive Deals",
+      "totalValue": "Gesamtwert",
+      "expiredCount": "Abgelaufen",
+      "cta": "Zum Funnel →",
+      "empty": "Noch keine Deals. Starte mit der Suche."
     },
-    "carousel": {
-      "recentlyViewed": "Zuletzt angesehen",
-      "mostViewed": "Am häufigsten angesehen",
-      "analyse": "Analyse"
+    "analyticsTile": {
+      "title": "Analytics",
+      "comingSoon": "Coming Soon",
+      "totalSaved": "Gespeicherte Immobilien",
+      "cta": "Zur Analyse →"
     },
-    "viewToggle": {
-      "tiles": "Kacheln",
-      "tilesIcon": "⊞",
+    "browseTile": {
+      "title": "Immobilien entdecken",
+      "search": "Suchen",
+      "finder": "Finder",
       "table": "Tabelle",
-      "tableIcon": "☰"
+      "lastFilter": "Zuletzt",
+      "urlImport": "Inserat per URL importieren",
+      "importSuccess": "\"{title}\" importiert.",
+      "importError": "Import fehlgeschlagen."
     },
-    "propertyCount": "{count} Immobilien",
-    "noMatchingProperties": "Keine Immobilien entsprechen deinen Filtern",
-    "tile": {
-      "expired": "Nicht mehr verfügbar",
-      "rooms": "Zi.",
-      "analyseTitle": "Diese Immobilie analysieren",
-      "reportUnavailableTitle": "Als nicht verfügbar melden",
-      "dismissTitle": "Ausblenden — diese Immobilie verstecken"
+    "sourcesTile": {
+      "title": "Quellen",
+      "titleHealthy": "Quellen — Alles aktiv",
+      "setupPrompt": "E-Mail Weiterleitung einrichten",
+      "setupBody": "Verbinde deine Willhaben- und ImmoScout24-Suchagenten mit IMMIO, um Inserate automatisch zu empfangen.",
+      "setupCta": "Einrichtungsanleitung →",
+      "yourEmail": "Deine IMMIO-Adresse",
+      "nudge": "Noch kein {platform}? Jetzt einrichten →",
+      "guideCta": "Anleitung ansehen →",
+      "lastReceived": "Zuletzt",
+      "notConfigured": "Nicht eingerichtet"
     },
-    "table": {
-      "headerImage": "Bild",
-      "headerTitle": "Titel",
-      "headerPrice": "Preis",
-      "headerSize": "m²",
-      "headerRooms": "Zimmer",
-      "headerLocation": "Ort",
-      "headerPricePerSqm": "€/m²",
-      "headerStatus": "Status",
-      "headerDate": "Datum",
-      "dismissTitle": "Ausblenden",
-      "analyseTitle": "Diese Immobilie analysieren",
-      "reportUnavailableTitle": "Als nicht verfügbar melden"
+    "carousels": {
+      "newArrivals": "Neu eingetroffen",
+      "recentlyViewed": "Zuletzt angesehen",
+      "recommended": "Empfohlen für Sie",
+      "newArrivalsEmpty": "Noch keine Inserate. Richte deine E-Mail-Weiterleitung ein.",
+      "recentlyViewedEmpty": "Noch keine angesehenen Inserate.",
+      "recommendedLocked": "Füge Inserate zu deinem Funnel hinzu, um personalisierte Empfehlungen zu erhalten.",
+      "analyse": "Analyse"
     }
   },
   "search": {
