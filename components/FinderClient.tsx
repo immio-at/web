@@ -398,9 +398,6 @@ export default function FinderClient({
         </button>
       </div>
 
-      {/* Progress count */}
-      <div className="text-gray-400 text-xs mt-3">{t('progress', { current, total })}</div>
-
       {/* Directions — below buttons */}
       <div className="flex gap-6 text-xs text-gray-400 text-center mt-3">
         <span>{t('directions.left')}</span>
@@ -408,6 +405,9 @@ export default function FinderClient({
         <span>{t('directions.down')}</span>
         <span>{t('directions.right')}</span>
       </div>
+
+      {/* Progress count */}
+      <div className="text-gray-400 text-xs mt-2">{t('progress', { current, total })}</div>
 
       {/* Analyse modal */}
       {showAnalyseModal && property && (

@@ -93,16 +93,14 @@ Do not create a `/login` route. Session expiry redirects to `/?signin=true`.
 - 30-second TTL cache
 - `update()` mirrors backend rule: clears `listingStatus` to `active` optimistically
 
-**useInteractionTracker hook — localStorage-based view tracking**
+**useInteractionTracker hook — backend-powered interaction tracking**
 - Location: `hooks/useInteractionTracker.ts`
-- Tracks property interactions in `localStorage` key `immio_property_interactions`
-- Stores per-property: `{ count, lastInteractedAt }`
-- Tracked actions: clicking listing URL, opening analysis modal, changing funnel status
-- NOT tracked: report unavailable, dismiss (not_relevant)
-- Provides: `track(id)`, `getRecent(limit)`, `getMost(limit)`
-- Used by Dashboard for "Zuletzt angesehen" and "Am häufigsten angesehen" carousels
-- Tech debt: migrate to backend table for cross-device persistence
-  when status moves to any non-terminal stage
+- Tracks property interactions via `POST /properties/:id/interactions` (fire-and-forget)
+- 2-second debounce per property+type to avoid flooding the API
+- Provides: `track(id, type)`, `getRecentlyViewed(limit)` (async, fetches from backend)
+- Interaction types: `view`, `analysis`, `url_click`, `status_change`
+- Used by Dashboard for "Recently Viewed" carousel
+- localStorage implementation removed — old key `immio_property_interactions` is harmless
 - `optimisticUpdate()` patches arbitrary `Property` fields in cache instantly
 
 **Route group layout**
@@ -277,4 +275,4 @@ Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
 - Cache invalidation via server push — 30s TTL polling in place, revisit post-MVP
 - Impressum address — replace placeholder before public launch (needs GmbH registration)
 - `TERMINAL_STAGES` duplicated in backend and frontend — update both if changed
-- Interaction tracking in localStorage — migrate to backend table for cross-device persistence
+- Old localStorage key `immio_property_interactions` still present in some browsers (harmless, interaction tracking now backend-powered)
