@@ -325,6 +325,10 @@
     "title": "Kaufprozess",
     "subtitle": "Verfolge deine Immobilien durch den Kaufprozess",
     "loading": "Funnel wird geladen…",
+    "filter": {
+      "selectFilter": "Filter anwenden",
+      "clear": "Filter entfernen"
+    },
     "propertyCount": "{count} Immobilien im Funnel",
     "stages": {
       "new": "Neu",

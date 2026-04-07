@@ -325,6 +325,10 @@
     "title": "Buy Funnel",
     "subtitle": "Track your properties through the acquisition process",
     "loading": "Loading funnel...",
+    "filter": {
+      "selectFilter": "Apply filter",
+      "clear": "Clear filter"
+    },
     "propertyCount": "{count} properties in funnel",
     "stages": {
       "new": "New",

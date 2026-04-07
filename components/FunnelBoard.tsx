@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
-import { Property, reportUnavailable, delistProperty } from '@/lib/api';
+import { Property, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
+import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
 
@@ -152,7 +153,7 @@ function ConfirmNotRelevantModal({
 
 // ─── Main board ───────────────────────────────────────────────────────────────
 
-export default function FunnelBoard() {
+export default function FunnelBoard({ savedFilter }: { savedFilter?: SavedFilter | null }) {
   const t = useTranslations('funnel');
   const { properties: all, loading, error, update, optimisticUpdate } = useProperties();
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
@@ -162,9 +163,31 @@ export default function FunnelBoard() {
 
   // Exclude new, not_relevant, and delisted from the funnel view.
   // 'delisted' is the terminal stage for expired listings dismissed by the user.
-  const properties = all.filter(
-    p => p.status !== 'new' && p.status !== 'not_relevant' && p.status !== 'delisted'
-  );
+  // Then apply saved filter if one is selected.
+  const properties = useMemo(() => {
+    let filtered = all.filter(
+      p => p.status !== 'new' && p.status !== 'not_relevant' && p.status !== 'delisted'
+    );
+
+    if (!savedFilter) return filtered;
+
+    const v = savedFilterToValues(savedFilter);
+    return filtered.filter(p => {
+      const price = p.price ? parseFloat(String(p.price)) : null;
+      const size = p.sizeSqm ?? null;
+      const rooms = p.rooms ? parseFloat(String(p.rooms)) : null;
+
+      if (v.minPrice && price != null && price < parseFloat(v.minPrice)) return false;
+      if (v.maxPrice && price != null && price > parseFloat(v.maxPrice)) return false;
+      if (v.minSize && size != null && size < parseFloat(v.minSize)) return false;
+      if (v.maxSize && size != null && size > parseFloat(v.maxSize)) return false;
+      if (v.minRooms && rooms != null && rooms < parseFloat(v.minRooms)) return false;
+      if (v.maxRooms && rooms != null && rooms > parseFloat(v.maxRooms)) return false;
+      const postcodes = resolvePostcodes(v.location);
+      if (postcodes.length > 0 && (!p.zipCode || !postcodes.includes(p.zipCode))) return false;
+      return true;
+    });
+  }, [all, savedFilter]);
 
   async function moveToStage(propertyId: string, newStatus: string) {
     try {
