@@ -27,14 +27,8 @@ export default function DashboardPage() {
 
   const handleInteraction = useCallback((id: string, type?: 'view' | 'analysis' | 'url_click' | 'status_change') => {
     track(id, type ?? 'view');
-    // Refresh recently viewed after a short delay to allow backend write
     setTimeout(() => setInteractionTick(t => t + 1), 500);
   }, [track]);
-
-  // Most recently updated saved filter
-  const lastFilter = filters.length > 0
-    ? filters.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0]
-    : null;
 
   if (loading) {
     return (
@@ -57,7 +51,7 @@ export default function DashboardPage() {
         onInteraction={handleInteraction}
         recentlyViewed={recentlyViewed}
         immioEmail={immioEmail}
-        lastFilter={lastFilter}
+        savedFilters={filters}
       />
     </div>
   );

@@ -12,71 +12,85 @@ const STAGE_I18N_KEY: Record<string, string> = {
   visit_booked: 'visitBooked', visited: 'visited', offer_made: 'offerMade',
 };
 
+function formatPrice(n: number): string {
+  return '€ ' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 export default function FunnelSummaryTile({ properties }: { properties: Property[] }) {
   const t = useTranslations('dashboard.funnelTile');
   const tStages = useTranslations('funnel.stages');
 
-  const stats = useMemo(() => {
-    const stageCounts: Record<string, number> = {};
-    let totalValue = 0;
-    let expiredCount = 0;
+  const stages = useMemo(() => {
+    const result: { key: string; count: number; total: number }[] = [];
 
-    for (const p of properties) {
-      if (ACTIVE_STAGES.includes(p.status)) {
-        stageCounts[p.status] = (stageCounts[p.status] ?? 0) + 1;
-        if (p.price) totalValue += parseFloat(String(p.price));
-      }
-      if (p.listingStatus === 'expired' && p.status !== 'delisted') {
-        expiredCount++;
-      }
+    for (const stage of ACTIVE_STAGES) {
+      const inStage = properties.filter(p => p.status === stage);
+      const total = inStage.reduce((sum, p) => {
+        const price = p.price ? parseFloat(String(p.price)) : 0;
+        return sum + price;
+      }, 0);
+      result.push({ key: stage, count: inStage.length, total });
     }
 
-    const activeCount = Object.values(stageCounts).reduce((a, b) => a + b, 0);
-    return { stageCounts, totalValue, expiredCount, activeCount };
+    return result;
   }, [properties]);
 
-  const hasDeals = stats.activeCount > 0;
+  const totalCount = stages.reduce((a, s) => a + s.count, 0);
+  const totalValue = stages.reduce((a, s) => a + s.total, 0);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col justify-between h-full">
-      <div>
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('title')}</h3>
+    <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
+      <h3 className="text-sm font-semibold text-gray-900 mb-1">{t('title')}</h3>
+      <p className="text-xs text-gray-400 mb-3">{t('description')}</p>
 
-        {hasDeals ? (
-          <>
-            <div className="space-y-1.5 mb-3">
-              {ACTIVE_STAGES.filter(s => stats.stageCounts[s]).map(stage => (
-                <div key={stage} className="flex justify-between text-sm">
-                  <span className="text-gray-600">{tStages(STAGE_I18N_KEY[stage])}</span>
-                  <span className="font-medium text-gray-900">{stats.stageCounts[stage]}</span>
-                </div>
-              ))}
-            </div>
+      {/* Stage breakdown */}
+      <div className="flex-1">
+        {/* Header row */}
+        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 text-[10px] text-gray-400 font-medium mb-1 px-1">
+          <span>{t('colStage')}</span>
+          <span className="text-right w-8">#</span>
+          <span className="text-right w-20">{t('colTotal')}</span>
+          <span className="text-right w-20">{t('colAvg')}</span>
+        </div>
 
-            <div className="border-t border-gray-100 pt-2 space-y-1">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t('activeDeals')}</span>
-                <span className="font-semibold text-gray-900">{stats.activeCount}</span>
+        <div className="space-y-0.5">
+          {stages.map(stage => {
+            const avg = stage.count > 0 ? stage.total / stage.count : 0;
+            return (
+              <div
+                key={stage.key}
+                className={`grid grid-cols-[1fr_auto_auto_auto] gap-x-3 items-center px-1 py-1 rounded text-sm ${
+                  stage.count > 0 ? 'bg-slate-50' : ''
+                }`}
+              >
+                <span className={`text-xs ${stage.count > 0 ? 'text-gray-700' : 'text-gray-300'}`}>
+                  {tStages(STAGE_I18N_KEY[stage.key])}
+                </span>
+                <span className={`text-right text-xs font-medium w-8 ${stage.count > 0 ? 'text-gray-900' : 'text-gray-300'}`}>
+                  {stage.count}
+                </span>
+                <span className={`text-right text-[10px] w-20 ${stage.count > 0 ? 'text-gray-600' : 'text-gray-300'}`}>
+                  {stage.count > 0 ? formatPrice(stage.total) : '—'}
+                </span>
+                <span className={`text-right text-[10px] w-20 ${stage.count > 0 ? 'text-gray-400' : 'text-gray-300'}`}>
+                  {stage.count > 0 ? formatPrice(avg) : '—'}
+                </span>
               </div>
-              {stats.totalValue > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">{t('totalValue')}</span>
-                  <span className="font-semibold text-blue-600">
-                    {'€ ' + Math.round(stats.totalValue).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                  </span>
-                </div>
-              )}
-              {stats.expiredCount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-amber-600">{t('expiredCount')}</span>
-                  <span className="font-medium text-amber-600">{stats.expiredCount}</span>
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          <p className="text-sm text-gray-400 mb-3">{t('empty')}</p>
-        )}
+            );
+          })}
+        </div>
+
+        {/* Totals */}
+        <div className="border-t border-gray-100 mt-2 pt-2 px-1">
+          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 text-xs font-semibold">
+            <span className="text-gray-700">{t('total')}</span>
+            <span className="text-right text-gray-900 w-8">{totalCount}</span>
+            <span className="text-right text-blue-600 w-20">{totalValue > 0 ? formatPrice(totalValue) : '—'}</span>
+            <span className="text-right text-gray-400 w-20">
+              {totalCount > 0 ? formatPrice(totalValue / totalCount) : '—'}
+            </span>
+          </div>
+        </div>
       </div>
 
       <Link

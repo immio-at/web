@@ -197,29 +197,38 @@
   },
   "dashboard": {
     "loading": "Immobilien werden geladen…",
+    "discoverTile": {
+      "title": "Immobilien entdecken",
+      "subtitle": "Durchsuche tausende Inserate aus verschiedenen Quellen.",
+      "savedFilter": "Gespeicherter Filter",
+      "noFilter": "Kein Filter",
+      "keyword": "Stichwort",
+      "keywordPlaceholder": "z.B. Dachgeschoss, Garten...",
+      "location": "PLZ / Bundesland",
+      "locationPlaceholder": "1010, Wien, NÖ...",
+      "priceFrom": "Preis von",
+      "priceTo": "Preis bis",
+      "size": "Größe (m²)",
+      "rooms": "Zimmer",
+      "searchButton": "Entdecken",
+      "searchDesc": "Kacheln oder Tabelle",
+      "finderButton": "Finder",
+      "finderDesc": "Swipe-Ansicht"
+    },
     "funnelTile": {
-      "title": "Funnel",
-      "activeDeals": "Aktive Deals",
-      "totalValue": "Gesamtwert",
-      "expiredCount": "Abgelaufen",
-      "cta": "Zum Funnel →",
-      "empty": "Noch keine Deals. Starte mit der Suche."
+      "title": "Funnel Übersicht",
+      "description": "Deine aktuellen Immobilien im Kaufprozess.",
+      "colStage": "Phase",
+      "colTotal": "Gesamt",
+      "colAvg": "Ø Preis",
+      "total": "Gesamt",
+      "cta": "Zum Funnel →"
     },
     "analyticsTile": {
       "title": "Analytics",
       "comingSoon": "Coming Soon",
       "totalSaved": "Gespeicherte Immobilien",
       "cta": "Zur Analyse →"
-    },
-    "browseTile": {
-      "title": "Immobilien entdecken",
-      "search": "Suchen",
-      "finder": "Finder",
-      "table": "Tabelle",
-      "lastFilter": "Zuletzt",
-      "urlImport": "Inserat per URL importieren",
-      "importSuccess": "\"{title}\" importiert.",
-      "importError": "Import fehlgeschlagen."
     },
     "sourcesTile": {
       "title": "Quellen",

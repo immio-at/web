@@ -3,10 +3,10 @@
 import { useState, useMemo } from 'react';
 import { Property, SavedFilter } from '@/lib/api';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
+import DiscoverTile from '@/app/[locale]/(authenticated)/dashboard/components/DiscoverTile';
 import FunnelSummaryTile from '@/app/[locale]/(authenticated)/dashboard/components/FunnelSummaryTile';
-import AnalyticsSnapshotTile from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
-import BrowseTile from '@/app/[locale]/(authenticated)/dashboard/components/BrowseTile';
 import SourcesSetupTile from '@/app/[locale]/(authenticated)/dashboard/components/SourcesSetupTile';
+import AnalyticsSnapshotTile from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
 import PropertyCarousel from '@/app/[locale]/(authenticated)/dashboard/components/PropertyCarousel';
 import RecommendedCarousel from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
 import { useTranslations } from 'next-intl';
@@ -20,13 +20,13 @@ export default function DashboardClient({
   onInteraction,
   recentlyViewed,
   immioEmail,
-  lastFilter,
+  savedFilters,
 }: {
   properties: Property[];
   onInteraction?: InteractionFn;
   recentlyViewed?: Property[];
   immioEmail: string | null;
-  lastFilter?: SavedFilter | null;
+  savedFilters: SavedFilter[];
 }) {
   const t = useTranslations('dashboard.carousels');
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
@@ -46,12 +46,12 @@ export default function DashboardClient({
 
   return (
     <div>
-      {/* Summary Tiles — 4-column grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* Summary Tiles — 2×2 grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+        <DiscoverTile savedFilters={savedFilters} />
         <FunnelSummaryTile properties={properties} />
-        <AnalyticsSnapshotTile properties={properties} />
-        <BrowseTile lastFilter={lastFilter} />
         <SourcesSetupTile properties={properties} immioEmail={immioEmail} />
+        <AnalyticsSnapshotTile properties={properties} />
       </div>
 
       {/* Carousels */}

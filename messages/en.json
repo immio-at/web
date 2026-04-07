@@ -197,29 +197,38 @@
   },
   "dashboard": {
     "loading": "Loading properties...",
+    "discoverTile": {
+      "title": "Discover properties",
+      "subtitle": "Search thousands of listings from multiple sources.",
+      "savedFilter": "Saved filter",
+      "noFilter": "No filter",
+      "keyword": "Keyword",
+      "keywordPlaceholder": "e.g. penthouse, garden...",
+      "location": "Postcode / Region",
+      "locationPlaceholder": "1010, Wien, NÖ...",
+      "priceFrom": "Price from",
+      "priceTo": "Price to",
+      "size": "Size (m²)",
+      "rooms": "Rooms",
+      "searchButton": "Discover",
+      "searchDesc": "Grid or table view",
+      "finderButton": "Finder",
+      "finderDesc": "Swipe view"
+    },
     "funnelTile": {
-      "title": "Funnel",
-      "activeDeals": "Active deals",
-      "totalValue": "Total value",
-      "expiredCount": "Expired",
-      "cta": "Go to Funnel →",
-      "empty": "No deals yet. Start by discovering properties."
+      "title": "Funnel Overview",
+      "description": "Your current properties in the buying funnel.",
+      "colStage": "Stage",
+      "colTotal": "Total",
+      "colAvg": "Avg price",
+      "total": "Total",
+      "cta": "Go to Funnel →"
     },
     "analyticsTile": {
       "title": "Analytics",
       "comingSoon": "Coming Soon",
       "totalSaved": "Saved properties",
       "cta": "Go to Analytics →"
-    },
-    "browseTile": {
-      "title": "Discover properties",
-      "search": "Search",
-      "finder": "Finder",
-      "table": "Table",
-      "lastFilter": "Last used",
-      "urlImport": "Import listing by URL",
-      "importSuccess": "\"{title}\" imported.",
-      "importError": "Import failed."
     },
     "sourcesTile": {
       "title": "Sources",
