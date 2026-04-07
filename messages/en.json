@@ -240,7 +240,10 @@
       "nudge": "No {platform} yet? Set it up now →",
       "guideCta": "View guide →",
       "lastReceived": "Last received",
-      "notConfigured": "Not configured"
+      "notConfigured": "Not configured",
+      "forwardHint": "Forward your search agents from Willhaben, ImmoScout24 & others to this address:",
+      "copy": "Copy",
+      "copied": "Copied!"
     },
     "carousels": {
       "newArrivals": "New arrivals",

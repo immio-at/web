@@ -240,7 +240,10 @@
       "nudge": "Noch kein {platform}? Jetzt einrichten →",
       "guideCta": "Anleitung ansehen →",
       "lastReceived": "Zuletzt",
-      "notConfigured": "Nicht eingerichtet"
+      "notConfigured": "Nicht eingerichtet",
+      "forwardHint": "Leite deine Suchagenten von Willhaben, ImmoScout24 & Co. an diese Adresse weiter:",
+      "copy": "Kopieren",
+      "copied": "Kopiert!"
     },
     "carousels": {
       "newArrivals": "Neu eingetroffen",

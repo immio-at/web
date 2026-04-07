@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Property } from '@/lib/api';
 
@@ -13,6 +13,31 @@ const PLATFORM_LABELS: Record<string, string> = {
   bazar: 'Bazar.at',
   immmo: 'immmo.at',
 };
+
+function EmailCopyBlock({ immioEmail, t }: { immioEmail: string; t: (key: string) => string }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(immioEmail);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="mt-auto pt-3 border-t border-gray-100">
+      <p className="text-xs text-gray-400 mb-2">{t('forwardHint')}</p>
+      <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2">
+        <p className="text-sm font-mono font-medium text-gray-900 select-all truncate flex-1">{immioEmail}</p>
+        <button
+          onClick={handleCopy}
+          className="flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded bg-teal-600 hover:bg-teal-700 text-white transition-colors"
+        >
+          {copied ? t('copied') : t('copy')}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function SourcesSetupTile({
   properties,
@@ -33,7 +58,6 @@ export default function SourcesSetupTile({
       result[platform] = { active: false, lastReceived: null };
     }
 
-    // Only consider email-parsed properties (not scraped)
     for (const p of properties) {
       const platform = p.platform;
       if (!KNOWN_PLATFORMS.includes(platform)) continue;
@@ -60,22 +84,12 @@ export default function SourcesSetupTile({
   // State A — new user
   if (!hasAnyEmail) {
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col justify-between h-full">
+      <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
         <div>
           <h3 className="text-base font-semibold text-gray-900 mb-2">{t('setupPrompt')}</h3>
           <p className="text-sm text-gray-500 mb-4">{t('setupBody')}</p>
-          {immioEmail && (
-            <div className="bg-slate-50 rounded-lg px-4 py-3 mb-4">
-              <p className="text-xs text-gray-400 mb-1">{t('yourEmail')}</p>
-              <p className="text-base font-mono font-medium text-gray-900 select-all">{immioEmail}</p>
-            </div>
-          )}
         </div>
-        <button
-          className="mt-3 block w-full text-center text-sm font-medium text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-lg py-2.5 transition-colors"
-        >
-          {t('setupCta')}
-        </button>
+        {immioEmail && <EmailCopyBlock immioEmail={immioEmail} t={t} />}
       </div>
     );
   }
@@ -83,7 +97,7 @@ export default function SourcesSetupTile({
   // State C — all healthy
   if (allActive) {
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col justify-between h-full">
+      <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
         <div>
           <h3 className="text-base font-semibold text-gray-900 mb-4">{t('titleHealthy')}</h3>
           <div className="space-y-3">
@@ -102,6 +116,7 @@ export default function SourcesSetupTile({
             ))}
           </div>
         </div>
+        {immioEmail && <EmailCopyBlock immioEmail={immioEmail} t={t} />}
       </div>
     );
   }
@@ -110,7 +125,7 @@ export default function SourcesSetupTile({
   const firstInactive = inactivePlatforms[0];
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col justify-between h-full">
+    <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
       <div>
         <h3 className="text-base font-semibold text-gray-900 mb-4">{t('title')}</h3>
         <div className="space-y-3">
@@ -142,11 +157,7 @@ export default function SourcesSetupTile({
         )}
       </div>
 
-      <button
-        className="mt-3 block w-full text-center text-sm font-medium text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-lg py-2.5 transition-colors"
-      >
-        {t('guideCta')}
-      </button>
+      {immioEmail && <EmailCopyBlock immioEmail={immioEmail} t={t} />}
     </div>
   );
 }
