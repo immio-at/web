@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useProperties } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { SavedFilter } from '@/lib/api';
+import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { savedFilterToValues, resolvePostcodes, valuesToSavedFilterDto, FilterValues, EMPTY_FILTERS } from '@/components/FilterBar';
 import Link from 'next/link';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
@@ -98,6 +99,7 @@ export default function FinderClient({
     if (!property) return;
 
     if (action === 'open') {
+      trackInteraction(property.id, 'url_click');
       window.open(property.sourceUrl, '_blank');
       setDragX(0);
       setDragY(0);
@@ -105,10 +107,15 @@ export default function FinderClient({
     }
 
     if (action === 'analyse') {
+      trackInteraction(property.id, 'analysis');
       setShowAnalyseModal(true);
       setDragX(0);
       setDragY(0);
       return;
+    }
+
+    if (action !== 'not_relevant') {
+      trackInteraction(property.id, 'status_change');
     }
 
     setLastAction(action);

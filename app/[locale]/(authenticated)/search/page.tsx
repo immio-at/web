@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, ScrapedListing, Property, SavedFilter } from '@/lib/api';
+import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
 import { invalidateCache } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
@@ -138,6 +139,14 @@ type ViewMode = 'grid' | 'table';
 
 // ─── Source badge ────────────────────────────────────────────────────────────
 
+// Track URL clicks for user's own properties
+function trackListingClick(listing: UnifiedListing) {
+  if (listing.source === 'email') {
+    const propertyId = listing.id.replace('prop-', '');
+    trackInteraction(propertyId, 'url_click');
+  }
+}
+
 function SourceBadge({ source, platform }: { source: 'email' | 'scraped'; platform: string }) {
   return (
     <span className={`absolute top-2 left-2 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
@@ -168,7 +177,7 @@ function ListingCard({
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
       {/* Image */}
-      <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer" className="block relative h-48 bg-gray-100 overflow-hidden flex-shrink-0">
+      <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackListingClick(listing)} className="block relative h-48 bg-gray-100 overflow-hidden flex-shrink-0">
         {listing.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -184,7 +193,7 @@ function ListingCard({
 
       {/* Details */}
       <div className="p-4 flex flex-col flex-grow">
-        <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer">
+        <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackListingClick(listing)}>
           <h3 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600 transition-colors leading-snug">
             {listing.title ?? '—'}
           </h3>
@@ -245,7 +254,7 @@ function ListingTableRow({
   return (
     <tr className={`border-b border-gray-100 hover:bg-gray-50 ${odd ? 'bg-gray-50/50' : ''}`}>
       <td className="px-4 py-2">
-        <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer">
+        <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackListingClick(listing)}>
           <div className="relative rounded overflow-hidden bg-gray-100 hover:opacity-80 transition-opacity cursor-pointer" style={{ width: '48px', height: '48px' }}>
             {listing.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -257,7 +266,7 @@ function ListingTableRow({
         </a>
       </td>
       <td className="px-4 py-2 max-w-xs">
-        <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-gray-900 hover:text-blue-600 font-medium text-sm line-clamp-2">
+        <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackListingClick(listing)} className="text-gray-900 hover:text-blue-600 font-medium text-sm line-clamp-2">
           {listing.title ?? '—'}
         </a>
       </td>

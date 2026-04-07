@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { Property, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
+import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
@@ -190,6 +191,9 @@ export default function FunnelBoard({ savedFilter }: { savedFilter?: SavedFilter
   }, [all, savedFilter]);
 
   async function moveToStage(propertyId: string, newStatus: string) {
+    if (newStatus !== 'not_relevant') {
+      trackInteraction(propertyId, 'status_change');
+    }
     try {
       await update(propertyId, {
         status: newStatus,
@@ -341,7 +345,7 @@ export default function FunnelBoard({ savedFilter }: { savedFilter?: SavedFilter
                     property={prop}
                     stages={FUNNEL_STAGES_DISPLAY}
                     onMove={requestMove}
-                    onAnalyse={setAnalyseProperty}
+                    onAnalyse={(p) => { trackInteraction(p.id, 'analysis'); setAnalyseProperty(p); }}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                   />
@@ -449,6 +453,7 @@ function FunnelCard({
           href={property.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => trackInteraction(property.id, 'url_click')}
           className="flex-shrink-0 rounded overflow-hidden bg-gray-100"
           style={{ width: '64px', height: '64px' }}
           draggable={false}
@@ -497,6 +502,7 @@ function FunnelCard({
           href={property.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => trackInteraction(property.id, 'url_click')}
           className={`text-xs font-medium line-clamp-2 block ${
             isExpired ? 'text-gray-400 hover:text-gray-500' : 'text-gray-700 hover:text-[#0F1F3D]'
           }`}
