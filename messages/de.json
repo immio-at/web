@@ -403,10 +403,10 @@
     "error": "Fehler beim Laden der Analytics",
     "portfolio": {
       "title": "Portfolio",
-      "total": "Inserate gesamt",
-      "totalValue": "Gesamtwert",
-      "avgPrice": "Ø Preis",
-      "expired": "Abgelaufen"
+      "total": "Immobilien in der Pipeline",
+      "totalValue": "Gesamter Angebotspreis",
+      "avgPrice": "Ø Angebotspreis",
+      "expired": "Abgelaufene Inserate"
     },
     "activity": {
       "title": "Aktivität",
@@ -434,7 +434,21 @@
     },
     "milestones": {
       "title": "Meilensteine",
-      "none": "Starte mit der Suche, um deine ersten Meilensteine zu erreichen."
+      "none": "Starte mit der Suche, um deine ersten Meilensteine zu erreichen.",
+      "first_property": "Erstes Inserat",
+      "properties_10": "10 Inserate",
+      "properties_25": "25 Inserate",
+      "properties_50": "50 Inserate",
+      "properties_100": "100 Inserate",
+      "interactions_10": "10 Interaktionen",
+      "interactions_100": "100 Interaktionen",
+      "interactions_500": "500 Interaktionen",
+      "first_analysis": "Erste Analyse",
+      "analyses_5": "5 Analysen",
+      "analyses_10": "10 Analysen",
+      "first_visit": "Erste Besichtigung",
+      "first_offer": "Erstes Angebot",
+      "first_win": "Erster Zuschlag"
     }
   },
   "admin": {

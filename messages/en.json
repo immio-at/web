@@ -403,10 +403,10 @@
     "error": "Error loading analytics",
     "portfolio": {
       "title": "Portfolio",
-      "total": "Total listings",
-      "totalValue": "Total value",
-      "avgPrice": "Avg price",
-      "expired": "Expired"
+      "total": "Properties in pipeline",
+      "totalValue": "Combined asking price",
+      "avgPrice": "Avg asking price",
+      "expired": "Expired listings"
     },
     "activity": {
       "title": "Activity",
@@ -434,7 +434,21 @@
     },
     "milestones": {
       "title": "Milestones",
-      "none": "Start searching to earn your first milestones."
+      "none": "Start searching to earn your first milestones.",
+      "first_property": "First listing",
+      "properties_10": "10 listings",
+      "properties_25": "25 listings",
+      "properties_50": "50 listings",
+      "properties_100": "100 listings",
+      "interactions_10": "10 interactions",
+      "interactions_100": "100 interactions",
+      "interactions_500": "500 interactions",
+      "first_analysis": "First analysis",
+      "analyses_5": "5 analyses",
+      "analyses_10": "10 analyses",
+      "first_visit": "First viewing booked",
+      "first_offer": "First offer made",
+      "first_win": "First deal won"
     }
   },
   "admin": {

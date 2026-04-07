@@ -320,7 +320,7 @@ export interface AnalyticsSummary {
     total: number;
   };
   activityTimeline: { date: string; count: number }[];
-  milestones: { key: string; label: string; value: number }[];
+  milestones: { key: string; value: number }[];
 }
 
 export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {

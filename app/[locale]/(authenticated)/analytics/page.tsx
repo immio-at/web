@@ -212,7 +212,7 @@ export default function AnalyticsPage() {
               {data.milestones.map(m => (
                 <div key={m.key} className="flex items-center gap-2 text-sm">
                   <span className="text-teal-500">&#9733;</span>
-                  <span className="text-gray-700">{m.label}</span>
+                  <span className="text-gray-700">{t(`milestones.${m.key}`)}</span>
                 </div>
               ))}
             </div>
