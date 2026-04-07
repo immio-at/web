@@ -373,7 +373,7 @@ export default function FinderClient({
         </div>
       </div>
 
-      {/* Buttons */}
+      {/* Buttons — order matches directions: left, up, down, right */}
       <div className="flex gap-4 mt-5">
         <button
           onClick={() => handleAction('not_relevant')}
@@ -383,18 +383,18 @@ export default function FinderClient({
           ✕
         </button>
         <button
-          onClick={() => handleAction('analyse')}
-          title={t('buttons.analyseTitle')}
-          className="w-14 h-14 rounded-full bg-white border border-gray-200 text-amber-500 font-bold text-lg hover:bg-amber-50 hover:border-amber-300 transition-colors shadow-sm flex items-center justify-center"
-        >
-          🔍
-        </button>
-        <button
           onClick={() => handleAction('open')}
           title={t('buttons.openListingTitle')}
           className="w-14 h-14 rounded-full bg-white border border-gray-200 text-blue-500 font-bold text-lg hover:bg-blue-50 hover:border-blue-300 transition-colors shadow-sm flex items-center justify-center"
         >
           ↗
+        </button>
+        <button
+          onClick={() => handleAction('analyse')}
+          title={t('buttons.analyseTitle')}
+          className="w-14 h-14 rounded-full bg-white border border-gray-200 text-amber-500 font-bold text-lg hover:bg-amber-50 hover:border-amber-300 transition-colors shadow-sm flex items-center justify-center"
+        >
+          🔍
         </button>
         <button
           onClick={() => handleAction('investigating')}
