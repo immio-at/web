@@ -83,6 +83,8 @@ Do not create a `/login` route. Session expiry redirects to `/?signin=true`.
   client holds the live session and auto-refreshes tokens
 - App-specific fields (`immioEmail`, `isAdmin`, `approved`) are stored in context
   AND persisted to localStorage as cache
+- Fallback: if `immioEmail` missing from localStorage on session restore, fetches from
+  `GET /auth/me` and caches the result. Fixes returning users after browser cache clear.
 - **Never** read auth state from `supabase.auth.getSession()` directly in components —
   always read from `AuthContext`
 
