@@ -145,6 +145,46 @@ export async function getProperties(): Promise<Property[]> {
   return handleResponse(response);
 }
 
+export interface PropertiesFilter {
+  keyword?: string;
+  postcodes?: string[];
+  minPrice?: number;
+  maxPrice?: number;
+  minPricePerSqm?: number;
+  maxPricePerSqm?: number;
+  minSize?: number;
+  maxSize?: number;
+  minRooms?: number;
+  maxRooms?: number;
+  hideNullPrice?: boolean;
+  sortBy?: string;
+  sortOrder?: string;
+}
+
+export async function getPropertiesFiltered(filter: PropertiesFilter = {}): Promise<Property[]> {
+  const token = await getAuthToken();
+  const params = new URLSearchParams();
+  if (filter.keyword) params.set('keyword', filter.keyword);
+  if (filter.postcodes?.length) params.set('postcodes', filter.postcodes.join(','));
+  if (filter.minPrice !== undefined) params.set('minPrice', String(filter.minPrice));
+  if (filter.maxPrice !== undefined) params.set('maxPrice', String(filter.maxPrice));
+  if (filter.minPricePerSqm !== undefined) params.set('minPricePerSqm', String(filter.minPricePerSqm));
+  if (filter.maxPricePerSqm !== undefined) params.set('maxPricePerSqm', String(filter.maxPricePerSqm));
+  if (filter.minSize !== undefined) params.set('minSize', String(filter.minSize));
+  if (filter.maxSize !== undefined) params.set('maxSize', String(filter.maxSize));
+  if (filter.minRooms !== undefined) params.set('minRooms', String(filter.minRooms));
+  if (filter.maxRooms !== undefined) params.set('maxRooms', String(filter.maxRooms));
+  if (filter.hideNullPrice === false) params.set('hideNullPrice', 'false');
+  if (filter.sortBy) params.set('sortBy', filter.sortBy);
+  if (filter.sortOrder) params.set('sortOrder', filter.sortOrder);
+  const qs = params.toString();
+  const response = await fetch(`${API_URL}/properties${qs ? `?${qs}` : ''}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  return handleResponse(response);
+}
+
 export async function updateProperty(
   id: string,
   data: { status?: string; notes?: string; movedToStageAt?: string },
