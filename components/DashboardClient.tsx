@@ -13,7 +13,8 @@ import { useTranslations } from 'next-intl';
 
 type InteractionFn = (id: string, type?: 'view' | 'analysis' | 'url_click' | 'status_change') => void;
 
-const TERMINAL_STAGES = ['not_relevant', 'delisted', 'won', 'parked'];
+// Stages excluded from New Arrivals carousel — terminal + completed stages
+const EXCLUDED_FROM_ARRIVALS = new Set(['not_relevant', 'delisted', 'won', 'parked']);
 
 export default function DashboardClient({
   properties,
@@ -39,7 +40,7 @@ export default function DashboardClient({
   // New Arrivals — 20 most recent non-terminal, non-expired properties
   const newArrivals = useMemo(() => {
     return properties
-      .filter(p => !TERMINAL_STAGES.includes(p.status) && p.listingStatus !== 'expired')
+      .filter(p => !EXCLUDED_FROM_ARRIVALS.has(p.status) && p.listingStatus !== 'expired')
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 20);
   }, [properties]);

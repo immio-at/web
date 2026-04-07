@@ -24,9 +24,7 @@ function notifyListeners(properties: Property[]) {
   listeners.forEach(fn => fn(properties));
 }
 
-// Terminal stages — moving to one of these does NOT clear the expired flag.
-// Must match the same constant in properties.service.ts on the backend.
-const TERMINAL_STAGES = new Set(['not_relevant', 'delisted']);
+import { TERMINAL_STAGES } from '@/lib/constants';
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 

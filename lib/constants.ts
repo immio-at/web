@@ -1,3 +1,8 @@
+// ─── Terminal stages ──────────────────────────────────────────────────────────
+// Moving a property to one of these does NOT clear the expired flag.
+// Must match TERMINAL_STAGES in properties.service.ts on the backend.
+export const TERMINAL_STAGES = new Set(['not_relevant', 'delisted']);
+
 // ─── Funnel stages ────────────────────────────────────────────────────────────
 // Single source of truth. Import from here in DashboardClient, FunnelBoard,
 // and any future component that needs stage definitions.
