@@ -233,6 +233,7 @@ export async function oauthCallback(accessToken: string): Promise<{
   immioEmail: string;
   approved: boolean;
   isAdmin: boolean;
+  tier: string;
 }> {
   const response = await fetch(`${API_URL}/auth/oauth-callback`, {
     method: 'POST',

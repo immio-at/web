@@ -12,6 +12,7 @@ interface AppData {
   isAdmin: boolean;
   approved: boolean;
   userEmail: string | null;
+  tier?: string;
 }
 
 // ─── Context type ─────────────────────────────────────────────────────────────
@@ -24,6 +25,7 @@ interface AuthContextType {
   isAdmin: boolean;
   approved: boolean;
   userEmail: string | null;
+  tier: string;
   setAppData: (data: AppData) => void;
   signOut: () => Promise<void>;
 }
@@ -36,6 +38,7 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   approved: false,
   userEmail: null,
+  tier: 'free',
   setAppData: () => {},
   signOut: async () => {},
 });
@@ -53,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [approved, setApproved] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [tier, setTier] = useState<string>('free');
 
   useEffect(() => {
     // Seed app-specific fields from localStorage on first load.
@@ -61,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAdmin(localStorage.getItem('isAdmin') === 'true');
     setApproved(localStorage.getItem('approved') === 'true');
     setUserEmail(localStorage.getItem('userEmail'));
+    setTier(localStorage.getItem('tier') || 'free');
 
     // Get initial Supabase session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -72,7 +77,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // fetch it from the backend. This handles cases where localStorage
       // was cleared or the login flow didn't populate it.
       const cachedImmioEmail = localStorage.getItem('immioEmail');
-      if (session?.access_token && !cachedImmioEmail) {
+      const cachedTier = localStorage.getItem('tier');
+      if (session?.access_token && (!cachedImmioEmail || !cachedTier)) {
         try {
           const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-production-e03a.up.railway.app';
           const res = await fetch(`${API_URL}/auth/me`, {
@@ -87,6 +93,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (data.email) {
               setUserEmail(data.email);
               localStorage.setItem('userEmail', data.email);
+            }
+            if (data.tier) {
+              setTier(data.tier);
+              localStorage.setItem('tier', data.tier);
             }
           }
         } catch {
@@ -124,12 +134,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAdmin(data.isAdmin);
     setApproved(data.approved);
     setUserEmail(data.userEmail);
+    if (data.tier) setTier(data.tier);
 
     // Keep localStorage in sync as a persistence cache
     localStorage.setItem('immioEmail', data.immioEmail ?? '');
     localStorage.setItem('isAdmin', String(data.isAdmin));
     localStorage.setItem('approved', String(data.approved));
     localStorage.setItem('userEmail', data.userEmail ?? '');
+    if (data.tier) localStorage.setItem('tier', data.tier);
   }
 
   const signOut = async () => {
@@ -139,10 +151,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAdmin(false);
     setApproved(false);
     setUserEmail(null);
+    setTier('free');
     localStorage.removeItem('immioEmail');
     localStorage.removeItem('isAdmin');
     localStorage.removeItem('approved');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('tier');
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userId');
   };
@@ -156,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAdmin,
       approved,
       userEmail,
+      tier,
       setAppData,
       signOut,
     }}>

@@ -85,6 +85,7 @@ export default function SignInModal({ open, onClose }: SignInModalProps) {
         isAdmin: data.isAdmin ?? false,
         approved: data.approved,
         userEmail: data.email,
+        tier: data.tier,
       });
 
       // 4. Redirect based on approval status

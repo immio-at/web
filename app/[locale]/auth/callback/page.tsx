@@ -32,6 +32,7 @@ export default function AuthCallbackPage() {
           isAdmin: appData.isAdmin,
           approved: appData.approved,
           userEmail: appData.email,
+          tier: appData.tier,
         });
 
         // Redirect to dashboard
