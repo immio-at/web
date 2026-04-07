@@ -5,23 +5,67 @@ import { useTranslations } from 'next-intl';
 import { useProperties } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { SavedFilter } from '@/lib/api';
-import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
+import { savedFilterToValues, resolvePostcodes, valuesToSavedFilterDto, FilterValues, EMPTY_FILTERS } from '@/components/FilterBar';
 import Link from 'next/link';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 
-export default function FinderClient({ skipFilterModal = false }: { skipFilterModal?: boolean }) {
+interface DashboardFilter {
+  keyword: string;
+  postcodes: string;
+  minPrice: string;
+  maxPrice: string;
+  minSize: string;
+  maxSize: string;
+  minRooms: string;
+  maxRooms: string;
+}
+
+function dashboardFilterToValues(f: DashboardFilter): FilterValues {
+  return {
+    ...EMPTY_FILTERS,
+    keyword: f.keyword,
+    location: f.postcodes,
+    minPrice: f.minPrice,
+    maxPrice: f.maxPrice,
+    minSize: f.minSize,
+    maxSize: f.maxSize,
+    minRooms: f.minRooms,
+    maxRooms: f.maxRooms,
+  };
+}
+
+export default function FinderClient({
+  skipFilterModal = false,
+  filterFromDashboard,
+}: {
+  skipFilterModal?: boolean;
+  filterFromDashboard?: DashboardFilter;
+}) {
   const t = useTranslations('finder');
   const { properties: all, loading, update } = useProperties();
-  const { filters: savedFilters } = useSavedFilters();
+  const { filters: savedFilters, create: createFilter } = useSavedFilters();
   const [selectedFilter, setSelectedFilter] = useState<SavedFilter | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(!skipFilterModal);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
-  // Apply saved filter to 'new' properties client-side
+  // The active filter values — either from a saved filter, dashboard params, or none
+  const activeFilterValues = useMemo(() => {
+    if (selectedFilter) return savedFilterToValues(selectedFilter);
+    if (filterFromDashboard) return dashboardFilterToValues(filterFromDashboard);
+    return null;
+  }, [selectedFilter, filterFromDashboard]);
+
+  // Whether unsaved dashboard filter params are active (show Save button)
+  const hasDashboardFilter = !!filterFromDashboard && !selectedFilter;
+
+  // Apply filter to 'new' properties client-side
   const properties = useMemo(() => {
     let filtered = all.filter(p => p.status === 'new');
-    if (!selectedFilter) return filtered;
+    if (!activeFilterValues) return filtered;
 
-    const v = savedFilterToValues(selectedFilter);
+    const v = activeFilterValues;
     return filtered.filter(p => {
       const price = p.price ? parseFloat(String(p.price)) : null;
       const size = p.sizeSqm ?? null;
@@ -37,7 +81,7 @@ export default function FinderClient({ skipFilterModal = false }: { skipFilterMo
       if (postcodes.length > 0 && (!p.zipCode || !postcodes.includes(p.zipCode))) return false;
       return true;
     });
-  }, [all, selectedFilter]);
+  }, [all, activeFilterValues]);
 
   const [current, setCurrent] = useState(0);
   const [dragX, setDragX] = useState(0);
@@ -73,13 +117,25 @@ export default function FinderClient({ skipFilterModal = false }: { skipFilterMo
     setDragY(0);
     setTimeout(() => setLastAction(null), 300);
 
-    // Persist in the background
     update(property.id, {
       status: action === 'interested' ? 'investigating' : action,
       movedToStageAt: new Date().toISOString(),
     });
   }
 
+  async function handleSaveFilter() {
+    if (!activeFilterValues) return;
+    try {
+      const created = await createFilter(valuesToSavedFilterDto(activeFilterValues, saveName.trim() || undefined));
+      setSelectedFilter(created);
+      setSaveSuccess(created.name);
+      setShowSaveModal(false);
+      setSaveName('');
+      setTimeout(() => setSaveSuccess(null), 4000);
+    } catch {
+      // silently handle — limit reached etc.
+    }
+  }
 
   function onPointerDown(e: React.PointerEvent) {
     dragStart.current = { x: e.clientX, y: e.clientY };
@@ -97,12 +153,10 @@ export default function FinderClient({ skipFilterModal = false }: { skipFilterMo
     const absY = Math.abs(dragY);
 
     if (absX > absY) {
-      // Horizontal swipe dominates
       if (dragX > 100) await handleAction('investigating');
       else if (dragX < -100) await handleAction('not_relevant');
       else { setDragX(0); setDragY(0); }
     } else {
-      // Vertical swipe dominates
       if (dragY < -100) await handleAction('open');
       else if (dragY > 100) await handleAction('analyse');
       else { setDragX(0); setDragY(0); }
@@ -112,7 +166,6 @@ export default function FinderClient({ skipFilterModal = false }: { skipFilterMo
     setIsDragging(false);
   }
 
-  // Overlay feedback during drag
   const swipeIntent =
     Math.abs(dragX) > Math.abs(dragY)
       ? dragX > 50 ? 'investigating' : dragX < -50 ? 'not_relevant' : null
@@ -141,7 +194,7 @@ export default function FinderClient({ skipFilterModal = false }: { skipFilterMo
     </div>
   );
 
-  // Filter selection modal — shown on first open when saved filters exist
+  // Filter selection modal — shown on first open when saved filters exist (unless skipped)
   if (showFilterModal && savedFilters.length > 0 && current === 0) return (
     <div className="flex-1 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 max-w-sm w-full mx-4">
@@ -202,8 +255,8 @@ export default function FinderClient({ skipFilterModal = false }: { skipFilterMo
   return (
     <div className="flex-1 flex flex-col items-center justify-start pt-4 px-4 pb-8 w-full">
 
-      {/* Filter indicator / selector */}
-      <div className="flex items-center gap-2 mb-2">
+      {/* Filter controls */}
+      <div className="flex items-center gap-2 mb-4">
         {selectedFilter ? (
           <>
             <span className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
@@ -216,23 +269,34 @@ export default function FinderClient({ skipFilterModal = false }: { skipFilterMo
               {t('filterModal.changeFilter')}
             </button>
           </>
-        ) : savedFilters.length > 0 ? (
-          <button
-            onClick={() => { setShowFilterModal(true); }}
-            className="text-xs text-teal-600 bg-teal-50 px-3 py-1 rounded-full border border-teal-200 hover:bg-teal-100 transition-colors"
-          >
-            {t('filterModal.selectFilter')}
-          </button>
-        ) : null}
+        ) : (
+          <>
+            {hasDashboardFilter && (
+              <button
+                onClick={() => setShowSaveModal(true)}
+                className="text-xs text-teal-600 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-200 hover:bg-teal-100 transition-colors"
+              >
+                {t('filterModal.saveFilter')}
+              </button>
+            )}
+            {savedFilters.length > 0 && (
+              <button
+                onClick={() => setShowFilterModal(true)}
+                className="text-xs text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200 hover:bg-blue-100 transition-colors"
+              >
+                {t('filterModal.applyFilter')}
+              </button>
+            )}
+          </>
+        )}
       </div>
 
-      {/* Directions — single line at top */}
-      <div className="flex gap-6 text-xs text-gray-400 text-center mb-4">
-        <span>{t('directions.left')}</span>
-        <span>{t('directions.up')}</span>
-        <span>{t('directions.down')}</span>
-        <span>{t('directions.right')}</span>
-      </div>
+      {/* Save success */}
+      {saveSuccess && (
+        <div className="text-xs text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-200 mb-3">
+          ✓ {t('filterModal.filterSaved', { name: saveSuccess })}
+        </div>
+      )}
 
       {/* Card */}
       <div
@@ -335,7 +399,15 @@ export default function FinderClient({ skipFilterModal = false }: { skipFilterMo
       </div>
 
       {/* Progress count */}
-      <div className="text-gray-400 text-xs mt-4">{t('progress', { current, total })}</div>
+      <div className="text-gray-400 text-xs mt-3">{t('progress', { current, total })}</div>
+
+      {/* Directions — below buttons */}
+      <div className="flex gap-6 text-xs text-gray-400 text-center mt-3">
+        <span>{t('directions.left')}</span>
+        <span>{t('directions.up')}</span>
+        <span>{t('directions.down')}</span>
+        <span>{t('directions.right')}</span>
+      </div>
 
       {/* Analyse modal */}
       {showAnalyseModal && property && (
@@ -343,6 +415,40 @@ export default function FinderClient({ skipFilterModal = false }: { skipFilterMo
           property={property}
           onClose={() => setShowAnalyseModal(false)}
         />
+      )}
+
+      {/* Save filter modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">{t('filterModal.saveFilterTitle')}</h3>
+            <p className="text-sm text-gray-500 mb-4">{t('filterModal.saveFilterDesc')}</p>
+            <input
+              type="text"
+              value={saveName}
+              onChange={e => setSaveName(e.target.value)}
+              placeholder={t('filterModal.saveFilterPlaceholder')}
+              maxLength={150}
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400 w-full mb-4"
+              autoFocus
+              onKeyDown={e => { if (e.key === 'Enter') handleSaveFilter(); }}
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => { setShowSaveModal(false); setSaveName(''); }}
+                className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                {t('filterModal.cancel')}
+              </button>
+              <button
+                onClick={handleSaveFilter}
+                className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {t('filterModal.save')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

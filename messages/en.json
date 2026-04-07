@@ -290,7 +290,14 @@
       "iFeelLucky": "I Feel Lucky",
       "applyFilter": "Apply filter",
       "changeFilter": "change",
-      "selectFilter": "Select filter"
+      "selectFilter": "Select filter",
+      "saveFilter": "Save filter",
+      "saveFilterTitle": "Save filter",
+      "saveFilterDesc": "Give your filter a name to reuse it later.",
+      "saveFilterPlaceholder": "e.g. Vienna under 300k",
+      "filterSaved": "Filter \"{name}\" saved.",
+      "cancel": "Cancel",
+      "save": "Save"
     },
     "allCaughtUp": {
       "title": "All caught up",

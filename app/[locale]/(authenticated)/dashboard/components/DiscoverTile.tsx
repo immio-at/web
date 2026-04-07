@@ -138,7 +138,7 @@ export default function DiscoverTile({
           <span className="text-xs font-normal opacity-80">{t('searchDesc')}</span>
         </Link>
         <Link
-          href="/finder?skipModal=true"
+          href={`/finder?skipModal=true${buildQueryString().replace('?', '&')}`}
           className="flex items-center justify-between w-full px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
         >
           <span>🃏 {t('finderButton')}</span>

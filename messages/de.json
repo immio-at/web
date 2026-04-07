@@ -290,7 +290,14 @@
       "iFeelLucky": "Auf gut Glück",
       "applyFilter": "Filter anwenden",
       "changeFilter": "ändern",
-      "selectFilter": "Filter wählen"
+      "selectFilter": "Filter wählen",
+      "saveFilter": "Filter speichern",
+      "saveFilterTitle": "Filter speichern",
+      "saveFilterDesc": "Gib deinem Filter einen Namen, um ihn später wiederzuverwenden.",
+      "saveFilterPlaceholder": "z.B. Wien unter 300k",
+      "filterSaved": "Filter \"{name}\" gespeichert.",
+      "cancel": "Abbrechen",
+      "save": "Speichern"
     },
     "allCaughtUp": {
       "title": "Alles erledigt",
