@@ -63,10 +63,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserEmail(localStorage.getItem('userEmail'));
 
     // Get initial Supabase session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // If immioEmail is missing from localStorage but we have a session,
+      // fetch it from the backend. This handles cases where localStorage
+      // was cleared or the login flow didn't populate it.
+      const cachedImmioEmail = localStorage.getItem('immioEmail');
+      if (session?.access_token && !cachedImmioEmail) {
+        try {
+          const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-production-e03a.up.railway.app';
+          const res = await fetch(`${API_URL}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.immioEmail) {
+              setImmioEmail(data.immioEmail);
+              localStorage.setItem('immioEmail', data.immioEmail);
+            }
+            if (data.email) {
+              setUserEmail(data.email);
+              localStorage.setItem('userEmail', data.email);
+            }
+          }
+        } catch {
+          // Silently ignore — immioEmail will remain empty
+        }
+      }
     });
 
     // Listen for all auth state changes (login, logout, token refresh).
