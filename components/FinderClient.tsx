@@ -9,12 +9,12 @@ import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
 import Link from 'next/link';
 import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 
-export default function FinderClient() {
+export default function FinderClient({ skipFilterModal = false }: { skipFilterModal?: boolean }) {
   const t = useTranslations('finder');
   const { properties: all, loading, update } = useProperties();
   const { filters: savedFilters } = useSavedFilters();
   const [selectedFilter, setSelectedFilter] = useState<SavedFilter | null>(null);
-  const [showFilterModal, setShowFilterModal] = useState(true);
+  const [showFilterModal, setShowFilterModal] = useState(!skipFilterModal);
 
   // Apply saved filter to 'new' properties client-side
   const properties = useMemo(() => {
@@ -202,20 +202,29 @@ export default function FinderClient() {
   return (
     <div className="flex-1 flex flex-col items-center justify-start pt-4 px-4 pb-8 w-full">
 
-      {/* Active filter indicator */}
-      {selectedFilter && (
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-            {selectedFilter.name}
-          </span>
+      {/* Filter indicator / selector */}
+      <div className="flex items-center gap-2 mb-2">
+        {selectedFilter ? (
+          <>
+            <span className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+              {selectedFilter.name}
+            </span>
+            <button
+              onClick={() => { setSelectedFilter(null); setShowFilterModal(true); setCurrent(0); }}
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              {t('filterModal.changeFilter')}
+            </button>
+          </>
+        ) : savedFilters.length > 0 ? (
           <button
-            onClick={() => { setSelectedFilter(null); setShowFilterModal(true); setCurrent(0); }}
-            className="text-xs text-gray-400 hover:text-gray-600"
+            onClick={() => { setShowFilterModal(true); }}
+            className="text-xs text-teal-600 bg-teal-50 px-3 py-1 rounded-full border border-teal-200 hover:bg-teal-100 transition-colors"
           >
-            {t('filterModal.changeFilter')}
+            {t('filterModal.selectFilter')}
           </button>
-        </div>
-      )}
+        ) : null}
+      </div>
 
       {/* Directions — single line at top */}
       <div className="flex gap-6 text-xs text-gray-400 text-center mb-4">

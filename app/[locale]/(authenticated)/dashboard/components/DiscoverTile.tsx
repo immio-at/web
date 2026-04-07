@@ -58,13 +58,13 @@ export default function DiscoverTile({
     return qs ? `?${qs}` : '';
   }
 
-  const inputClass = 'border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 w-full';
-  const labelClass = 'text-[10px] text-gray-400 font-medium';
+  const inputClass = 'border border-gray-200 rounded px-2.5 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 w-full';
+  const labelClass = 'text-xs text-gray-400 font-medium';
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
-      <h3 className="text-sm font-semibold text-gray-900 mb-1">{t('title')}</h3>
-      <p className="text-xs text-gray-400 mb-3">{t('subtitle')}</p>
+      <h3 className="text-base font-semibold text-gray-900 mb-1">{t('title')}</h3>
+      <p className="text-sm text-gray-400 mb-4">{t('subtitle')}</p>
 
       {/* Saved filter selector */}
       {savedFilters.length > 0 && (
@@ -84,7 +84,7 @@ export default function DiscoverTile({
       )}
 
       {/* Filter fields */}
-      <div className="space-y-2 mb-3">
+      <div className="space-y-2.5 mb-3">
         {/* Keyword + Location */}
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -135,14 +135,14 @@ export default function DiscoverTile({
           className="flex items-center justify-between w-full px-3 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
         >
           <span>🔍 {t('searchButton')}</span>
-          <span className="text-[10px] font-normal opacity-80">{t('searchDesc')}</span>
+          <span className="text-xs font-normal opacity-80">{t('searchDesc')}</span>
         </Link>
         <Link
-          href="/finder"
+          href="/finder?skipModal=true"
           className="flex items-center justify-between w-full px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
         >
           <span>🃏 {t('finderButton')}</span>
-          <span className="text-[10px] font-normal text-gray-400">{t('finderDesc')}</span>
+          <span className="text-xs font-normal text-gray-400">{t('finderDesc')}</span>
         </Link>
       </div>
     </div>

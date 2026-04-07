@@ -212,8 +212,8 @@
       "rooms": "Zimmer",
       "searchButton": "Entdecken",
       "searchDesc": "Kacheln oder Tabelle",
-      "finderButton": "Tinder für Immo",
-      "finderDesc": "Swipe-Ansicht"
+      "finderButton": "Finder",
+      "finderDesc": "Tinder für Immo"
     },
     "funnelTile": {
       "title": "Funnel Übersicht",
@@ -289,7 +289,8 @@
       "subtitle": "Wähle einen gespeicherten Filter oder starte ohne Einschränkung.",
       "iFeelLucky": "Auf gut Glück",
       "applyFilter": "Filter anwenden",
-      "changeFilter": "ändern"
+      "changeFilter": "ändern",
+      "selectFilter": "Filter wählen"
     },
     "allCaughtUp": {
       "title": "Alles erledigt",

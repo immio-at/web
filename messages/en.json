@@ -212,8 +212,8 @@
       "rooms": "Rooms",
       "searchButton": "Discover",
       "searchDesc": "Grid or table view",
-      "finderButton": "Tinder für Immo",
-      "finderDesc": "Swipe view"
+      "finderButton": "Finder",
+      "finderDesc": "Tinder für Immo"
     },
     "funnelTile": {
       "title": "Funnel Overview",
@@ -289,7 +289,8 @@
       "subtitle": "Select a saved filter or start without restrictions.",
       "iFeelLucky": "I Feel Lucky",
       "applyFilter": "Apply filter",
-      "changeFilter": "change"
+      "changeFilter": "change",
+      "selectFilter": "Select filter"
     },
     "allCaughtUp": {
       "title": "All caught up",
