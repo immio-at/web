@@ -86,8 +86,8 @@ export default function FunnelSummaryTile({ properties }: { properties: Property
           <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 text-sm font-semibold">
             <span className="text-gray-700">{t('total')}</span>
             <span className="text-right text-gray-900 w-8">{totalCount}</span>
-            <span className="text-right text-blue-600 w-24">{totalValue > 0 ? formatPrice(totalValue) : '—'}</span>
-            <span className="text-right text-gray-400 w-24">
+            <span className="text-right text-gray-900 w-24">{totalValue > 0 ? formatPrice(totalValue) : '—'}</span>
+            <span className="text-right text-gray-900 w-24">
               {totalCount > 0 ? formatPrice(totalValue / totalCount) : '—'}
             </span>
           </div>
