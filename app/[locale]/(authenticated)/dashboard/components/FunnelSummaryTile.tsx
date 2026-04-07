@@ -5,11 +5,12 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Property } from '@/lib/api';
 
-const ACTIVE_STAGES = ['investigating', 'interested', 'visit_booked', 'visited', 'offer_made'];
+const FUNNEL_STAGES = ['investigating', 'interested', 'visit_booked', 'visited', 'offer_made', 'parked', 'won'];
 
 const STAGE_I18N_KEY: Record<string, string> = {
   investigating: 'investigating', interested: 'interested',
   visit_booked: 'visitBooked', visited: 'visited', offer_made: 'offerMade',
+  parked: 'parked', won: 'won',
 };
 
 function formatPrice(n: number): string {
@@ -23,7 +24,7 @@ export default function FunnelSummaryTile({ properties }: { properties: Property
   const stages = useMemo(() => {
     const result: { key: string; count: number; total: number }[] = [];
 
-    for (const stage of ACTIVE_STAGES) {
+    for (const stage of FUNNEL_STAGES) {
       const inStage = properties.filter(p => p.status === stage);
       const total = inStage.reduce((sum, p) => {
         const price = p.price ? parseFloat(String(p.price)) : 0;
@@ -40,39 +41,39 @@ export default function FunnelSummaryTile({ properties }: { properties: Property
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
-      <h3 className="text-sm font-semibold text-gray-900 mb-1">{t('title')}</h3>
-      <p className="text-xs text-gray-400 mb-3">{t('description')}</p>
+      <h3 className="text-base font-semibold text-gray-900 mb-1">{t('title')}</h3>
+      <p className="text-sm text-gray-400 mb-4">{t('description')}</p>
 
       {/* Stage breakdown */}
       <div className="flex-1">
         {/* Header row */}
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 text-[10px] text-gray-400 font-medium mb-1 px-1">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 text-xs text-gray-400 font-medium mb-1.5 px-2">
           <span>{t('colStage')}</span>
           <span className="text-right w-8">#</span>
-          <span className="text-right w-20">{t('colTotal')}</span>
-          <span className="text-right w-20">{t('colAvg')}</span>
+          <span className="text-right w-24">{t('colTotal')}</span>
+          <span className="text-right w-24">{t('colAvg')}</span>
         </div>
 
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           {stages.map(stage => {
             const avg = stage.count > 0 ? stage.total / stage.count : 0;
             return (
               <div
                 key={stage.key}
-                className={`grid grid-cols-[1fr_auto_auto_auto] gap-x-3 items-center px-1 py-1 rounded text-sm ${
+                className={`grid grid-cols-[1fr_auto_auto_auto] gap-x-4 items-center px-2 py-1.5 rounded ${
                   stage.count > 0 ? 'bg-slate-50' : ''
                 }`}
               >
-                <span className={`text-xs ${stage.count > 0 ? 'text-gray-700' : 'text-gray-300'}`}>
+                <span className={`text-sm ${stage.count > 0 ? 'text-gray-700' : 'text-gray-300'}`}>
                   {tStages(STAGE_I18N_KEY[stage.key])}
                 </span>
-                <span className={`text-right text-xs font-medium w-8 ${stage.count > 0 ? 'text-gray-900' : 'text-gray-300'}`}>
+                <span className={`text-right text-sm font-medium w-8 ${stage.count > 0 ? 'text-gray-900' : 'text-gray-300'}`}>
                   {stage.count}
                 </span>
-                <span className={`text-right text-[10px] w-20 ${stage.count > 0 ? 'text-gray-600' : 'text-gray-300'}`}>
+                <span className={`text-right text-xs w-24 ${stage.count > 0 ? 'text-gray-600' : 'text-gray-300'}`}>
                   {stage.count > 0 ? formatPrice(stage.total) : '—'}
                 </span>
-                <span className={`text-right text-[10px] w-20 ${stage.count > 0 ? 'text-gray-400' : 'text-gray-300'}`}>
+                <span className={`text-right text-xs w-24 ${stage.count > 0 ? 'text-gray-400' : 'text-gray-300'}`}>
                   {stage.count > 0 ? formatPrice(avg) : '—'}
                 </span>
               </div>
@@ -81,12 +82,12 @@ export default function FunnelSummaryTile({ properties }: { properties: Property
         </div>
 
         {/* Totals */}
-        <div className="border-t border-gray-100 mt-2 pt-2 px-1">
-          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 text-xs font-semibold">
+        <div className="border-t border-gray-100 mt-3 pt-2 px-2">
+          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 text-sm font-semibold">
             <span className="text-gray-700">{t('total')}</span>
             <span className="text-right text-gray-900 w-8">{totalCount}</span>
-            <span className="text-right text-blue-600 w-20">{totalValue > 0 ? formatPrice(totalValue) : '—'}</span>
-            <span className="text-right text-gray-400 w-20">
+            <span className="text-right text-blue-600 w-24">{totalValue > 0 ? formatPrice(totalValue) : '—'}</span>
+            <span className="text-right text-gray-400 w-24">
               {totalCount > 0 ? formatPrice(totalValue / totalCount) : '—'}
             </span>
           </div>

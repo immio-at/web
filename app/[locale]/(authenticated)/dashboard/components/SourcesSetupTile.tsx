@@ -62,17 +62,17 @@ export default function SourcesSetupTile({
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col justify-between h-full">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">{t('setupPrompt')}</h3>
-          <p className="text-xs text-gray-500 mb-3">{t('setupBody')}</p>
+          <h3 className="text-base font-semibold text-gray-900 mb-2">{t('setupPrompt')}</h3>
+          <p className="text-sm text-gray-500 mb-4">{t('setupBody')}</p>
           {immioEmail && (
-            <div className="bg-slate-50 rounded-lg px-3 py-2 mb-3">
-              <p className="text-[10px] text-gray-400 mb-0.5">{t('yourEmail')}</p>
-              <p className="text-sm font-mono font-medium text-gray-900 select-all">{immioEmail}</p>
+            <div className="bg-slate-50 rounded-lg px-4 py-3 mb-4">
+              <p className="text-xs text-gray-400 mb-1">{t('yourEmail')}</p>
+              <p className="text-base font-mono font-medium text-gray-900 select-all">{immioEmail}</p>
             </div>
           )}
         </div>
         <button
-          className="mt-3 block w-full text-center text-sm font-medium text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-lg py-2 transition-colors"
+          className="mt-3 block w-full text-center text-sm font-medium text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-lg py-2.5 transition-colors"
         >
           {t('setupCta')}
         </button>
@@ -85,16 +85,16 @@ export default function SourcesSetupTile({
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col justify-between h-full">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('titleHealthy')}</h3>
-          <div className="space-y-1.5">
+          <h3 className="text-base font-semibold text-gray-900 mb-4">{t('titleHealthy')}</h3>
+          <div className="space-y-3">
             {KNOWN_PLATFORMS.map(platform => (
-              <div key={platform} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-green-500 text-xs">✓</span>
-                  <span className="text-gray-700">{PLATFORM_LABELS[platform]}</span>
+              <div key={platform} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-green-500 text-sm">✓</span>
+                  <span className="text-sm text-gray-700">{PLATFORM_LABELS[platform]}</span>
                 </div>
                 {platformStatus[platform].lastReceived && (
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-xs text-gray-400">
                     {new Date(platformStatus[platform].lastReceived!).toLocaleDateString('de-AT')}
                   </span>
                 )}
@@ -112,38 +112,38 @@ export default function SourcesSetupTile({
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col justify-between h-full">
       <div>
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('title')}</h3>
-        <div className="space-y-1.5">
+        <h3 className="text-base font-semibold text-gray-900 mb-4">{t('title')}</h3>
+        <div className="space-y-3">
           {KNOWN_PLATFORMS.map(platform => (
-            <div key={platform} className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-1.5">
+            <div key={platform} className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 {platformStatus[platform].active ? (
-                  <span className="text-green-500 text-xs">✓</span>
+                  <span className="text-green-500 text-sm">✓</span>
                 ) : (
-                  <span className="text-amber-400 text-xs">○</span>
+                  <span className="text-amber-400 text-sm">○</span>
                 )}
-                <span className="text-gray-700">{PLATFORM_LABELS[platform]}</span>
+                <span className="text-sm text-gray-700">{PLATFORM_LABELS[platform]}</span>
               </div>
               {platformStatus[platform].active && platformStatus[platform].lastReceived ? (
-                <span className="text-[10px] text-gray-400">
+                <span className="text-xs text-gray-400">
                   {new Date(platformStatus[platform].lastReceived!).toLocaleDateString('de-AT')}
                 </span>
               ) : (
-                <span className="text-[10px] text-gray-400">{t('notConfigured')}</span>
+                <span className="text-xs text-gray-400">{t('notConfigured')}</span>
               )}
             </div>
           ))}
         </div>
 
         {firstInactive && (
-          <p className="text-xs text-teal-600 mt-3">
+          <p className="text-sm text-teal-600 mt-4">
             {t('nudge', { platform: PLATFORM_LABELS[firstInactive] })}
           </p>
         )}
       </div>
 
       <button
-        className="mt-3 block w-full text-center text-sm font-medium text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-lg py-2 transition-colors"
+        className="mt-3 block w-full text-center text-sm font-medium text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-lg py-2.5 transition-colors"
       >
         {t('guideCta')}
       </button>
