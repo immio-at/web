@@ -841,6 +841,14 @@
     "roomsShort": "rm.",
     "perSqm": "/m²"
   },
+  "propertyCard": {
+    "addToFunnel": "Add to Funnel",
+    "moveToStage": "Move",
+    "analyse": "Analyse",
+    "reportDead": "Report dead link",
+    "dismiss": "Dismiss",
+    "expired": "Unavailable"
+  },
   "presetFilters": {
     "searchAgents": "Search Agents",
     "last24h": "Last 24h",

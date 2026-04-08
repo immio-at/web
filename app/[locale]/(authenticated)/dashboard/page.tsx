@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useProperties } from '@/hooks/useProperties';
 import { Property } from '@/lib/api';
@@ -12,7 +12,7 @@ import DashboardClient from '@/components/DashboardClient';
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
   const { properties, loading, error } = useProperties();
-  const { track, getRecentlyViewed } = useInteractionTracker();
+  const { getRecentlyViewed } = useInteractionTracker();
   const { filters } = useSavedFilters();
   const { immioEmail, session, loading: authLoading } = useAuth();
 
@@ -27,12 +27,6 @@ export default function DashboardPage() {
     recentlyViewedFetched.current = true;
     getRecentlyViewed(20).then(setRecentlyViewed);
   }, [authLoading, session, getRecentlyViewed]);
-
-  const handleInteraction = useCallback((id: string, type?: 'view' | 'analysis' | 'url_click' | 'status_change') => {
-    track(id, type ?? 'view');
-    // Refresh recently viewed after a short delay to pick up the new interaction
-    setTimeout(() => getRecentlyViewed(20).then(setRecentlyViewed), 500);
-  }, [track, getRecentlyViewed]);
 
   if (loading) {
     return (
@@ -79,7 +73,6 @@ export default function DashboardPage() {
 
       <DashboardClient
         properties={properties}
-        onInteraction={handleInteraction}
         recentlyViewed={recentlyViewed}
         immioEmail={immioEmail}
         savedFilters={filters}

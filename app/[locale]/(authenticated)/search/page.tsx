@@ -20,6 +20,8 @@ import FilterBar, {
 import PresetFilters from '@/components/PresetFilters';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
+import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
+import { updateProperty, reportUnavailable } from '@/lib/api';
 
 // ─── Unified listing type ────────────────────────────────────────────────────
 
@@ -555,6 +557,66 @@ export default function EntdeckenPage() {
   // State presets are now sent server-side, so pagination is accurate with them.
   const hasClientOnlyPresets = activePresets.has('searchAgents') || activePresets.has('last24h') || activePresets.has('lastWeek');
   const presetsActive = hasClientOnlyPresets || activeSavedFilterIds.size > 0;
+  // ── Convert UnifiedListing to CardProperty ──
+  function listingToCard(l: UnifiedListing): CardProperty {
+    return {
+      id: l.source === 'email' ? l.id.replace('prop-', '') : l.id,
+      title: l.title,
+      price: l.price,
+      sizeSqm: l.sizeSqm,
+      rooms: l.rooms,
+      location: l.location,
+      zipCode: l.zipCode,
+      imageUrl: l.imageUrl,
+      sourceUrl: l.sourceUrl,
+      platform: l.platform,
+      status: l.status,
+      source: l.source === 'email' ? 'own' : 'scraped',
+      scrapedListingId: l.scrapedListingId,
+    };
+  }
+
+  const { update: updateProp, optimisticUpdate } = useProperties();
+
+  const cardActions: CardActions = useMemo(() => ({
+    onStageChange: async (item: CardProperty, stage: string) => {
+      if (item.source === 'scraped' && item.scrapedListingId) {
+        // Save scraped listing to funnel at the selected stage
+        try {
+          await saveScrapedListing(item.scrapedListingId);
+          invalidateCache();
+          // Mark as saved in local state
+          setScrapedListings(prev => prev.map(l =>
+            l.id === `scraped-${item.scrapedListingId}` ? { ...l, savedByUser: true } : l
+          ));
+        } catch { /* 409 = already saved */ }
+      } else {
+        // Own property — move to stage
+        trackInteraction(item.id, 'status_change');
+        updateProp(item.id, { status: stage, movedToStageAt: new Date().toISOString() });
+      }
+    },
+    onAnalyse: (item: CardProperty) => {
+      if (item.source === 'own') trackInteraction(item.id, 'analysis');
+    },
+    onReportDead: (item: CardProperty) => {
+      optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
+      reportUnavailable(item.id).catch(() => {});
+    },
+    onDismiss: (item: CardProperty) => {
+      if (item.source === 'own') {
+        updateProp(item.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() });
+      }
+      // For scraped: just hide from view
+      if (item.source === 'scraped') {
+        setScrapedListings(prev => prev.filter(l => l.id !== `scraped-${item.scrapedListingId}`));
+      }
+    },
+    onUrlClick: (item: CardProperty) => {
+      if (item.source === 'own') trackInteraction(item.id, 'url_click');
+    },
+  }), [updateProp, optimisticUpdate]);
+
   const totalResults = presetsActive
     ? listings.length
     : (page === 1 ? mergedUserCount : 0) + scrapedTotal;
@@ -657,11 +719,10 @@ export default function EntdeckenPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {listings.map(listing => (
-              <ListingCard
+              <PropertyCard
                 key={listing.id}
-                listing={listing}
-                onSave={handleSave}
-                saving={savingId === listing.id}
+                item={listingToCard(listing)}
+                actions={cardActions}
               />
             ))}
           </div>

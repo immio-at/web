@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { Property, SavedFilter } from '@/lib/api';
+import { Property, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
+import { useProperties } from '@/hooks/useProperties';
+import { trackInteraction } from '@/hooks/useInteractionTracker';
 import DiscoverTile from '@/app/[locale]/(authenticated)/dashboard/components/DiscoverTile';
 import FunnelSummaryTile from '@/app/[locale]/(authenticated)/dashboard/components/FunnelSummaryTile';
 import SourcesSetupTile from '@/app/[locale]/(authenticated)/dashboard/components/SourcesSetupTile';
 import AnalyticsSnapshotTile from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
 import PropertyCarousel from '@/app/[locale]/(authenticated)/dashboard/components/PropertyCarousel';
 import RecommendedCarousel from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
+import { type CardProperty, type CardActions } from '@/components/PropertyCard';
 import { useTranslations } from 'next-intl';
 
 const PropertyAnalysisModal = dynamic(
@@ -16,31 +19,46 @@ const PropertyAnalysisModal = dynamic(
   { ssr: false },
 );
 
-type InteractionFn = (id: string, type?: 'view' | 'analysis' | 'url_click' | 'status_change') => void;
-
 // Stages excluded from New Arrivals carousel — terminal + completed stages
 const EXCLUDED_FROM_ARRIVALS = new Set(['not_relevant', 'delisted', 'won', 'parked']);
 
 export default function DashboardClient({
   properties,
-  onInteraction,
   recentlyViewed,
   immioEmail,
   savedFilters,
 }: {
   properties: Property[];
-  onInteraction?: InteractionFn;
   recentlyViewed?: Property[];
   immioEmail: string | null;
   savedFilters: SavedFilter[];
 }) {
   const t = useTranslations('dashboard.carousels');
+  const { update, optimisticUpdate } = useProperties();
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
 
-  function handleAnalyse(p: Property) {
-    onInteraction?.(p.id, 'analysis');
-    setAnalyseProperty(p);
-  }
+  // Card actions — shared across all carousels
+  const cardActions: CardActions = useMemo(() => ({
+    onStageChange: (item: CardProperty, stage: string) => {
+      trackInteraction(item.id, 'status_change');
+      update(item.id, { status: stage, movedToStageAt: new Date().toISOString() });
+    },
+    onAnalyse: (item: CardProperty) => {
+      trackInteraction(item.id, 'analysis');
+      const prop = properties.find(p => p.id === item.id);
+      if (prop) setAnalyseProperty(prop);
+    },
+    onReportDead: (item: CardProperty) => {
+      optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
+      reportUnavailable(item.id).catch(() => {});
+    },
+    onDismiss: (item: CardProperty) => {
+      update(item.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() });
+    },
+    onUrlClick: (item: CardProperty) => {
+      trackInteraction(item.id, 'url_click');
+    },
+  }), [properties, update, optimisticUpdate]);
 
   // New Arrivals — 20 most recent non-terminal, non-expired properties
   const newArrivals = useMemo(() => {
@@ -65,16 +83,14 @@ export default function DashboardClient({
         title={t('newArrivals')}
         properties={newArrivals}
         emptyMessage={t('newArrivalsEmpty')}
-        onInteraction={onInteraction}
-        onAnalyse={handleAnalyse}
+        actions={cardActions}
       />
 
       <PropertyCarousel
         title={t('recentlyViewed')}
         properties={recentlyViewed ?? []}
         emptyMessage={t('recentlyViewedEmpty')}
-        onInteraction={onInteraction}
-        onAnalyse={handleAnalyse}
+        actions={cardActions}
       />
 
       <RecommendedCarousel />

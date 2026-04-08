@@ -841,6 +841,14 @@
     "roomsShort": "Zi.",
     "perSqm": "/m²"
   },
+  "propertyCard": {
+    "addToFunnel": "Zum Funnel",
+    "moveToStage": "Verschieben",
+    "analyse": "Analyse",
+    "reportDead": "Link melden",
+    "dismiss": "Entfernen",
+    "expired": "Nicht verfügbar"
+  },
   "presetFilters": {
     "searchAgents": "Suchagenten",
     "last24h": "Letzte 24h",
