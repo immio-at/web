@@ -99,15 +99,12 @@ export function passesPresetFilters<T extends Filterable>(
 ): boolean {
   if (active.size === 0) return true;
 
-  // Source filter — "Search Agents" means email-parsed only
+  // Source filter — "Search Agents" means email-parsed only.
+  // Always check emailReceivedAt — it's the reliable indicator.
+  // Properties saved from scraped listings have source='email' but
+  // no emailReceivedAt, so checking source alone would be wrong.
   if (active.has('searchAgents')) {
-    if (item.source !== undefined) {
-      // UnifiedListing — has explicit source field
-      if (item.source !== 'email') return false;
-    } else {
-      // Property — check emailReceivedAt
-      if (!item.emailReceivedAt) return false;
-    }
+    if (!item.emailReceivedAt) return false;
   }
 
   // Time filter
