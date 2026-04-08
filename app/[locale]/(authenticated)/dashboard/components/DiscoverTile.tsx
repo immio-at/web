@@ -205,27 +205,25 @@ export default function DiscoverTile({
           href={`/search${buildQueryString()}`}
           className="flex items-center justify-between w-full px-3 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
         >
-          <span>🔍 {t('searchButton')}</span>
-          {hasAnyFilter ? (
-            <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">
-              {matchCount} {t('ownMatch')} +
-            </span>
-          ) : (
-            <span className="text-xs font-normal opacity-80">{t('searchDesc')}</span>
-          )}
+          <span className="flex items-center gap-2">
+            <span>🔍 {t('searchButton')}</span>
+            <span className="text-xs font-normal opacity-70">{t('searchDesc')}</span>
+          </span>
+          <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">
+            {matchCount} {t('ownMatch')} +
+          </span>
         </Link>
         <Link
           href={`/finder${buildQueryString()}`}
           className="flex items-center justify-between w-full px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
         >
-          <span>🃏 {t('finderButton')}</span>
-          {hasAnyFilter ? (
-            <span className="text-xs font-semibold bg-gray-200 px-2 py-0.5 rounded-full">
-              {matchCount} {t('ownMatch')} +
-            </span>
-          ) : (
+          <span className="flex items-center gap-2">
+            <span>🃏 {t('finderButton')}</span>
             <span className="text-xs font-normal text-gray-400">{t('finderDesc')}</span>
-          )}
+          </span>
+          <span className="text-xs font-semibold bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
+            {matchCount} {t('ownMatch')} +
+          </span>
         </Link>
       </div>
     </div>
