@@ -24,24 +24,37 @@ export default function DiscoverTile({
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(new Set());
 
-  // Fetch scraped listings total from server (re-fetches when state presets change)
-  const [scrapedTotal, setScrapedTotal] = useState<number | null>(null);
+  // Pre-fetch scraped counts: global + per state. All cached on mount.
+  // Austrian postcodes map to exactly one state → summing is exact.
   const STATE_KEYS: BundeslandAbbreviation[] = ['W', 'NÖ', 'OÖ', 'ST', 'K', 'S', 'T', 'V', 'B'];
-
-  const presetPostcodes = useMemo(() => {
-    const activeStates = STATE_KEYS.filter(k => activePresets.has(k));
-    if (activeStates.length === 0) return [];
-    return activeStates.flatMap(abbr => getPostcodesByBundesland(abbr) ?? []);
-  }, [activePresets]);
+  const [scrapedGlobal, setScrapedGlobal] = useState<number | null>(null);
+  const [scrapedByState, setScrapedByState] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (authLoading || !session) return;
-    const params: Record<string, unknown> = { page: 1, hideNullPrice: true };
-    if (presetPostcodes.length > 0) params.postcodes = presetPostcodes;
-    getScrapedListings(params as any)
-      .then(data => setScrapedTotal(data.total))
+    // Fetch global total
+    getScrapedListings({ page: 1, hideNullPrice: true } as any)
+      .then(data => setScrapedGlobal(data.total))
       .catch(() => {});
-  }, [authLoading, session, presetPostcodes]);
+    // Fetch per-state counts in parallel
+    for (const abbr of STATE_KEYS) {
+      const postcodes = getPostcodesByBundesland(abbr) ?? [];
+      if (postcodes.length === 0) continue;
+      getScrapedListings({ page: 1, hideNullPrice: true, postcodes } as any)
+        .then(data => setScrapedByState(prev => ({ ...prev, [abbr]: data.total })))
+        .catch(() => {});
+    }
+  }, [authLoading, session]);
+
+  // Compute scraped total from cache — instant on toggle
+  const scrapedTotal = useMemo(() => {
+    const activeStates = STATE_KEYS.filter(k => activePresets.has(k));
+    if (activeStates.length === 0) return scrapedGlobal;
+    // Sum individual state counts (exact since postcodes are state-unique)
+    const allCached = activeStates.every(k => k in scrapedByState);
+    if (!allCached) return null; // still loading
+    return activeStates.reduce((sum, k) => sum + (scrapedByState[k] ?? 0), 0);
+  }, [activePresets, scrapedGlobal, scrapedByState]);
 
   function toggleSavedFilter(id: string) {
     setActiveSavedFilterIds(prev => {
