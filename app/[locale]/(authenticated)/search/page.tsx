@@ -19,6 +19,7 @@ import FilterBar, {
 } from '@/components/FilterBar';
 import PresetFilters from '@/components/PresetFilters';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
+import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
 
 // ─── Unified listing type ────────────────────────────────────────────────────
 
@@ -395,13 +396,31 @@ export default function EntdeckenPage() {
     };
   }, []);
 
-  // ── Fetch scraped listings — fires immediately, no dependency on useProperties ──
+  // Resolve active state presets to postcodes for server-side filtering
+  const STATE_KEYS: BundeslandAbbreviation[] = ['W', 'NÖ', 'OÖ', 'ST', 'K', 'S', 'T', 'V', 'B'];
+  const presetPostcodes = useMemo(() => {
+    const activeStates = STATE_KEYS.filter(k => activePresets.has(k));
+    if (activeStates.length === 0) return [];
+    return activeStates.flatMap(abbr => getPostcodesByBundesland(abbr) ?? []);
+  }, [activePresets]);
+
+  // ── Fetch scraped listings — fires immediately, includes preset state postcodes ──
   const fetchScraped = useCallback(async () => {
     if (authLoading || !session) return;
     try {
       setScrapedLoading(true);
       setError(null);
       const filterParams = buildFilterParams(applied);
+
+      // Merge preset state postcodes with FilterBar postcodes
+      const allPostcodes = [
+        ...(filterParams.postcodes ?? []),
+        ...presetPostcodes,
+      ];
+      if (allPostcodes.length > 0) {
+        filterParams.postcodes = [...new Set(allPostcodes)]; // deduplicate
+      }
+
       const scrapedData = await getScrapedListings({ ...filterParams, page });
       setScrapedListings(scrapedData.data.map(scrapedToUnified));
       setScrapedTotal(scrapedData.total);
@@ -411,7 +430,7 @@ export default function EntdeckenPage() {
     } finally {
       setScrapedLoading(false);
     }
-  }, [authLoading, session, applied, page, t, buildFilterParams]);
+  }, [authLoading, session, applied, page, t, buildFilterParams, presetPostcodes]);
 
   useEffect(() => { fetchScraped(); }, [fetchScraped]);
 
@@ -532,7 +551,10 @@ export default function EntdeckenPage() {
   }
 
   // When preset/saved filter pills are active, use actual displayed count
-  const presetsActive = activePresets.size > 0 || activeSavedFilterIds.size > 0;
+  // Only client-side-only presets (time, source, saved filters) affect count accuracy.
+  // State presets are now sent server-side, so pagination is accurate with them.
+  const hasClientOnlyPresets = activePresets.has('searchAgents') || activePresets.has('last24h') || activePresets.has('lastWeek');
+  const presetsActive = hasClientOnlyPresets || activeSavedFilterIds.size > 0;
   const totalResults = presetsActive
     ? listings.length
     : (page === 1 ? mergedUserCount : 0) + scrapedTotal;
