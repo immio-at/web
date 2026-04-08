@@ -274,7 +274,19 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
     setDragOverStage(null);
   }
 
-  if (loading) return <div className="text-gray-500 py-12 text-center">{t('loading')}</div>;
+  if (loading) return (
+    <div className="flex gap-3 overflow-x-auto py-4">
+      {[0,1,2,3,4].map(i => (
+        <div key={i} className="flex-shrink-0 w-64 bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+          <div className="h-4 bg-gray-100 rounded w-1/2 mb-4" />
+          <div className="space-y-3">
+            <div className="h-16 bg-gray-100 rounded" />
+            <div className="h-16 bg-gray-100 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
   if (error)   return <div className="text-red-500 py-12 text-center">{error}</div>;
 
   return (

@@ -14,16 +14,30 @@ function formatNumber(n: number): string {
   return n.toLocaleString('de-AT');
 }
 
+// Module-level cache for analytics — avoids re-fetching on every Dashboard visit
+let analyticsCache: AnalyticsSummary | null = null;
+let analyticsCacheTimestamp = 0;
+const ANALYTICS_CACHE_TTL_MS = 300_000; // 5 minutes
+
 export default function AnalyticsSnapshotTile({ properties }: { properties: Property[] }) {
   const t = useTranslations('dashboard.analyticsTile');
   const ta = useTranslations('analytics');
   const { session, loading: authLoading } = useAuth();
 
-  const [data, setData] = useState<AnalyticsSummary | null>(null);
+  const [data, setData] = useState<AnalyticsSummary | null>(analyticsCache);
 
   useEffect(() => {
     if (authLoading || !session) return;
-    getAnalyticsSummary().then(setData).catch(() => {});
+    const cacheAge = Date.now() - analyticsCacheTimestamp;
+    if (analyticsCache && cacheAge < ANALYTICS_CACHE_TTL_MS) {
+      setData(analyticsCache);
+      return;
+    }
+    getAnalyticsSummary().then(d => {
+      analyticsCache = d;
+      analyticsCacheTimestamp = Date.now();
+      setData(d);
+    }).catch(() => {});
   }, [authLoading, session]);
 
   const totalSaved = properties.filter(

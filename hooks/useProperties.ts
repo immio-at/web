@@ -14,7 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 
 let cache: Property[] | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL_MS = 30_000; // re-fetch from server after 30 seconds
+const CACHE_TTL_MS = 120_000; // re-fetch from server after 2 minutes
 
 // Listeners allow multiple mounted components to receive cache updates
 // e.g. if Dashboard and Funnel were both mounted simultaneously
@@ -155,4 +155,18 @@ export function useProperties() {
 export function invalidateCache() {
   cache = null;
   cacheTimestamp = 0;
+}
+
+// Prefetch properties into module cache — call during auth init
+// so the cache is warm before any page component mounts.
+export async function prefetchProperties() {
+  if (cache !== null && Date.now() - cacheTimestamp < CACHE_TTL_MS) return;
+  try {
+    const data = await getProperties();
+    cache = data;
+    cacheTimestamp = Date.now();
+    notifyListeners(data);
+  } catch {
+    // Silently ignore — page-level fetch will retry
+  }
 }

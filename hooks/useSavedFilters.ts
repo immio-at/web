@@ -13,7 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 // ─── Module-level cache (same pattern as useProperties) ─────────────────────
 let filterCache: SavedFilter[] | null = null;
 let filterCacheTimestamp = 0;
-const FILTER_CACHE_TTL_MS = 60_000; // re-fetch after 60 seconds
+const FILTER_CACHE_TTL_MS = 300_000; // re-fetch after 5 minutes
 const filterListeners = new Set<(filters: SavedFilter[]) => void>();
 
 function notifyFilterListeners(filters: SavedFilter[]) {
@@ -81,4 +81,17 @@ export function useSavedFilters() {
   }, []);
 
   return { filters, loading, error, create, update, remove, refresh: fetch };
+}
+
+// Prefetch saved filters into module cache — call during auth init.
+export async function prefetchSavedFilters() {
+  if (filterCache !== null && Date.now() - filterCacheTimestamp < FILTER_CACHE_TTL_MS) return;
+  try {
+    const data = await getSavedFilters();
+    filterCache = data;
+    filterCacheTimestamp = Date.now();
+    notifyFilterListeners(data);
+  } catch {
+    // Silently ignore
+  }
 }

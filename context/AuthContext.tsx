@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { setTokenGetter } from '@/lib/api';
+import { prefetchProperties } from '@/hooks/useProperties';
+import { prefetchSavedFilters } from '@/hooks/useSavedFilters';
 
 // ─── App-specific fields Supabase doesn't know about ─────────────────────────
 
@@ -123,6 +125,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data } = await supabase.auth.getSession();
       return data.session?.access_token ?? null;
     });
+
+    // Prefetch core data as soon as token is available — starts loading
+    // before any page component mounts, so caches are warm by the time
+    // useProperties/useSavedFilters first read them.
+    if (session?.access_token) {
+      prefetchProperties();
+      prefetchSavedFilters();
+    }
 
     return () => subscription.unsubscribe();
   }, []);
