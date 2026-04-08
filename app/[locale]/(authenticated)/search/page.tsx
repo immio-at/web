@@ -339,9 +339,15 @@ export default function EntdeckenPage() {
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  // Preset + saved filter pill state
-  const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
-  const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(new Set());
+  // Preset + saved filter pill state — initialise from URL params if present
+  const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(() => {
+    const raw = searchParams.get('presets');
+    return raw ? new Set(raw.split(',') as PresetFilterKey[]) : new Set();
+  });
+  const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(() => {
+    const raw = searchParams.get('savedFilterIds');
+    return raw ? new Set(raw.split(',')) : new Set();
+  });
 
   function toggleSavedFilter(id: string) {
     setActiveSavedFilterIds(prev => {

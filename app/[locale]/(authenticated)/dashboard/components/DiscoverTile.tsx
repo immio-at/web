@@ -80,6 +80,9 @@ export default function DiscoverTile({
     if (v.maxRooms) params.set('maxRooms', v.maxRooms);
     if (v.sortBy && v.sortBy !== 'listedDate') params.set('sortBy', v.sortBy);
     if (v.sortOrder && v.sortOrder !== 'desc') params.set('sortOrder', v.sortOrder);
+    // Pass active preset and saved filter selections
+    if (activePresets.size > 0) params.set('presets', Array.from(activePresets).join(','));
+    if (activeSavedFilterIds.size > 0) params.set('savedFilterIds', Array.from(activeSavedFilterIds).join(','));
     const qs = params.toString();
     return qs ? `?${qs}` : '';
   }
@@ -212,7 +215,7 @@ export default function DiscoverTile({
           )}
         </Link>
         <Link
-          href="/finder"
+          href={`/finder${buildQueryString()}`}
           className="flex items-center justify-between w-full px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
         >
           <span>🃏 {t('finderButton')}</span>

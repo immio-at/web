@@ -15,12 +15,18 @@ const PropertyAnalysisModal = dynamic(
   { ssr: false },
 );
 
-export default function FinderClient() {
+export default function FinderClient({
+  initialPresets,
+  initialSavedFilterIds,
+}: {
+  initialPresets?: Set<PresetFilterKey>;
+  initialSavedFilterIds?: Set<string>;
+} = {}) {
   const t = useTranslations('finder');
   const { properties: all, loading, update } = useProperties();
   const { filters: savedFilters } = useSavedFilters();
-  const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
-  const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(new Set());
+  const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(initialPresets ?? new Set());
+  const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(initialSavedFilterIds ?? new Set());
 
   function toggleSavedFilter(id: string) {
     setActiveSavedFilterIds(prev => {
