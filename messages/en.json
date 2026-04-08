@@ -212,6 +212,7 @@
       "rooms": "Rooms",
       "searchButton": "Discover",
       "searchDesc": "Grid or table view",
+      "matchCount": "matches",
       "finderButton": "Finder",
       "finderDesc": "Tinder für Immo"
     },

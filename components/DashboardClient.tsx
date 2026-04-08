@@ -54,7 +54,7 @@ export default function DashboardClient({
     <div>
       {/* Summary Tiles — 2×2 grid, equal row heights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 lg:auto-rows-fr gap-4 mb-8">
-        <DiscoverTile savedFilters={savedFilters} />
+        <DiscoverTile savedFilters={savedFilters} properties={properties} />
         <FunnelSummaryTile properties={properties} />
         <SourcesSetupTile properties={properties} immioEmail={immioEmail} />
         <AnalyticsSnapshotTile properties={properties} />
