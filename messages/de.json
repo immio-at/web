@@ -298,8 +298,11 @@
     },
     "allCaughtUp": {
       "title": "Alles erledigt",
-      "subtitle": "Du hast alle {total} neuen Immobilien durchgesehen",
-      "backToDashboard": "Zurück zum Dashboard"
+      "subtitle": "Du hast alle {total} neuen Immobilien durchgesehen.",
+      "widenHint": "Ändere deine Filter oben, um weitere Ergebnisse zu sehen.",
+      "startOver": "Nochmal ansehen",
+      "backToDashboard": "Zum Dashboard",
+      "goToFunnel": "Zum Funnel"
     },
     "directions": {
       "left": "← Nicht relevant",

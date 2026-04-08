@@ -155,25 +155,12 @@ export default function FinderClient({
     </div>
   );
 
-  if (current >= total) return (
-    <div className="flex-1 flex items-center justify-center">
-      <div className="text-center px-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('allCaughtUp.title')}</h2>
-        <p className="text-gray-500 mb-8">{t('allCaughtUp.subtitle', { total })}</p>
-        <Link
-          href="/dashboard"
-          className="bg-slate-700 text-white px-8 py-3 rounded-lg font-medium hover:bg-slate-800 transition-colors"
-        >
-          {t('allCaughtUp.backToDashboard')}
-        </Link>
-      </div>
-    </div>
-  );
+  const allReviewed = current >= total;
 
   return (
     <div className="flex-1 flex flex-col items-center justify-start pt-4 px-4 pb-8 w-full">
 
-      {/* Preset + saved filter pills */}
+      {/* Preset + saved filter pills — always visible */}
       <PresetFilters
         active={activePresets}
         onChange={setActivePresets}
@@ -182,6 +169,36 @@ export default function FinderClient({
         onToggleSavedFilter={toggleSavedFilter}
       />
 
+      {allReviewed ? (
+        <div className="flex-1 flex items-center justify-center w-full">
+          <div className="text-center px-8 max-w-md">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('allCaughtUp.title')}</h2>
+            <p className="text-gray-500 mb-2">{t('allCaughtUp.subtitle', { total })}</p>
+            <p className="text-sm text-gray-400 mb-8">{t('allCaughtUp.widenHint')}</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => setCurrent(0)}
+                className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {t('allCaughtUp.startOver')}
+              </button>
+              <Link
+                href="/dashboard"
+                className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-gray-700 text-sm font-medium rounded-lg transition-colors text-center"
+              >
+                {t('allCaughtUp.backToDashboard')}
+              </Link>
+              <Link
+                href="/funnel"
+                className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-gray-700 text-sm font-medium rounded-lg transition-colors text-center"
+              >
+                {t('allCaughtUp.goToFunnel')}
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : (
+      <>
       {/* Card */}
       <div
         className="relative w-full max-w-sm mx-auto cursor-grab active:cursor-grabbing select-none"
@@ -304,7 +321,8 @@ export default function FinderClient({
           onClose={() => setShowAnalyseModal(false)}
         />
       )}
-
+      </>
+      )}
     </div>
   );
 }

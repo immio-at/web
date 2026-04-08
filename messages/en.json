@@ -298,8 +298,11 @@
     },
     "allCaughtUp": {
       "title": "All caught up",
-      "subtitle": "You've reviewed all {total} new properties",
-      "backToDashboard": "Back to Dashboard"
+      "subtitle": "You've reviewed all {total} new properties.",
+      "widenHint": "Adjust your filters above to see more results.",
+      "startOver": "Review again",
+      "backToDashboard": "Dashboard",
+      "goToFunnel": "Funnel"
     },
     "directions": {
       "left": "← Not Relevant",
