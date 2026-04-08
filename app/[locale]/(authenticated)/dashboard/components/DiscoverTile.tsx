@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { Property, SavedFilter } from '@/lib/api';
+import { Property, SavedFilter, getScrapedListings } from '@/lib/api';
 import { FilterValues, EMPTY_FILTERS, savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
 import { type PresetFilterKey, PRESET_FILTERS, togglePreset, passesPresetFilters } from '@/lib/preset-filters';
+import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
+import { useAuth } from '@/context/AuthContext';
 
 export default function DiscoverTile({
   savedFilters,
@@ -17,9 +19,29 @@ export default function DiscoverTile({
   const t = useTranslations('dashboard.discoverTile');
   const tp = useTranslations('presetFilters');
 
+  const { session, loading: authLoading } = useAuth();
   const [filterValues, setFilterValues] = useState<FilterValues>(EMPTY_FILTERS);
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(new Set());
+
+  // Fetch scraped listings total from server (re-fetches when state presets change)
+  const [scrapedTotal, setScrapedTotal] = useState<number | null>(null);
+  const STATE_KEYS: BundeslandAbbreviation[] = ['W', 'NÖ', 'OÖ', 'ST', 'K', 'S', 'T', 'V', 'B'];
+
+  const presetPostcodes = useMemo(() => {
+    const activeStates = STATE_KEYS.filter(k => activePresets.has(k));
+    if (activeStates.length === 0) return [];
+    return activeStates.flatMap(abbr => getPostcodesByBundesland(abbr) ?? []);
+  }, [activePresets]);
+
+  useEffect(() => {
+    if (authLoading || !session) return;
+    const params: Record<string, unknown> = { page: 1, hideNullPrice: true };
+    if (presetPostcodes.length > 0) params.postcodes = presetPostcodes;
+    getScrapedListings(params as any)
+      .then(data => setScrapedTotal(data.total))
+      .catch(() => {});
+  }, [authLoading, session, presetPostcodes]);
 
   function toggleSavedFilter(id: string) {
     setActiveSavedFilterIds(prev => {
@@ -201,30 +223,40 @@ export default function DiscoverTile({
 
       {/* Action buttons at bottom */}
       <div className="mt-auto space-y-2 pt-3 border-t border-gray-100">
-        <Link
-          href={`/search${buildQueryString()}`}
-          className="flex items-center justify-between w-full px-3 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          <span className="flex items-center gap-2">
-            <span>🔍 {t('searchButton')}</span>
-            <span className="text-xs font-normal opacity-70">{t('searchDesc')}</span>
-          </span>
-          <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">
-            {matchCount} {t('ownMatch')} +
-          </span>
-        </Link>
-        <Link
-          href={`/finder${buildQueryString()}`}
-          className="flex items-center justify-between w-full px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
-        >
-          <span className="flex items-center gap-2">
-            <span>🃏 {t('finderButton')}</span>
-            <span className="text-xs font-normal text-gray-400">{t('finderDesc')}</span>
-          </span>
-          <span className="text-xs font-semibold bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
-            {matchCount} {t('ownMatch')} +
-          </span>
-        </Link>
+        {(() => {
+          const totalCount = matchCount + (scrapedTotal ?? 0);
+          const countText = scrapedTotal !== null
+            ? totalCount.toLocaleString('de-AT')
+            : `${matchCount}+`;
+          return (
+            <>
+              <Link
+                href={`/search${buildQueryString()}`}
+                className="flex items-center justify-between w-full px-3 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <span>🔍 {t('searchButton')}</span>
+                  <span className="text-xs font-normal opacity-70">{t('searchDesc')}</span>
+                </span>
+                <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">
+                  {countText} {t('matchCount')}
+                </span>
+              </Link>
+              <Link
+                href={`/finder${buildQueryString()}`}
+                className="flex items-center justify-between w-full px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <span>🃏 {t('finderButton')}</span>
+                  <span className="text-xs font-normal text-gray-400">{t('finderDesc')}</span>
+                </span>
+                <span className="text-xs font-semibold bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
+                  {countText} {t('matchCount')}
+                </span>
+              </Link>
+            </>
+          );
+        })()}
       </div>
     </div>
   );
