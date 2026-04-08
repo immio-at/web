@@ -86,7 +86,7 @@ interface Filterable {
   createdAt?: string;
   emailReceivedAt?: string | null;
   firstSeenAt?: string;
-  source?: 'email' | 'scraped';
+  source?: string;
 }
 
 /**

@@ -306,18 +306,24 @@
     },
     "directions": {
       "left": "← Not Relevant",
+      "leftScraped": "← Skip",
       "up": "↑ Open",
       "down": "↓ Analyse",
-      "right": "→ Investigating"
+      "right": "→ Investigating",
+      "rightScraped": "→ Save"
     },
     "overlay": {
       "investigating": "Investigating",
       "notRelevant": "Not Relevant",
       "openListing": "Open Listing",
-      "analyse": "Analyse"
+      "analyse": "Analyse",
+      "save": "Save",
+      "skip": "Skip"
     },
     "buttons": {
       "notRelevantTitle": "Not Relevant",
+      "skipTitle": "Skip",
+      "saveTitle": "Save to my properties",
       "analyseTitle": "Analyse Property",
       "openListingTitle": "Open Listing",
       "investigatingTitle": "Investigating"

@@ -1,19 +1,94 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { useProperties } from '@/hooks/useProperties';
+import { useProperties, invalidateCache } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
+import { Property, getScrapedListings, saveScrapedListing, ScrapedListing } from '@/lib/api';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
+import { useAuth } from '@/context/AuthContext';
 import PresetFilters from '@/components/PresetFilters';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
+import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
 import Link from 'next/link';
 
 const PropertyAnalysisModal = dynamic(
   () => import('@/components/PropertyAnalysisModal'),
   { ssr: false },
 );
+
+// ─── Unified card type for Finder ────────────────────────────────────────────
+
+interface FinderCard {
+  id: string;
+  title: string | null;
+  price: number | null;
+  sizeSqm: number | null;
+  rooms: number | null;
+  location: string | null;
+  zipCode: string | null;
+  imageUrl: string | null;
+  sourceUrl: string;
+  platform: string;
+  source: 'own' | 'scraped';
+  // For own properties — needed for update/track
+  propertyId?: string;
+  // For scraped — needed for save
+  scrapedListingId?: string;
+  // For preset filters
+  emailReceivedAt?: string | null;
+  createdAt?: string;
+  firstSeenAt?: string;
+}
+
+function propertyToCard(p: Property): FinderCard {
+  return {
+    id: `prop-${p.id}`,
+    title: p.title,
+    price: p.price,
+    sizeSqm: p.sizeSqm,
+    rooms: p.rooms ? parseFloat(String(p.rooms)) : null,
+    location: p.location,
+    zipCode: p.zipCode,
+    imageUrl: p.imageUrl,
+    sourceUrl: p.sourceUrl,
+    platform: p.platform,
+    source: 'own',
+    propertyId: p.id,
+    emailReceivedAt: p.emailReceivedAt,
+    createdAt: p.createdAt,
+  };
+}
+
+function scrapedToCard(s: ScrapedListing): FinderCard {
+  return {
+    id: `scraped-${s.id}`,
+    title: s.title,
+    price: s.price ? parseFloat(String(s.price)) : null,
+    sizeSqm: s.sizeSqm ? parseFloat(String(s.sizeSqm)) : null,
+    rooms: s.rooms ? parseFloat(String(s.rooms)) : null,
+    location: s.location,
+    zipCode: s.zipCode,
+    imageUrl: s.imageUrl,
+    sourceUrl: s.sourceUrl,
+    platform: s.platform,
+    source: 'scraped',
+    scrapedListingId: s.id,
+    firstSeenAt: s.firstSeenAt,
+  };
+}
+
+// Platform display names
+const PLATFORM_LABELS: Record<string, string> = {
+  willhaben: 'Willhaben', immoscout24: 'ImmoScout24', immowelt: 'Immowelt',
+  bazar: 'Bazar.at', immmo: 'immmo.at', raiffeisen: 'Raiffeisen',
+  sreal: 's REAL', oerag: 'ÖRAG', remax: 'RE/MAX',
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+const STATE_KEYS: BundeslandAbbreviation[] = ['W', 'NÖ', 'OÖ', 'ST', 'K', 'S', 'T', 'V', 'B'];
 
 export default function FinderClient({
   initialPresets,
@@ -23,10 +98,15 @@ export default function FinderClient({
   initialSavedFilterIds?: Set<string>;
 } = {}) {
   const t = useTranslations('finder');
-  const { properties: all, loading, update } = useProperties();
+  const { session, loading: authLoading } = useAuth();
+  const { properties: allOwn, loading: propsLoading, update } = useProperties();
   const { filters: savedFilters } = useSavedFilters();
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(initialPresets ?? new Set());
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(initialSavedFilterIds ?? new Set());
+
+  // Scraped listings state
+  const [scrapedCards, setScrapedCards] = useState<FinderCard[]>([]);
+  const [scrapedLoading, setScrapedLoading] = useState(true);
 
   function toggleSavedFilter(id: string) {
     setActiveSavedFilterIds(prev => {
@@ -37,20 +117,65 @@ export default function FinderClient({
     });
   }
 
-  // Apply filters to 'new' properties client-side
-  const properties = useMemo(() => {
-    let filtered = all.filter(p => p.status === 'new');
+  // Resolve state presets to postcodes for server-side filtering
+  const presetPostcodes = useMemo(() => {
+    const activeStates = STATE_KEYS.filter(k => activePresets.has(k));
+    if (activeStates.length === 0) return [];
+    return activeStates.flatMap(abbr => getPostcodesByBundesland(abbr) ?? []);
+  }, [activePresets]);
 
+  // Fetch scraped listings — re-fetches when state presets change
+  const fetchScraped = useCallback(async () => {
+    if (authLoading || !session) return;
+    try {
+      setScrapedLoading(true);
+      const params: Record<string, unknown> = { page: 1, hideNullPrice: true };
+      if (presetPostcodes.length > 0) {
+        params.postcodes = presetPostcodes;
+      }
+      // Fetch multiple pages to have a decent card stack
+      const data = await getScrapedListings(params as any);
+      setScrapedCards(data.data.map(scrapedToCard));
+    } catch {
+      setScrapedCards([]);
+    } finally {
+      setScrapedLoading(false);
+    }
+  }, [authLoading, session, presetPostcodes]);
+
+  useEffect(() => { fetchScraped(); }, [fetchScraped]);
+
+  // Track which scraped cards the user has dismissed or saved (by id)
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+
+  // Merge own properties (status new) + scraped listings, apply filters
+  const cards = useMemo(() => {
+    // Own properties with status 'new'
+    const ownCards = allOwn
+      .filter(p => p.status === 'new')
+      .map(propertyToCard);
+
+    // Exclude scraped listings already saved by user (by sourceUrl)
+    const ownSourceUrls = new Set(allOwn.map(p => p.sourceUrl));
+    const filteredScraped = scrapedCards.filter(
+      s => !ownSourceUrls.has(s.sourceUrl) && !dismissedIds.has(s.id)
+    );
+
+    // Own cards first, then scraped
+    let merged = [...ownCards, ...filteredScraped];
+
+    // Apply preset filters (client-side: searchAgents, time)
     if (activePresets.size > 0) {
-      filtered = filtered.filter(p => passesPresetFilters(p, activePresets));
+      merged = merged.filter(c => passesPresetFilters(c, activePresets));
     }
 
+    // Apply saved filter pills
     if (activeSavedFilterIds.size > 0) {
-      filtered = filtered.filter(p => passesSavedFilters(p, savedFilters, activeSavedFilterIds));
+      merged = merged.filter(c => passesSavedFilters(c, savedFilters, activeSavedFilterIds));
     }
 
-    return filtered;
-  }, [all, activePresets, activeSavedFilterIds, savedFilters]);
+    return merged;
+  }, [allOwn, scrapedCards, dismissedIds, activePresets, activeSavedFilterIds, savedFilters]);
 
   const [current, setCurrent] = useState(0);
   const [dragX, setDragX] = useState(0);
@@ -60,42 +185,61 @@ export default function FinderClient({
   const [showAnalyseModal, setShowAnalyseModal] = useState(false);
   const dragStart = useRef<{ x: number; y: number } | null>(null);
 
-  const property = properties[current];
-  const total = properties.length;
+  // Reset card index when filters change
+  useEffect(() => { setCurrent(0); }, [activePresets, activeSavedFilterIds]);
+
+  const card = cards[current];
+  const total = cards.length;
 
   async function handleAction(action: string) {
-    if (!property) return;
+    if (!card) return;
 
     if (action === 'open') {
-      trackInteraction(property.id, 'url_click');
-      window.open(property.sourceUrl, '_blank');
+      if (card.propertyId) trackInteraction(card.propertyId, 'url_click');
+      window.open(card.sourceUrl, '_blank');
       setDragX(0);
       setDragY(0);
       return;
     }
 
     if (action === 'analyse') {
-      trackInteraction(property.id, 'analysis');
+      if (card.propertyId) trackInteraction(card.propertyId, 'analysis');
       setShowAnalyseModal(true);
       setDragX(0);
       setDragY(0);
       return;
     }
 
-    if (action !== 'not_relevant') {
-      trackInteraction(property.id, 'status_change');
-    }
-
+    // Swipe right (investigating) or left (not_relevant)
     setLastAction(action);
-    setCurrent(c => c + 1);
     setDragX(0);
     setDragY(0);
     setTimeout(() => setLastAction(null), 300);
 
-    update(property.id, {
-      status: action === 'interested' ? 'investigating' : action,
-      movedToStageAt: new Date().toISOString(),
-    });
+    if (card.source === 'own' && card.propertyId) {
+      // Own property — update status
+      if (action !== 'not_relevant') trackInteraction(card.propertyId, 'status_change');
+      setCurrent(c => c + 1);
+      update(card.propertyId, {
+        status: action === 'interested' ? 'investigating' : action,
+        movedToStageAt: new Date().toISOString(),
+      });
+    } else if (card.source === 'scraped' && card.scrapedListingId) {
+      if (action === 'investigating') {
+        // Scraped — save to funnel
+        setCurrent(c => c + 1);
+        try {
+          await saveScrapedListing(card.scrapedListingId);
+          invalidateCache();
+        } catch {
+          // 409 = already saved, ignore
+        }
+      } else {
+        // Scraped — dismiss (skip, don't save)
+        setDismissedIds(prev => new Set(prev).add(card.id));
+        setCurrent(c => c + 1);
+      }
+    }
   }
 
   function onPointerDown(e: React.PointerEvent) {
@@ -133,8 +277,8 @@ export default function FinderClient({
       : dragY < -50 ? 'open' : dragY > 50 ? 'analyse' : null;
 
   const overlayConfig: Record<string, { bg: string; label: string }> = {
-    investigating:  { bg: 'bg-emerald-500', label: t('overlay.investigating') },
-    not_relevant:   { bg: 'bg-rose-500',    label: t('overlay.notRelevant') },
+    investigating:  { bg: 'bg-emerald-500', label: card?.source === 'scraped' ? t('overlay.save') : t('overlay.investigating') },
+    not_relevant:   { bg: 'bg-rose-500',    label: card?.source === 'scraped' ? t('overlay.skip') : t('overlay.notRelevant') },
     open:           { bg: 'bg-blue-500',    label: t('overlay.openListing') },
     analyse:        { bg: 'bg-amber-500',   label: t('overlay.analyse') },
   };
@@ -144,10 +288,12 @@ export default function FinderClient({
     0.85
   );
 
-  const rawPrice = property?.price ? parseFloat(String(property.price)) : null;
+  const rawPrice = card?.price ? parseFloat(String(card.price)) : null;
   const priceText = rawPrice
     ? '€ ' + Math.round(rawPrice).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
     : '';
+
+  const loading = propsLoading || scrapedLoading;
 
   if (loading) return (
     <div className="flex-1 flex items-center justify-center">
@@ -177,7 +323,7 @@ export default function FinderClient({
             <p className="text-sm text-gray-400 mb-8">{t('allCaughtUp.widenHint')}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
-                onClick={() => setCurrent(0)}
+                onClick={() => { setCurrent(0); setDismissedIds(new Set()); }}
                 className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 {t('allCaughtUp.startOver')}
@@ -234,11 +380,11 @@ export default function FinderClient({
         <div className="bg-white rounded-2xl overflow-hidden shadow-2xl">
           {/* Image */}
           <div className="relative w-full bg-gray-100" style={{ height: '288px' }}>
-            {property.imageUrl ? (
+            {card.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={property.imageUrl}
-                alt={property.title ?? ''}
+                src={card.imageUrl}
+                alt={card.title ?? ''}
                 width={400}
                 height={288}
                 className="w-full h-full object-cover pointer-events-none"
@@ -248,34 +394,42 @@ export default function FinderClient({
             ) : (
               <div className="h-full flex items-center justify-center text-gray-300 text-5xl">🏠</div>
             )}
+            {/* Source badge */}
+            <span className={`absolute top-2 left-2 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+              card.source === 'own'
+                ? 'bg-teal-50/90 text-teal-700 border-teal-200'
+                : 'bg-white/90 text-gray-700 border-gray-200'
+            }`}>
+              {PLATFORM_LABELS[card.platform] ?? card.platform}
+            </span>
           </div>
 
           {/* Details */}
           <div className="p-5">
             <h2 className="font-bold text-gray-900 text-lg mb-3 line-clamp-2">
-              {property.title}
+              {card.title}
             </h2>
             <div className="space-y-1 text-sm text-gray-600">
               {priceText && (
                 <div className="text-2xl font-bold text-blue-600 mb-1">{priceText}</div>
               )}
-              {property.location && (
-                <div className="text-gray-500">📍 {property.location}</div>
+              {card.location && (
+                <div className="text-gray-500">📍 {card.location}</div>
               )}
               <div className="flex gap-4 text-gray-500">
-                {property.sizeSqm && <span>{property.sizeSqm} m²</span>}
-                {property.rooms && <span>{property.rooms} {t('rooms')}</span>}
+                {card.sizeSqm && <span>{Math.round(card.sizeSqm)} m²</span>}
+                {card.rooms && <span>{card.rooms} {t('rooms')}</span>}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Buttons — order matches directions: left, up, down, right */}
+      {/* Buttons */}
       <div className="flex gap-4 mt-5">
         <button
           onClick={() => handleAction('not_relevant')}
-          title={t('buttons.notRelevantTitle')}
+          title={card.source === 'scraped' ? t('buttons.skipTitle') : t('buttons.notRelevantTitle')}
           className="w-14 h-14 rounded-full bg-white border border-gray-200 text-rose-500 font-bold text-lg hover:bg-rose-50 hover:border-rose-300 transition-colors shadow-sm flex items-center justify-center"
         >
           ✕
@@ -296,28 +450,28 @@ export default function FinderClient({
         </button>
         <button
           onClick={() => handleAction('investigating')}
-          title={t('buttons.investigatingTitle')}
+          title={card.source === 'scraped' ? t('buttons.saveTitle') : t('buttons.investigatingTitle')}
           className="w-14 h-14 rounded-full bg-white border border-gray-200 text-emerald-600 font-bold text-lg hover:bg-emerald-50 hover:border-emerald-300 transition-colors shadow-sm flex items-center justify-center"
         >
-          ✓
+          {card.source === 'scraped' ? '＋' : '✓'}
         </button>
       </div>
 
-      {/* Directions — below buttons */}
+      {/* Directions */}
       <div className="flex gap-6 text-xs text-gray-400 text-center mt-3">
-        <span>{t('directions.left')}</span>
+        <span>{card.source === 'scraped' ? t('directions.leftScraped') : t('directions.left')}</span>
         <span>{t('directions.up')}</span>
         <span>{t('directions.down')}</span>
-        <span>{t('directions.right')}</span>
+        <span>{card.source === 'scraped' ? t('directions.rightScraped') : t('directions.right')}</span>
       </div>
 
       {/* Progress count */}
-      <div className="text-gray-400 text-xs mt-2">{t('progress', { current, total })}</div>
+      <div className="text-gray-400 text-xs mt-2">{t('progress', { current: current + 1, total })}</div>
 
-      {/* Analyse modal */}
-      {showAnalyseModal && property && (
+      {/* Analyse modal — only for own properties */}
+      {showAnalyseModal && card?.source === 'own' && card.propertyId && (
         <PropertyAnalysisModal
-          property={property}
+          property={allOwn.find(p => p.id === card.propertyId)!}
           onClose={() => setShowAnalyseModal(false)}
         />
       )}

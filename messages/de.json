@@ -306,18 +306,24 @@
     },
     "directions": {
       "left": "← Nicht relevant",
+      "leftScraped": "← Überspringen",
       "up": "↑ Öffnen",
       "down": "↓ Analyse",
-      "right": "→ In Prüfung"
+      "right": "→ In Prüfung",
+      "rightScraped": "→ Speichern"
     },
     "overlay": {
       "investigating": "In Prüfung",
       "notRelevant": "Nicht relevant",
       "openListing": "Inserat öffnen",
-      "analyse": "Analyse"
+      "analyse": "Analyse",
+      "save": "Speichern",
+      "skip": "Überspringen"
     },
     "buttons": {
       "notRelevantTitle": "Nicht relevant",
+      "skipTitle": "Überspringen",
+      "saveTitle": "Zu meinen Immobilien hinzufügen",
       "analyseTitle": "Immobilie analysieren",
       "openListingTitle": "Inserat öffnen",
       "investigatingTitle": "In Prüfung"
