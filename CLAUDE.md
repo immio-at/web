@@ -267,21 +267,37 @@ Set in Vercel dashboard — never commit to git.
 7. **Onboarding wizard** (P3) — deferred until all functionality complete
 
 ## Preset Filters
-- `lib/preset-filters.ts` — types, definitions, pure filter functions (`passesPresetFilters`)
-- `components/PresetFilters.tsx` — shared pill toggle component used on Discover, Finder, Funnel, and Dashboard Discover tile
+- `lib/preset-filters.ts` — types, definitions, `passesPresetFilters()`, `passesSavedFilters()`, `togglePreset()`
+- `components/PresetFilters.tsx` — shared pill toggle component. Accepts optional `savedFilters` + `activeSavedFilterIds` + `onToggleSavedFilter` for amber saved filter pills alongside presets
 - Presets: Search Agents (`emailReceivedAt` check), Last 24h/Week (mutually exclusive), 9 Austrian states (OR within group, AND with other groups)
+- State presets sent server-side on Discover and Finder (resolved to postcodes via `getPostcodesByBundesland`)
 - i18n: `presetFilters` namespace in de.json + en.json
+
+## Unified PropertyCard
+- `components/PropertyCard.tsx` — shared card for Dashboard carousels (compact) and Discover grid (full)
+- Exports: `CardProperty` interface, `CardActions` interface
+- Source badge: green "Platform Suchagent" for email-parsed, grey "Platform" for scraped (checks `emailReceivedAt`)
+- Actions: funnel stage dropdown (move/add), analyse (🔍), report dead link (⚠, own only), dismiss (✕)
+- i18n: `propertyCard` namespace in de.json + en.json
 
 ## Entdecken Page (`/search`)
 Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
-- Unified FilterBar: keyword + PLZ/Bundesland, price + €/m², size + rooms
-- Preset filter pills below FilterBar — client-side post-filter on merged results
+- Unified FilterBar: keyword + PLZ/Bundesland, price + €/m², size + rooms (saved filter dropdown removed)
+- Preset + saved filter pills below FilterBar — state presets server-side, time/source client-side
+- Unified PropertyCard with stage dropdown, analyse, report, dismiss
 - Null-price listings hidden by default ("Ohne Preis anzeigen" toggle)
-- Saved filter management (save/load/delete with naming modal)
-- Grid of listing cards with image, platform badge, price, price/m², location, size/rooms
-- "Zu meinen Immobilien" save button — calls POST /scraped-listings/:id/save
 - Saving a listing invalidates the `useProperties` cache so Dashboard/Funnel update immediately
-- Pagination: 20 per page, Zurück/Weiter controls (hidden when preset filters active)
+- Pagination: 20 per page (hidden when client-only presets active)
+- Reads preset + saved filter selections from URL params (from Dashboard)
+
+## Performance Architecture
+- `useProperties`: 2-minute TTL module-level cache, `prefetchProperties()` called during auth init
+- `useSavedFilters`: 5-minute TTL module-level cache, `prefetchSavedFilters()` called during auth init
+- Analytics summary: 5-minute module-level cache in AnalyticsSnapshotTile
+- PropertyAnalysisModal + recharts: dynamic import (`next/dynamic`, ssr: false)
+- Skeleton loading states on Dashboard, Funnel
+- `connection_limit=5` on Supabase pgbouncer (Railway env var)
+- Backend: 60s token validation cache, parallel scraped-listings queries
 
 ## Tech Debt
 *Source of truth: `docs/IMMIO-Project-State.md`*
