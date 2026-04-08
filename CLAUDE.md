@@ -258,7 +258,6 @@ Set in Vercel dashboard — never commit to git.
 
 ## TODO — Active Work Queue (Priority Order)
 *Source of truth: `docs/IMMIO-Project-State.md`*
-0. **Page load performance** (P0) — profile bundle size, API waterfall, component code splitting, image loading. Target: first meaningful paint < 2s on warm load
 1. **Email forwarding setup assistant** (P1) — in-app guide for Gmail/Outlook forwarding config. Must recommend auto-forward filter for Bazar
 2. **Recommended for You carousel** (P1) — Dashboard carousel based on funnel behaviour. Locked until ≥5 properties in `investigating`+
 3. **Kontakt page** (P1) — simple contact form
@@ -267,15 +266,22 @@ Set in Vercel dashboard — never commit to git.
 6. **Anna's landing page copy** (P3) — hero headline and problem section are placeholder
 7. **Onboarding wizard** (P3) — deferred until all functionality complete
 
+## Preset Filters
+- `lib/preset-filters.ts` — types, definitions, pure filter functions (`passesPresetFilters`)
+- `components/PresetFilters.tsx` — shared pill toggle component used on Discover, Finder, Funnel, and Dashboard Discover tile
+- Presets: Search Agents (`emailReceivedAt` check), Last 24h/Week (mutually exclusive), 9 Austrian states (OR within group, AND with other groups)
+- i18n: `presetFilters` namespace in de.json + en.json
+
 ## Entdecken Page (`/search`)
 Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
 - Unified FilterBar: keyword + PLZ/Bundesland, price + €/m², size + rooms
+- Preset filter pills below FilterBar — client-side post-filter on merged results
 - Null-price listings hidden by default ("Ohne Preis anzeigen" toggle)
 - Saved filter management (save/load/delete with naming modal)
 - Grid of listing cards with image, platform badge, price, price/m², location, size/rooms
 - "Zu meinen Immobilien" save button — calls POST /scraped-listings/:id/save
 - Saving a listing invalidates the `useProperties` cache so Dashboard/Funnel update immediately
-- Pagination: 20 per page, Zurück/Weiter controls
+- Pagination: 20 per page, Zurück/Weiter controls (hidden when preset filters active)
 
 ## Tech Debt
 *Source of truth: `docs/IMMIO-Project-State.md`*
