@@ -510,7 +510,11 @@ export default function EntdeckenPage() {
     }
   }
 
-  const totalResults = (page === 1 ? mergedUserCount : 0) + scrapedTotal;
+  // When preset filters are active, use actual displayed count (server doesn't know about presets)
+  const presetsActive = activePresets.size > 0;
+  const totalResults = presetsActive
+    ? listings.length
+    : (page === 1 ? mergedUserCount : 0) + scrapedTotal;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -661,7 +665,7 @@ export default function EntdeckenPage() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {totalPages > 1 && !presetsActive && (
         <div className="flex items-center justify-center gap-2 mt-8">
           <button
             onClick={() => handlePageChange(page - 1)}
