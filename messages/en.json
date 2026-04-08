@@ -213,6 +213,7 @@
       "searchButton": "Discover",
       "searchDesc": "Grid or table view",
       "matchCount": "matches",
+      "ownMatch": "own",
       "finderButton": "Finder",
       "finderDesc": "Tinder für Immo"
     },

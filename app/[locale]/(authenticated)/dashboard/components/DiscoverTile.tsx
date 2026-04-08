@@ -208,7 +208,7 @@ export default function DiscoverTile({
           <span>🔍 {t('searchButton')}</span>
           {hasAnyFilter ? (
             <span className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full">
-              {matchCount} {t('matchCount')}
+              {matchCount} {t('ownMatch')} +
             </span>
           ) : (
             <span className="text-xs font-normal opacity-80">{t('searchDesc')}</span>
@@ -221,7 +221,7 @@ export default function DiscoverTile({
           <span>🃏 {t('finderButton')}</span>
           {hasAnyFilter ? (
             <span className="text-xs font-semibold bg-gray-200 px-2 py-0.5 rounded-full">
-              {matchCount} {t('matchCount')}
+              {matchCount} {t('ownMatch')} +
             </span>
           ) : (
             <span className="text-xs font-normal text-gray-400">{t('finderDesc')}</span>

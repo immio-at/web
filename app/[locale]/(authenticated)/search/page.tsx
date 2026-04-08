@@ -638,10 +638,6 @@ export default function EntdeckenPage() {
         onSearch={handleSearch}
         onReset={handleReset}
         onSave={handleSaveFilter}
-        savedFilters={savedFilters}
-        onLoadFilter={handleLoadFilter}
-        onDeleteFilter={handleDeleteFilter}
-        activeFilterId={activeFilterId}
       />
 
       <PresetFilters
