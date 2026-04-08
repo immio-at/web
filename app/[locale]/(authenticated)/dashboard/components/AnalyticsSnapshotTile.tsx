@@ -1,33 +1,90 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { Property } from '@/lib/api';
+import { Property, getAnalyticsSummary, AnalyticsSummary } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+
+const INTERACTION_TYPE_KEY: Record<string, string> = {
+  view: 'views', analysis: 'analyses', url_click: 'urlClicks', status_change: 'statusChanges',
+};
+
+function formatNumber(n: number): string {
+  return n.toLocaleString('de-AT');
+}
 
 export default function AnalyticsSnapshotTile({ properties }: { properties: Property[] }) {
   const t = useTranslations('dashboard.analyticsTile');
+  const ta = useTranslations('analytics');
+  const { session, loading: authLoading } = useAuth();
 
-  const totalSaved = useMemo(
-    () => properties.filter(p => p.status !== 'not_relevant' && p.status !== 'delisted').length,
-    [properties],
-  );
+  const [data, setData] = useState<AnalyticsSummary | null>(null);
+
+  useEffect(() => {
+    if (authLoading || !session) return;
+    getAnalyticsSummary().then(setData).catch(() => {});
+  }, [authLoading, session]);
+
+  const totalSaved = properties.filter(
+    p => p.status !== 'not_relevant' && p.status !== 'delisted'
+  ).length;
+
+  // Build interaction map from analytics data
+  const interactionMap: Record<string, number> = {};
+  if (data) {
+    for (const i of data.interactionCounts.byType) interactionMap[i.type] = i.count;
+  }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col justify-between h-full">
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <h3 className="text-base font-semibold text-gray-900">{t('title')}</h3>
-          <span className="text-xs font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-            {t('comingSoon')}
-          </span>
-        </div>
+    <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
+      <h3 className="text-base font-semibold text-gray-900 mb-3">{t('title')}</h3>
 
-        <div className="text-center py-6">
-          <div className="text-4xl font-bold text-gray-900">{totalSaved}</div>
-          <div className="text-sm text-gray-500 mt-1">{t('totalSaved')}</div>
+      {!data ? (
+        // Loading skeleton
+        <div className="flex-1 space-y-3 animate-pulse">
+          <div className="h-4 bg-gray-100 rounded w-2/3" />
+          <div className="h-4 bg-gray-100 rounded w-1/2" />
+          <div className="h-4 bg-gray-100 rounded w-3/4" />
         </div>
-      </div>
+      ) : (
+        <div className="flex-1 space-y-4">
+          {/* Activity summary */}
+          <div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-bold text-gray-900">{formatNumber(data.interactionCounts.total)}</span>
+              <span className="text-xs text-gray-400">{ta('activity.total')}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+              {['view', 'analysis', 'url_click', 'status_change'].map(type => (
+                <div key={type} className="flex justify-between text-xs">
+                  <span className="text-gray-500">{ta(`activity.${INTERACTION_TYPE_KEY[type]}`)}</span>
+                  <span className="font-medium text-gray-700">{formatNumber(interactionMap[type] ?? 0)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3 mt-2 text-[10px] text-gray-400">
+              <span>{ta('activity.last7')}: <span className="font-semibold text-gray-600">{formatNumber(data.interactionCounts.last7Days)}</span></span>
+              <span>{ta('activity.last30')}: <span className="font-semibold text-gray-600">{formatNumber(data.interactionCounts.last30Days)}</span></span>
+            </div>
+          </div>
+
+          {/* Milestones */}
+          {data.milestones.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">{ta('milestones.title')}</h4>
+              <div className="flex flex-wrap gap-1.5">
+                {data.milestones.map(m => (
+                  <span key={m.key} className="inline-flex items-center gap-1 text-[10px] font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded-full px-2 py-0.5">
+                    <span className="text-teal-500">&#9733;</span>
+                    {ta(`milestones.${m.key}`)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <Link
         href="/analytics"

@@ -216,7 +216,13 @@ export default function DiscoverTile({
           className="flex items-center justify-between w-full px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
         >
           <span>🃏 {t('finderButton')}</span>
-          <span className="text-xs font-normal text-gray-400">{t('finderDesc')}</span>
+          {hasAnyFilter ? (
+            <span className="text-xs font-semibold bg-gray-200 px-2 py-0.5 rounded-full">
+              {matchCount} {t('matchCount')}
+            </span>
+          ) : (
+            <span className="text-xs font-normal text-gray-400">{t('finderDesc')}</span>
+          )}
         </Link>
       </div>
     </div>
