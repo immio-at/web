@@ -573,6 +573,7 @@ export default function EntdeckenPage() {
       status: l.status,
       source: l.source === 'email' ? 'own' : 'scraped',
       scrapedListingId: l.scrapedListingId,
+      emailReceivedAt: l.emailReceivedAt,
     };
   }
 

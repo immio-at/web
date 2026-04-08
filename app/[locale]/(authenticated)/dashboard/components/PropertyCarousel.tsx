@@ -19,6 +19,7 @@ function propertyToCard(p: Property): CardProperty {
     status: p.status,
     listingStatus: p.listingStatus,
     source: 'own',
+    emailReceivedAt: p.emailReceivedAt,
   };
 }
 

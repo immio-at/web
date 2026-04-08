@@ -20,6 +20,7 @@ export interface CardProperty {
   listingStatus?: string;
   source: 'own' | 'scraped';
   scrapedListingId?: string;
+  emailReceivedAt?: string | null;
 }
 
 export interface CardActions {
@@ -109,14 +110,21 @@ export default function PropertyCard({
         ) : (
           <div className={`flex items-center justify-center h-full ${compact ? 'text-2xl' : 'text-4xl'} text-gray-300`}>🏠</div>
         )}
-        {/* Platform badge */}
-        <span className={`absolute top-2 left-2 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-          item.source === 'own'
-            ? 'bg-teal-50/90 text-teal-700 border-teal-200'
-            : 'bg-white/90 text-gray-700 border-gray-200'
-        }`}>
-          {PLATFORM_LABELS[item.platform] ?? item.platform}
-        </span>
+        {/* Source badge — green for search agent, grey for scraped */}
+        {(() => {
+          const isSearchAgent = !!item.emailReceivedAt;
+          const platformName = PLATFORM_LABELS[item.platform] ?? item.platform;
+          const label = isSearchAgent ? `${platformName} Suchagent` : platformName;
+          return (
+            <span className={`absolute top-2 left-2 text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded-full border ${
+              isSearchAgent
+                ? 'bg-emerald-50/90 text-emerald-700 border-emerald-200'
+                : 'bg-white/90 text-gray-600 border-gray-200'
+            }`}>
+              {label}
+            </span>
+          );
+        })()}
         {/* Expired badge */}
         {isExpired && (
           <span className="absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50/90 text-amber-700 border border-amber-200">
@@ -157,7 +165,7 @@ export default function PropertyCard({
             <div className="relative flex-1 min-w-0">
               <button
                 onClick={() => setStageOpen(!stageOpen)}
-                className={`w-full text-left ${compact ? 'text-[10px] px-1.5 py-1' : 'text-xs px-2 py-1.5'} font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded transition-colors truncate`}
+                className={`w-full text-left ${compact ? 'text-[10px] px-1.5 py-1' : 'text-xs px-2 py-1.5'} font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors truncate`}
               >
                 {item.source === 'own' && item.status !== 'new' ? t('moveToStage') : t('addToFunnel')} ▾
               </button>
