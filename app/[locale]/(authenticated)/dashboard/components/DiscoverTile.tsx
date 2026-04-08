@@ -237,7 +237,8 @@ export default function DiscoverTile({
       {/* Action buttons at bottom */}
       <div className="mt-auto space-y-2 pt-3 border-t border-gray-100">
         {(() => {
-          // Search Agents = email-parsed only, so exclude scraped total
+          // searchAgents = email-only, no scraped. excludeSearchAgents = scraped + non-email own.
+          // matchCount already reflects preset filters on user's own properties.
           const includeScraped = !activePresets.has('searchAgents');
           const scrapedCount = includeScraped ? (scrapedTotal ?? 0) : 0;
           const totalCount = matchCount + scrapedCount;

@@ -13,6 +13,7 @@ import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
 
 export type PresetFilterKey =
   | 'searchAgents'
+  | 'excludeSearchAgents'
   | 'last24h'
   | 'lastWeek'
   | BundeslandAbbreviation;
@@ -29,6 +30,7 @@ export interface PresetFilterDef {
 
 export const PRESET_FILTERS: PresetFilterDef[] = [
   { key: 'searchAgents', labelKey: 'searchAgents', group: 'source' },
+  { key: 'excludeSearchAgents', labelKey: 'excludeSearchAgents', group: 'source' },
   { key: 'last24h', labelKey: 'last24h', group: 'time' },
   { key: 'lastWeek', labelKey: 'lastWeek', group: 'time' },
   { key: 'W', labelKey: 'W', group: 'state' },
@@ -42,8 +44,9 @@ export const PRESET_FILTERS: PresetFilterDef[] = [
   { key: 'B', labelKey: 'B', group: 'state' },
 ];
 
-// Time filters are mutually exclusive
+// Mutually exclusive groups
 const TIME_KEYS = new Set<PresetFilterKey>(['last24h', 'lastWeek']);
+const SOURCE_KEYS = new Set<PresetFilterKey>(['searchAgents', 'excludeSearchAgents']);
 
 // ─── Toggle logic ────────────────────────────────────────────────────────────
 
@@ -58,6 +61,10 @@ export function togglePreset(
     // Time filters are mutually exclusive
     if (TIME_KEYS.has(key)) {
       for (const tk of TIME_KEYS) next.delete(tk);
+    }
+    // Source filters are mutually exclusive
+    if (SOURCE_KEYS.has(key)) {
+      for (const sk of SOURCE_KEYS) next.delete(sk);
     }
     next.add(key);
   }
@@ -101,12 +108,13 @@ export function passesPresetFilters<T extends Filterable>(
 ): boolean {
   if (active.size === 0) return true;
 
-  // Source filter — "Search Agents" means email-parsed only.
-  // Always check emailReceivedAt — it's the reliable indicator.
-  // Properties saved from scraped listings have source='email' but
-  // no emailReceivedAt, so checking source alone would be wrong.
+  // Source filters — mutually exclusive.
+  // Check emailReceivedAt — the reliable indicator of email-parsed origin.
   if (active.has('searchAgents')) {
     if (!item.emailReceivedAt) return false;
+  }
+  if (active.has('excludeSearchAgents')) {
+    if (item.emailReceivedAt) return false;
   }
 
   // Time filter

@@ -852,6 +852,7 @@
   },
   "presetFilters": {
     "searchAgents": "Suchagenten",
+    "excludeSearchAgents": "Ohne Suchagenten",
     "last24h": "Letzte 24h",
     "lastWeek": "Letzte Woche",
     "W": "Wien",

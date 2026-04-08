@@ -852,6 +852,7 @@
   },
   "presetFilters": {
     "searchAgents": "Search Agents",
+    "excludeSearchAgents": "Excl. Search Agents",
     "last24h": "Last 24h",
     "lastWeek": "Last Week",
     "W": "Vienna",
