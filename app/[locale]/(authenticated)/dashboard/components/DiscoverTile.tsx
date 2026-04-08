@@ -224,8 +224,11 @@ export default function DiscoverTile({
       {/* Action buttons at bottom */}
       <div className="mt-auto space-y-2 pt-3 border-t border-gray-100">
         {(() => {
-          const totalCount = matchCount + (scrapedTotal ?? 0);
-          const countText = scrapedTotal !== null
+          // Search Agents = email-parsed only, so exclude scraped total
+          const includeScraped = !activePresets.has('searchAgents');
+          const scrapedCount = includeScraped ? (scrapedTotal ?? 0) : 0;
+          const totalCount = matchCount + scrapedCount;
+          const countText = scrapedTotal !== null || !includeScraped
             ? totalCount.toLocaleString('de-AT')
             : `${matchCount}+`;
           return (
