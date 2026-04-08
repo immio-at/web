@@ -18,7 +18,7 @@ import FilterBar, {
   resolvePostcodes,
 } from '@/components/FilterBar';
 import PresetFilters from '@/components/PresetFilters';
-import { type PresetFilterKey, passesPresetFilters } from '@/lib/preset-filters';
+import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 
 // ─── Unified listing type ────────────────────────────────────────────────────
 
@@ -339,8 +339,18 @@ export default function EntdeckenPage() {
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  // Preset filters
+  // Preset + saved filter pill state
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
+  const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(new Set());
+
+  function toggleSavedFilter(id: string) {
+    setActiveSavedFilterIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   // Data state — scraped and user properties tracked separately for progressive rendering
   const [scrapedListings, setScrapedListings] = useState<UnifiedListing[]>([]);
@@ -435,12 +445,17 @@ export default function EntdeckenPage() {
       merged = merged.filter(l => passesPresetFilters(l, activePresets));
     }
 
+    // Apply saved filter pills (OR across selected saved filters)
+    if (activeSavedFilterIds.size > 0) {
+      merged = merged.filter(l => passesSavedFilters(l, savedFilters, activeSavedFilterIds));
+    }
+
     const userCount = page === 1
       ? merged.filter(l => l.source === 'email').length
       : 0;
 
     return { listings: merged, mergedUserCount: userCount };
-  }, [scrapedListings, filteredUserProps, page, activePresets]);
+  }, [scrapedListings, filteredUserProps, page, activePresets, activeSavedFilterIds, savedFilters]);
 
   const loading = scrapedLoading;
 
@@ -510,8 +525,8 @@ export default function EntdeckenPage() {
     }
   }
 
-  // When preset filters are active, use actual displayed count (server doesn't know about presets)
-  const presetsActive = activePresets.size > 0;
+  // When preset/saved filter pills are active, use actual displayed count
+  const presetsActive = activePresets.size > 0 || activeSavedFilterIds.size > 0;
   const totalResults = presetsActive
     ? listings.length
     : (page === 1 ? mergedUserCount : 0) + scrapedTotal;
@@ -538,7 +553,13 @@ export default function EntdeckenPage() {
         activeFilterId={activeFilterId}
       />
 
-      <PresetFilters active={activePresets} onChange={setActivePresets} />
+      <PresetFilters
+        active={activePresets}
+        onChange={setActivePresets}
+        savedFilters={savedFilters}
+        activeSavedFilterIds={activeSavedFilterIds}
+        onToggleSavedFilter={toggleSavedFilter}
+      />
 
       {/* Save filter feedback */}
       {saveFilterSuccess && (

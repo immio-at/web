@@ -5,11 +5,9 @@ import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useProperties } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
-import { SavedFilter } from '@/lib/api';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
-import { savedFilterToValues, resolvePostcodes, valuesToSavedFilterDto, FilterValues, EMPTY_FILTERS } from '@/components/FilterBar';
 import PresetFilters from '@/components/PresetFilters';
-import { type PresetFilterKey, passesPresetFilters } from '@/lib/preset-filters';
+import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import Link from 'next/link';
 
 const PropertyAnalysisModal = dynamic(
@@ -17,86 +15,36 @@ const PropertyAnalysisModal = dynamic(
   { ssr: false },
 );
 
-interface DashboardFilter {
-  keyword: string;
-  postcodes: string;
-  minPrice: string;
-  maxPrice: string;
-  minSize: string;
-  maxSize: string;
-  minRooms: string;
-  maxRooms: string;
-}
-
-function dashboardFilterToValues(f: DashboardFilter): FilterValues {
-  return {
-    ...EMPTY_FILTERS,
-    keyword: f.keyword,
-    location: f.postcodes,
-    minPrice: f.minPrice,
-    maxPrice: f.maxPrice,
-    minSize: f.minSize,
-    maxSize: f.maxSize,
-    minRooms: f.minRooms,
-    maxRooms: f.maxRooms,
-  };
-}
-
-export default function FinderClient({
-  skipFilterModal = false,
-  filterFromDashboard,
-}: {
-  skipFilterModal?: boolean;
-  filterFromDashboard?: DashboardFilter;
-}) {
+export default function FinderClient() {
   const t = useTranslations('finder');
   const { properties: all, loading, update } = useProperties();
-  const { filters: savedFilters, create: createFilter } = useSavedFilters();
-  const [selectedFilter, setSelectedFilter] = useState<SavedFilter | null>(null);
-  const [showFilterModal, setShowFilterModal] = useState(!skipFilterModal);
-  const [showSaveModal, setShowSaveModal] = useState(false);
+  const { filters: savedFilters } = useSavedFilters();
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
-  const [saveName, setSaveName] = useState('');
-  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(new Set());
 
-  // The active filter values — either from a saved filter, dashboard params, or none
-  const activeFilterValues = useMemo(() => {
-    if (selectedFilter) return savedFilterToValues(selectedFilter);
-    if (filterFromDashboard) return dashboardFilterToValues(filterFromDashboard);
-    return null;
-  }, [selectedFilter, filterFromDashboard]);
+  function toggleSavedFilter(id: string) {
+    setActiveSavedFilterIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
-  // Whether unsaved dashboard filter params are active (show Save button)
-  const hasDashboardFilter = !!filterFromDashboard && !selectedFilter;
-
-  // Apply filter to 'new' properties client-side
+  // Apply filters to 'new' properties client-side
   const properties = useMemo(() => {
     let filtered = all.filter(p => p.status === 'new');
 
-    // Apply preset filters
     if (activePresets.size > 0) {
       filtered = filtered.filter(p => passesPresetFilters(p, activePresets));
     }
 
-    if (!activeFilterValues) return filtered;
+    if (activeSavedFilterIds.size > 0) {
+      filtered = filtered.filter(p => passesSavedFilters(p, savedFilters, activeSavedFilterIds));
+    }
 
-    const v = activeFilterValues;
-    return filtered.filter(p => {
-      const price = p.price ? parseFloat(String(p.price)) : null;
-      const size = p.sizeSqm ?? null;
-      const rooms = p.rooms ? parseFloat(String(p.rooms)) : null;
-
-      if (v.minPrice && price != null && price < parseFloat(v.minPrice)) return false;
-      if (v.maxPrice && price != null && price > parseFloat(v.maxPrice)) return false;
-      if (v.minSize && size != null && size < parseFloat(v.minSize)) return false;
-      if (v.maxSize && size != null && size > parseFloat(v.maxSize)) return false;
-      if (v.minRooms && rooms != null && rooms < parseFloat(v.minRooms)) return false;
-      if (v.maxRooms && rooms != null && rooms > parseFloat(v.maxRooms)) return false;
-      const postcodes = resolvePostcodes(v.location);
-      if (postcodes.length > 0 && (!p.zipCode || !postcodes.includes(p.zipCode))) return false;
-      return true;
-    });
-  }, [all, activeFilterValues, activePresets]);
+    return filtered;
+  }, [all, activePresets, activeSavedFilterIds, savedFilters]);
 
   const [current, setCurrent] = useState(0);
   const [dragX, setDragX] = useState(0);
@@ -142,20 +90,6 @@ export default function FinderClient({
       status: action === 'interested' ? 'investigating' : action,
       movedToStageAt: new Date().toISOString(),
     });
-  }
-
-  async function handleSaveFilter() {
-    if (!activeFilterValues) return;
-    try {
-      const created = await createFilter(valuesToSavedFilterDto(activeFilterValues, saveName.trim() || undefined));
-      setSelectedFilter(created);
-      setSaveSuccess(created.name);
-      setShowSaveModal(false);
-      setSaveName('');
-      setTimeout(() => setSaveSuccess(null), 4000);
-    } catch {
-      // silently handle — limit reached etc.
-    }
   }
 
   function onPointerDown(e: React.PointerEvent) {
@@ -215,49 +149,6 @@ export default function FinderClient({
     </div>
   );
 
-  // Filter selection modal — shown on first open when saved filters exist (unless skipped)
-  if (showFilterModal && savedFilters.length > 0 && current === 0) return (
-    <div className="flex-1 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 max-w-sm w-full mx-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('filterModal.title')}</h2>
-        <p className="text-sm text-gray-500 mb-5">
-          {t('filterModal.subtitle')}
-        </p>
-        <div className="space-y-2 mb-5 max-h-48 overflow-y-auto">
-          {savedFilters.map(sf => (
-            <button
-              key={sf.id}
-              onClick={() => { setSelectedFilter(sf); setShowFilterModal(false); }}
-              className={`w-full text-left px-4 py-3 rounded-lg border text-sm transition-colors ${
-                selectedFilter?.id === sf.id
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 hover:bg-gray-50 text-gray-700'
-              }`}
-            >
-              {sf.name}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => { setSelectedFilter(null); setShowFilterModal(false); }}
-            className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            {t('filterModal.iFeelLucky')}
-          </button>
-          {selectedFilter && (
-            <button
-              onClick={() => setShowFilterModal(false)}
-              className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              {t('filterModal.applyFilter')}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
   if (current >= total) return (
     <div className="flex-1 flex items-center justify-center">
       <div className="text-center px-8">
@@ -276,51 +167,14 @@ export default function FinderClient({
   return (
     <div className="flex-1 flex flex-col items-center justify-start pt-4 px-4 pb-8 w-full">
 
-      {/* Preset filters */}
-      <PresetFilters active={activePresets} onChange={setActivePresets} />
-
-      {/* Filter controls */}
-      <div className="flex items-center gap-2 mb-4">
-        {selectedFilter ? (
-          <>
-            <span className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-              {selectedFilter.name}
-            </span>
-            <button
-              onClick={() => { setSelectedFilter(null); setShowFilterModal(true); setCurrent(0); }}
-              className="text-xs text-gray-400 hover:text-gray-600"
-            >
-              {t('filterModal.changeFilter')}
-            </button>
-          </>
-        ) : (
-          <>
-            {hasDashboardFilter && (
-              <button
-                onClick={() => setShowSaveModal(true)}
-                className="text-xs text-teal-600 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-200 hover:bg-teal-100 transition-colors"
-              >
-                {t('filterModal.saveFilter')}
-              </button>
-            )}
-            {savedFilters.length > 0 && (
-              <button
-                onClick={() => setShowFilterModal(true)}
-                className="text-xs text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200 hover:bg-blue-100 transition-colors"
-              >
-                {t('filterModal.applyFilter')}
-              </button>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Save success */}
-      {saveSuccess && (
-        <div className="text-xs text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-200 mb-3">
-          ✓ {t('filterModal.filterSaved', { name: saveSuccess })}
-        </div>
-      )}
+      {/* Preset + saved filter pills */}
+      <PresetFilters
+        active={activePresets}
+        onChange={setActivePresets}
+        savedFilters={savedFilters}
+        activeSavedFilterIds={activeSavedFilterIds}
+        onToggleSavedFilter={toggleSavedFilter}
+      />
 
       {/* Card */}
       <div
@@ -445,39 +299,6 @@ export default function FinderClient({
         />
       )}
 
-      {/* Save filter modal */}
-      {showSaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 max-w-sm w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">{t('filterModal.saveFilterTitle')}</h3>
-            <p className="text-sm text-gray-500 mb-4">{t('filterModal.saveFilterDesc')}</p>
-            <input
-              type="text"
-              value={saveName}
-              onChange={e => setSaveName(e.target.value)}
-              placeholder={t('filterModal.saveFilterPlaceholder')}
-              maxLength={150}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400 w-full mb-4"
-              autoFocus
-              onKeyDown={e => { if (e.key === 'Enter') handleSaveFilter(); }}
-            />
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => { setShowSaveModal(false); setSaveName(''); }}
-                className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                {t('filterModal.cancel')}
-              </button>
-              <button
-                onClick={handleSaveFilter}
-                className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {t('filterModal.save')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

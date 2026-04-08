@@ -6,6 +6,8 @@
  */
 
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from './austria-plz-bundesland';
+import { type SavedFilter } from '@/lib/api';
+import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -127,4 +129,45 @@ export function passesPresetFilters<T extends Filterable>(
   }
 
   return true;
+}
+
+// ─── Saved filter matching ──────────────────────────────────────────────────
+
+interface PropertyLike {
+  price?: number | null;
+  sizeSqm?: number | null;
+  rooms?: number | null;
+  zipCode?: string | null;
+}
+
+/**
+ * Returns true if a property matches ANY of the active saved filters (OR logic).
+ * Each saved filter's criteria are ANDed internally (price AND size AND rooms AND location).
+ */
+export function passesSavedFilters<T extends PropertyLike>(
+  item: T,
+  savedFilters: SavedFilter[],
+  activeIds: Set<string>,
+): boolean {
+  if (activeIds.size === 0) return true;
+
+  return Array.from(activeIds).some(id => {
+    const sf = savedFilters.find(f => f.id === id);
+    if (!sf) return false;
+    const v = savedFilterToValues(sf);
+
+    const price = item.price ? parseFloat(String(item.price)) : null;
+    const size = item.sizeSqm != null ? parseFloat(String(item.sizeSqm)) : null;
+    const rooms = item.rooms ? parseFloat(String(item.rooms)) : null;
+
+    if (v.minPrice && price != null && price < parseFloat(v.minPrice)) return false;
+    if (v.maxPrice && price != null && price > parseFloat(v.maxPrice)) return false;
+    if (v.minSize && size != null && size < parseFloat(v.minSize)) return false;
+    if (v.maxSize && size != null && size > parseFloat(v.maxSize)) return false;
+    if (v.minRooms && rooms != null && rooms < parseFloat(v.minRooms)) return false;
+    if (v.maxRooms && rooms != null && rooms > parseFloat(v.maxRooms)) return false;
+    const postcodes = resolvePostcodes(v.location);
+    if (postcodes.length > 0 && (!item.zipCode || !postcodes.includes(item.zipCode))) return false;
+    return true;
+  });
 }

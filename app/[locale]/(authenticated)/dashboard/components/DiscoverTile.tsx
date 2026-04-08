@@ -212,7 +212,7 @@ export default function DiscoverTile({
           )}
         </Link>
         <Link
-          href={`/finder?skipModal=true${buildQueryString().replace('?', '&')}`}
+          href="/finder"
           className="flex items-center justify-between w-full px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
         >
           <span>🃏 {t('finderButton')}</span>

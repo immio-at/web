@@ -7,8 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Property, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
-import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
-import { type PresetFilterKey, passesPresetFilters } from '@/lib/preset-filters';
+import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
 
 const PropertyAnalysisModal = dynamic(
@@ -160,7 +159,11 @@ function ConfirmNotRelevantModal({
 
 // ─── Main board ───────────────────────────────────────────────────────────────
 
-export default function FunnelBoard({ savedFilter, activePresets }: { savedFilter?: SavedFilter | null; activePresets?: Set<PresetFilterKey> }) {
+export default function FunnelBoard({ activePresets, activeSavedFilterIds, savedFilters }: {
+  activePresets?: Set<PresetFilterKey>;
+  activeSavedFilterIds?: Set<string>;
+  savedFilters?: SavedFilter[];
+}) {
   const t = useTranslations('funnel');
   const { properties: all, loading, error, update, optimisticUpdate } = useProperties();
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
@@ -169,37 +172,22 @@ export default function FunnelBoard({ savedFilter, activePresets }: { savedFilte
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
   // Exclude new, not_relevant, and delisted from the funnel view.
-  // 'delisted' is the terminal stage for expired listings dismissed by the user.
-  // Then apply saved filter and preset filters if active.
+  // Then apply preset and saved filter pills if active.
   const properties = useMemo(() => {
     let filtered = all.filter(
       p => p.status !== 'new' && p.status !== 'not_relevant' && p.status !== 'delisted'
     );
 
-    // Apply preset filters
     if (activePresets && activePresets.size > 0) {
       filtered = filtered.filter(p => passesPresetFilters(p, activePresets));
     }
 
-    if (!savedFilter) return filtered;
+    if (activeSavedFilterIds && activeSavedFilterIds.size > 0 && savedFilters) {
+      filtered = filtered.filter(p => passesSavedFilters(p, savedFilters, activeSavedFilterIds));
+    }
 
-    const v = savedFilterToValues(savedFilter);
-    return filtered.filter(p => {
-      const price = p.price ? parseFloat(String(p.price)) : null;
-      const size = p.sizeSqm ?? null;
-      const rooms = p.rooms ? parseFloat(String(p.rooms)) : null;
-
-      if (v.minPrice && price != null && price < parseFloat(v.minPrice)) return false;
-      if (v.maxPrice && price != null && price > parseFloat(v.maxPrice)) return false;
-      if (v.minSize && size != null && size < parseFloat(v.minSize)) return false;
-      if (v.maxSize && size != null && size > parseFloat(v.maxSize)) return false;
-      if (v.minRooms && rooms != null && rooms < parseFloat(v.minRooms)) return false;
-      if (v.maxRooms && rooms != null && rooms > parseFloat(v.maxRooms)) return false;
-      const postcodes = resolvePostcodes(v.location);
-      if (postcodes.length > 0 && (!p.zipCode || !postcodes.includes(p.zipCode))) return false;
-      return true;
-    });
-  }, [all, savedFilter, activePresets]);
+    return filtered;
+  }, [all, activePresets, activeSavedFilterIds, savedFilters]);
 
   async function moveToStage(propertyId: string, newStatus: string) {
     if (newStatus !== 'not_relevant') {
