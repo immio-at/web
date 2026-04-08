@@ -830,5 +830,20 @@
     "rooms": "Zimmer",
     "roomsShort": "Zi.",
     "perSqm": "/m²"
+  },
+  "presetFilters": {
+    "searchAgents": "Suchagenten",
+    "last24h": "Letzte 24h",
+    "lastWeek": "Letzte Woche",
+    "W": "Wien",
+    "NO": "NÖ",
+    "OO": "OÖ",
+    "ST": "Stmk",
+    "K": "Ktn",
+    "S": "Sbg",
+    "T": "Tirol",
+    "V": "Vbg",
+    "B": "Bgld",
+    "clearAll": "Alle löschen"
   }
 }

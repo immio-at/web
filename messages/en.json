@@ -830,5 +830,20 @@
     "rooms": "rooms",
     "roomsShort": "rm.",
     "perSqm": "/m²"
+  },
+  "presetFilters": {
+    "searchAgents": "Search Agents",
+    "last24h": "Last 24h",
+    "lastWeek": "Last Week",
+    "W": "Vienna",
+    "NO": "Lower Austria",
+    "OO": "Upper Austria",
+    "ST": "Styria",
+    "K": "Carinthia",
+    "S": "Salzburg",
+    "T": "Tyrol",
+    "V": "Vorarlberg",
+    "B": "Burgenland",
+    "clearAll": "Clear all"
   }
 }

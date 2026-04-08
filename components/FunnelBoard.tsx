@@ -8,6 +8,7 @@ import { Property, SavedFilter, reportUnavailable, delistProperty } from '@/lib/
 import { useProperties } from '@/hooks/useProperties';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
+import { type PresetFilterKey, passesPresetFilters } from '@/lib/preset-filters';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
 
 const PropertyAnalysisModal = dynamic(
@@ -159,7 +160,7 @@ function ConfirmNotRelevantModal({
 
 // ─── Main board ───────────────────────────────────────────────────────────────
 
-export default function FunnelBoard({ savedFilter }: { savedFilter?: SavedFilter | null }) {
+export default function FunnelBoard({ savedFilter, activePresets }: { savedFilter?: SavedFilter | null; activePresets?: Set<PresetFilterKey> }) {
   const t = useTranslations('funnel');
   const { properties: all, loading, error, update, optimisticUpdate } = useProperties();
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
@@ -169,11 +170,16 @@ export default function FunnelBoard({ savedFilter }: { savedFilter?: SavedFilter
 
   // Exclude new, not_relevant, and delisted from the funnel view.
   // 'delisted' is the terminal stage for expired listings dismissed by the user.
-  // Then apply saved filter if one is selected.
+  // Then apply saved filter and preset filters if active.
   const properties = useMemo(() => {
     let filtered = all.filter(
       p => p.status !== 'new' && p.status !== 'not_relevant' && p.status !== 'delisted'
     );
+
+    // Apply preset filters
+    if (activePresets && activePresets.size > 0) {
+      filtered = filtered.filter(p => passesPresetFilters(p, activePresets));
+    }
 
     if (!savedFilter) return filtered;
 
@@ -193,7 +199,7 @@ export default function FunnelBoard({ savedFilter }: { savedFilter?: SavedFilter
       if (postcodes.length > 0 && (!p.zipCode || !postcodes.includes(p.zipCode))) return false;
       return true;
     });
-  }, [all, savedFilter]);
+  }, [all, savedFilter, activePresets]);
 
   async function moveToStage(propertyId: string, newStatus: string) {
     if (newStatus !== 'not_relevant') {

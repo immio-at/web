@@ -8,6 +8,8 @@ import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { SavedFilter } from '@/lib/api';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { savedFilterToValues, resolvePostcodes, valuesToSavedFilterDto, FilterValues, EMPTY_FILTERS } from '@/components/FilterBar';
+import PresetFilters from '@/components/PresetFilters';
+import { type PresetFilterKey, passesPresetFilters } from '@/lib/preset-filters';
 import Link from 'next/link';
 
 const PropertyAnalysisModal = dynamic(
@@ -53,6 +55,7 @@ export default function FinderClient({
   const [selectedFilter, setSelectedFilter] = useState<SavedFilter | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(!skipFilterModal);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
   const [saveName, setSaveName] = useState('');
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
@@ -69,6 +72,12 @@ export default function FinderClient({
   // Apply filter to 'new' properties client-side
   const properties = useMemo(() => {
     let filtered = all.filter(p => p.status === 'new');
+
+    // Apply preset filters
+    if (activePresets.size > 0) {
+      filtered = filtered.filter(p => passesPresetFilters(p, activePresets));
+    }
+
     if (!activeFilterValues) return filtered;
 
     const v = activeFilterValues;
@@ -87,7 +96,7 @@ export default function FinderClient({
       if (postcodes.length > 0 && (!p.zipCode || !postcodes.includes(p.zipCode))) return false;
       return true;
     });
-  }, [all, activeFilterValues]);
+  }, [all, activeFilterValues, activePresets]);
 
   const [current, setCurrent] = useState(0);
   const [dragX, setDragX] = useState(0);
@@ -266,6 +275,9 @@ export default function FinderClient({
 
   return (
     <div className="flex-1 flex flex-col items-center justify-start pt-4 px-4 pb-8 w-full">
+
+      {/* Preset filters */}
+      <PresetFilters active={activePresets} onChange={setActivePresets} />
 
       {/* Filter controls */}
       <div className="flex items-center gap-2 mb-4">

@@ -5,15 +5,18 @@ import { useTranslations } from 'next-intl';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { SavedFilter } from '@/lib/api';
 import FunnelBoard from '@/components/FunnelBoard';
+import PresetFilters from '@/components/PresetFilters';
+import { type PresetFilterKey } from '@/lib/preset-filters';
 
 export default function FunnelPage() {
   const t = useTranslations('funnel');
   const { filters: savedFilters } = useSavedFilters();
   const [selectedFilter, setSelectedFilter] = useState<SavedFilter | null>(null);
+  const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
 
   return (
     <div className="max-w-full px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">{t('title')}</h2>
           <p className="text-gray-600 mt-1">{t('subtitle')}</p>
@@ -50,7 +53,10 @@ export default function FunnelPage() {
           ) : null}
         </div>
       </div>
-      <FunnelBoard savedFilter={selectedFilter} />
+
+      <PresetFilters active={activePresets} onChange={setActivePresets} />
+
+      <FunnelBoard savedFilter={selectedFilter} activePresets={activePresets} />
     </div>
   );
 }

@@ -17,6 +17,8 @@ import FilterBar, {
   isFilterActive,
   resolvePostcodes,
 } from '@/components/FilterBar';
+import PresetFilters from '@/components/PresetFilters';
+import { type PresetFilterKey, passesPresetFilters } from '@/lib/preset-filters';
 
 // ─── Unified listing type ────────────────────────────────────────────────────
 
@@ -37,6 +39,10 @@ interface UnifiedListing {
   scrapedListingId?: string;
   // Only present for email properties
   status?: string;
+  // Time fields for preset filters
+  createdAt?: string;
+  emailReceivedAt?: string | null;
+  firstSeenAt?: string;
 }
 
 function propertyToUnified(p: Property): UnifiedListing {
@@ -54,6 +60,8 @@ function propertyToUnified(p: Property): UnifiedListing {
     source: 'email',
     savedByUser: true, // already in user's funnel
     status: p.status,
+    createdAt: p.createdAt,
+    emailReceivedAt: p.emailReceivedAt,
   };
 }
 
@@ -72,6 +80,7 @@ function scrapedToUnified(s: ScrapedListing): UnifiedListing {
     source: 'scraped',
     savedByUser: s.savedByUser,
     scrapedListingId: s.id,
+    firstSeenAt: s.firstSeenAt,
   };
 }
 
@@ -330,6 +339,9 @@ export default function EntdeckenPage() {
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
+  // Preset filters
+  const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
+
   // Data state — scraped and user properties tracked separately for progressive rendering
   const [scrapedListings, setScrapedListings] = useState<UnifiedListing[]>([]);
   const [scrapedTotal, setScrapedTotal] = useState(0);
@@ -414,12 +426,21 @@ export default function EntdeckenPage() {
     const userSourceUrls = new Set(userUnified.map(u => u.sourceUrl));
     const dedupedScraped = scrapedListings.filter(s => !userSourceUrls.has(s.sourceUrl));
 
-    const merged = page === 1
+    let merged = page === 1
       ? [...userUnified, ...dedupedScraped]
       : dedupedScraped;
 
-    return { listings: merged, mergedUserCount: userUnified.length };
-  }, [scrapedListings, filteredUserProps, page]);
+    // Apply preset filters client-side
+    if (activePresets.size > 0) {
+      merged = merged.filter(l => passesPresetFilters(l, activePresets));
+    }
+
+    const userCount = page === 1
+      ? merged.filter(l => l.source === 'email').length
+      : 0;
+
+    return { listings: merged, mergedUserCount: userCount };
+  }, [scrapedListings, filteredUserProps, page, activePresets]);
 
   const loading = scrapedLoading;
 
@@ -512,6 +533,8 @@ export default function EntdeckenPage() {
         onDeleteFilter={handleDeleteFilter}
         activeFilterId={activeFilterId}
       />
+
+      <PresetFilters active={activePresets} onChange={setActivePresets} />
 
       {/* Save filter feedback */}
       {saveFilterSuccess && (
