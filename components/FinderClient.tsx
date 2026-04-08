@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useProperties } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
@@ -8,7 +9,11 @@ import { SavedFilter } from '@/lib/api';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { savedFilterToValues, resolvePostcodes, valuesToSavedFilterDto, FilterValues, EMPTY_FILTERS } from '@/components/FilterBar';
 import Link from 'next/link';
-import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
+
+const PropertyAnalysisModal = dynamic(
+  () => import('@/components/PropertyAnalysisModal'),
+  { ssr: false },
+);
 
 interface DashboardFilter {
   keyword: string;
@@ -341,10 +346,14 @@ export default function FinderClient({
           {/* Image */}
           <div className="relative w-full bg-gray-100" style={{ height: '288px' }}>
             {property.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={property.imageUrl}
                 alt={property.title ?? ''}
+                width={400}
+                height={288}
                 className="w-full h-full object-cover pointer-events-none"
+                loading="eager"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             ) : (

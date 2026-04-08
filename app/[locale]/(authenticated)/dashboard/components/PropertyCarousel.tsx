@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Property } from '@/lib/api';
 
@@ -82,11 +83,14 @@ function CarouselCard({ property, onInteraction, onAnalyse }: {
       >
         <div className="relative h-28 bg-gray-100">
           {property.imageUrl ? (
-            <img
+            <Image
               src={property.imageUrl}
               alt={property.title ?? ''}
-              className={`w-full h-full object-cover ${isExpired ? 'grayscale' : ''}`}
-              onError={e => { e.currentTarget.style.display = 'none'; }}
+              fill
+              sizes="192px"
+              className={`object-cover ${isExpired ? 'grayscale' : ''}`}
+              loading="lazy"
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-2xl text-gray-300">🏠</div>

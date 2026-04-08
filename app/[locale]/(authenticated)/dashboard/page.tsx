@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useProperties } from '@/hooks/useProperties';
 import { Property } from '@/lib/api';
@@ -14,21 +14,25 @@ export default function DashboardPage() {
   const { properties, loading, error } = useProperties();
   const { track, getRecentlyViewed } = useInteractionTracker();
   const { filters } = useSavedFilters();
-  const { immioEmail } = useAuth();
+  const { immioEmail, session, loading: authLoading } = useAuth();
 
   // Recently viewed properties from backend
   const [recentlyViewed, setRecentlyViewed] = useState<Property[]>([]);
+  const recentlyViewedFetched = useRef(false);
 
-  // Fetch recently viewed on mount and after interactions
-  const [interactionTick, setInteractionTick] = useState(0);
+  // Fetch recently viewed once after auth is ready
   useEffect(() => {
+    if (authLoading || !session) return;
+    if (recentlyViewedFetched.current) return;
+    recentlyViewedFetched.current = true;
     getRecentlyViewed(20).then(setRecentlyViewed);
-  }, [getRecentlyViewed, interactionTick]);
+  }, [authLoading, session, getRecentlyViewed]);
 
   const handleInteraction = useCallback((id: string, type?: 'view' | 'analysis' | 'url_click' | 'status_change') => {
     track(id, type ?? 'view');
-    setTimeout(() => setInteractionTick(t => t + 1), 500);
-  }, [track]);
+    // Refresh recently viewed after a short delay to pick up the new interaction
+    setTimeout(() => getRecentlyViewed(20).then(setRecentlyViewed), 500);
+  }, [track, getRecentlyViewed]);
 
   if (loading) {
     return (

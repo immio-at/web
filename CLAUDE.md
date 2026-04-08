@@ -257,11 +257,15 @@ Set in Vercel dashboard — never commit to git.
 ---
 
 ## TODO — Active Work Queue (Priority Order)
-1. **First-login onboarding modal** — display immioEmail + email forwarding setup guide
-3. **Finder + Funnel sort/filter bar** — sort by price/size/date, filter by district/range
-4. **Garbled characters fix** — some titles show `ß□` encoding edge case
-5. **Kontakt page** — simple contact form
-6. **Anna's landing page copy** — hero headline and problem section are placeholder
+*Source of truth: `docs/IMMIO-Project-State.md`*
+0. **Page load performance** (P0) — profile bundle size, API waterfall, component code splitting, image loading. Target: first meaningful paint < 2s on warm load
+1. **Email forwarding setup assistant** (P1) — in-app guide for Gmail/Outlook forwarding config. Must recommend auto-forward filter for Bazar
+2. **Recommended for You carousel** (P1) — Dashboard carousel based on funnel behaviour. Locked until ≥5 properties in `investigating`+
+3. **Kontakt page** (P1) — simple contact form
+4. **Apple Sign In + LinkedIn OAuth** (P2) — prerequisites for native mobile app
+5. **Native mobile app** (P2) — React Native / Expo, iOS + Android
+6. **Anna's landing page copy** (P3) — hero headline and problem section are placeholder
+7. **Onboarding wizard** (P3) — deferred until all functionality complete
 
 ## Entdecken Page (`/search`)
 Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
@@ -274,7 +278,8 @@ Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
 - Pagination: 20 per page, Zurück/Weiter controls
 
 ## Tech Debt
-- Cache invalidation via server push — 30s TTL polling in place, revisit post-MVP
-- Impressum address — replace placeholder before public launch (needs GmbH registration)
-- `TERMINAL_STAGES` duplicated in backend and frontend — update both if changed
-- Old localStorage key `immio_property_interactions` still present in some browsers (harmless, interaction tracking now backend-powered)
+*Source of truth: `docs/IMMIO-Project-State.md`*
+- **TD1** Cache invalidation via server push — 30s TTL polling in place, revisit after MVP testing
+- **TD2** Impressum address — replace placeholder before public launch (needs GmbH registration)
+- **TD10** Saved filter `sources` enum maintenance — new scraped sources need corresponding values added to TEXT[] enum
+- **TD13** `platformListedAt` columns empty — schema added but no parser/scraper extracts listing dates yet

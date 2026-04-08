@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, ScrapedListing, Property, SavedFilter } from '@/lib/api';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
-import { invalidateCache } from '@/hooks/useProperties';
+import { useProperties, invalidateCache } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import FilterBar, {
   FilterValues,
@@ -179,11 +180,14 @@ function ListingCard({
       {/* Image */}
       <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackListingClick(listing)} className="block relative h-48 bg-gray-100 overflow-hidden flex-shrink-0">
         {listing.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={listing.imageUrl}
             alt={listing.title ?? ''}
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-cover hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+            unoptimized
           />
         ) : (
           <div className="flex items-center justify-center h-full text-4xl text-gray-300">🏠</div>
@@ -257,8 +261,7 @@ function ListingTableRow({
         <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackListingClick(listing)}>
           <div className="relative rounded overflow-hidden bg-gray-100 hover:opacity-80 transition-opacity cursor-pointer" style={{ width: '48px', height: '48px' }}>
             {listing.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={listing.imageUrl} alt={listing.title ?? ''} className="w-full h-full object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />
+              <Image src={listing.imageUrl} alt={listing.title ?? ''} fill sizes="48px" className="object-cover" loading="lazy" unoptimized onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             ) : (
               <span className="text-xl flex items-center justify-center h-full">🏠</span>
             )}
@@ -310,6 +313,8 @@ export default function EntdeckenPage() {
   const searchParams = useSearchParams();
   const { session, loading: authLoading } = useAuth();
   const { filters: savedFilters, create: createFilter, remove: removeFilter } = useSavedFilters();
+  // Use cached properties from useProperties — avoids a redundant API call on page 1
+  const { properties: cachedProperties, loading: propertiesLoading } = useProperties();
 
   // Read initial view mode from URL
   const [view, setView] = useState<ViewMode>(
@@ -325,81 +330,98 @@ export default function EntdeckenPage() {
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  // Data state
-  const [listings, setListings] = useState<UnifiedListing[]>([]);
+  // Data state — scraped and user properties tracked separately for progressive rendering
+  const [scrapedListings, setScrapedListings] = useState<UnifiedListing[]>([]);
   const [scrapedTotal, setScrapedTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [userPropertyCount, setUserPropertyCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [scrapedLoading, setScrapedLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveFilterError, setSaveFilterError] = useState<string | null>(null);
   const [saveFilterSuccess, setSaveFilterSuccess] = useState<string | null>(null);
 
-  const fetchListings = useCallback(async () => {
+  // Check if any filter beyond defaults is active (needs server-side filtering)
+  const hasActiveFilter = useCallback((f: FilterValues) => {
+    return !!(f.keyword || f.location || f.minPrice || f.maxPrice ||
+      f.minPricePerSqm || f.maxPricePerSqm || f.minSize || f.maxSize ||
+      f.minRooms || f.maxRooms);
+  }, []);
+
+  // Build filter params from applied state
+  const buildFilterParams = useCallback((f: FilterValues) => {
+    const postcodes = resolvePostcodes(f.location);
+    return {
+      keyword: f.keyword || undefined,
+      postcodes: postcodes.length > 0 ? postcodes : undefined,
+      minPrice: f.minPrice ? parseFloat(f.minPrice) : undefined,
+      maxPrice: f.maxPrice ? parseFloat(f.maxPrice) : undefined,
+      minPricePerSqm: f.minPricePerSqm ? parseFloat(f.minPricePerSqm) : undefined,
+      maxPricePerSqm: f.maxPricePerSqm ? parseFloat(f.maxPricePerSqm) : undefined,
+      minSize: f.minSize ? parseFloat(f.minSize) : undefined,
+      maxSize: f.maxSize ? parseFloat(f.maxSize) : undefined,
+      minRooms: f.minRooms ? parseFloat(f.minRooms) : undefined,
+      maxRooms: f.maxRooms ? parseFloat(f.maxRooms) : undefined,
+      hideNullPrice: !f.showHidden,
+      sortBy: f.sortBy || undefined,
+      sortOrder: f.sortOrder || undefined,
+    };
+  }, []);
+
+  // ── Fetch scraped listings — fires immediately, no dependency on useProperties ──
+  const fetchScraped = useCallback(async () => {
     if (authLoading || !session) return;
     try {
-      setLoading(true);
+      setScrapedLoading(true);
       setError(null);
-      const postcodes = resolvePostcodes(applied.location);
-
-      const filterParams = {
-        keyword: applied.keyword || undefined,
-        postcodes: postcodes.length > 0 ? postcodes : undefined,
-        minPrice: applied.minPrice ? parseFloat(applied.minPrice) : undefined,
-        maxPrice: applied.maxPrice ? parseFloat(applied.maxPrice) : undefined,
-        minPricePerSqm: applied.minPricePerSqm ? parseFloat(applied.minPricePerSqm) : undefined,
-        maxPricePerSqm: applied.maxPricePerSqm ? parseFloat(applied.maxPricePerSqm) : undefined,
-        minSize: applied.minSize ? parseFloat(applied.minSize) : undefined,
-        maxSize: applied.maxSize ? parseFloat(applied.maxSize) : undefined,
-        minRooms: applied.minRooms ? parseFloat(applied.minRooms) : undefined,
-        maxRooms: applied.maxRooms ? parseFloat(applied.maxRooms) : undefined,
-        hideNullPrice: !applied.showHidden,
-        sortBy: applied.sortBy || undefined,
-        sortOrder: applied.sortOrder || undefined,
-      };
-
-      // Fetch both in parallel
-      const [scrapedData, userProperties] = await Promise.all([
-        getScrapedListings({ ...filterParams, page }),
-        // User properties only on page 1 (they're not paginated and appear at top)
-        page === 1
-          ? getPropertiesFiltered(filterParams)
-          : Promise.resolve([] as Property[]),
-      ]);
-
-      // Convert to unified format
-      const scrapedUnified = scrapedData.data.map(scrapedToUnified);
-
-      // Filter out not_relevant and delisted from user properties
-      const userUnified = userProperties
-        .filter(p => p.status !== 'not_relevant' && p.status !== 'delisted')
-        .map(propertyToUnified);
-
-      // Deduplicate: if a scraped listing was already saved by user, the user's
-      // property version takes precedence (sourceUrl match)
-      const userSourceUrls = new Set(userUnified.map(u => u.sourceUrl));
-      const dedupedScraped = scrapedUnified.filter(s => !userSourceUrls.has(s.sourceUrl));
-
-      // User properties first (page 1 only), then scraped
-      const merged = page === 1
-        ? [...userUnified, ...dedupedScraped]
-        : dedupedScraped;
-
-      setListings(merged);
+      const filterParams = buildFilterParams(applied);
+      const scrapedData = await getScrapedListings({ ...filterParams, page });
+      setScrapedListings(scrapedData.data.map(scrapedToUnified));
       setScrapedTotal(scrapedData.total);
       setTotalPages(scrapedData.totalPages);
-      setUserPropertyCount(userUnified.length);
     } catch (e) {
       setError(e instanceof Error ? e.message : t('errorLoadingListings'));
     } finally {
-      setLoading(false);
+      setScrapedLoading(false);
     }
-  }, [authLoading, session, applied, page, t]);
+  }, [authLoading, session, applied, page, t, buildFilterParams]);
+
+  useEffect(() => { fetchScraped(); }, [fetchScraped]);
+
+  // ── User properties for page 1 — from cache or filtered API call ──
+  const [filteredUserProps, setFilteredUserProps] = useState<Property[]>([]);
 
   useEffect(() => {
-    fetchListings();
-  }, [fetchListings]);
+    if (page !== 1) { setFilteredUserProps([]); return; }
+
+    if (!hasActiveFilter(applied)) {
+      // No filters — use cached properties (updates reactively as cache loads)
+      setFilteredUserProps(cachedProperties);
+    } else if (!authLoading && session) {
+      // Filters active — fetch from server (runs in parallel with scraped fetch)
+      const filterParams = buildFilterParams(applied);
+      getPropertiesFiltered(filterParams)
+        .then(setFilteredUserProps)
+        .catch(() => setFilteredUserProps([]));
+    }
+  }, [page, applied, cachedProperties, hasActiveFilter, authLoading, session, buildFilterParams]);
+
+  // ── Merge scraped + user properties into final listing ──
+  const { listings, mergedUserCount } = useMemo(() => {
+    const userUnified = filteredUserProps
+      .filter(p => p.status !== 'not_relevant' && p.status !== 'delisted')
+      .map(propertyToUnified);
+
+    const userSourceUrls = new Set(userUnified.map(u => u.sourceUrl));
+    const dedupedScraped = scrapedListings.filter(s => !userSourceUrls.has(s.sourceUrl));
+
+    const merged = page === 1
+      ? [...userUnified, ...dedupedScraped]
+      : dedupedScraped;
+
+    return { listings: merged, mergedUserCount: userUnified.length };
+  }, [scrapedListings, filteredUserProps, page]);
+
+  const loading = scrapedLoading;
 
   function handleSearch() {
     setApplied({ ...filterValues });
@@ -455,19 +477,19 @@ export default function EntdeckenPage() {
     setSavingId(listing.id);
     try {
       await saveScrapedListing(listing.scrapedListingId);
-      setListings(prev => prev.map(l => l.id === listing.id ? { ...l, savedByUser: true } : l));
+      setScrapedListings(prev => prev.map(l => l.id === listing.id ? { ...l, savedByUser: true } : l));
       invalidateCache();
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
       if (msg.includes('409')) {
-        setListings(prev => prev.map(l => l.id === listing.id ? { ...l, savedByUser: true } : l));
+        setScrapedListings(prev => prev.map(l => l.id === listing.id ? { ...l, savedByUser: true } : l));
       }
     } finally {
       setSavingId(null);
     }
   }
 
-  const totalResults = (page === 1 ? userPropertyCount : 0) + scrapedTotal;
+  const totalResults = (page === 1 ? mergedUserCount : 0) + scrapedTotal;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -517,9 +539,9 @@ export default function EntdeckenPage() {
             {listings.length === 0
               ? t('noListingsFound')
               : t('listingsFound', { count: totalResults.toLocaleString('de-AT') })}
-            {page === 1 && userPropertyCount > 0 && (
+            {page === 1 && mergedUserCount > 0 && (
               <span className="text-teal-600 ml-1">
-                ({t('includingOwn', { count: userPropertyCount })})
+                ({t('includingOwn', { count: mergedUserCount })})
               </span>
             )}
           </p>

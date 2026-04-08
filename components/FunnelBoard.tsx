@@ -2,13 +2,18 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { Property, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
-import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
+
+const PropertyAnalysisModal = dynamic(
+  () => import('@/components/PropertyAnalysisModal'),
+  { ssr: false },
+);
 
 // Map snake_case stage keys to camelCase translation keys
 const STAGE_I18N_KEY: Record<string, string> = {
@@ -459,10 +464,14 @@ function FunnelCard({
           draggable={false}
         >
           {property.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={property.imageUrl}
               alt={property.title ?? ''}
+              width={64}
+              height={64}
               className={`w-full h-full object-cover hover:opacity-90 transition-opacity ${isExpired ? 'grayscale' : ''}`}
+              loading="lazy"
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
               draggable={false}
             />

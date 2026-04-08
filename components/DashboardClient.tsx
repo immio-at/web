@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { Property, SavedFilter } from '@/lib/api';
-import PropertyAnalysisModal from '@/components/PropertyAnalysisModal';
 import DiscoverTile from '@/app/[locale]/(authenticated)/dashboard/components/DiscoverTile';
 import FunnelSummaryTile from '@/app/[locale]/(authenticated)/dashboard/components/FunnelSummaryTile';
 import SourcesSetupTile from '@/app/[locale]/(authenticated)/dashboard/components/SourcesSetupTile';
@@ -10,6 +10,11 @@ import AnalyticsSnapshotTile from '@/app/[locale]/(authenticated)/dashboard/comp
 import PropertyCarousel from '@/app/[locale]/(authenticated)/dashboard/components/PropertyCarousel';
 import RecommendedCarousel from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
 import { useTranslations } from 'next-intl';
+
+const PropertyAnalysisModal = dynamic(
+  () => import('@/components/PropertyAnalysisModal'),
+  { ssr: false },
+);
 
 type InteractionFn = (id: string, type?: 'view' | 'analysis' | 'url_click' | 'status_change') => void;
 
