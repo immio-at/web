@@ -81,6 +81,7 @@ export interface PropertyAnalysis {
   dealId: string;
   name: string | null;
   usageType: 'owner' | 'rental' | 'flip';
+  legalStructure: 'private' | 'gmbh';
 
   // Purchase
   listPrice: number | null;
@@ -119,6 +120,13 @@ export interface PropertyAnalysis {
   rentGrowthPct: number;
   valueGrowthPct: number;
 
+  // Tax inputs
+  purchaseDate: string | null;           // ISO date — for AfA schedule
+  gebaeudeAnteilPct: number;             // default 0.60 — building proportion
+  grenzsteuersatzPct: number | null;     // private marginal tax rate
+  gmbhAccountingCostsAnnual: number | null; // GmbH annual accounting costs
+  distributeProfit: boolean;             // GmbH: distribute profits (triggers KESt)
+
   // Flip
   flipDurationMonths: number | null;
   flipResalePrice: number | null;
@@ -129,6 +137,7 @@ export interface PropertyAnalysis {
 
 export type CreateAnalysisDto = {
   usageType: 'owner' | 'rental' | 'flip';
+  legalStructure?: 'private' | 'gmbh';
   name?: string;
 };
 

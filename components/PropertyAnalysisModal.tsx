@@ -111,6 +111,7 @@ function blankAnalysis(property: Property): Omit<PropertyAnalysis, 'id' | 'prope
   return {
     name: null,
     usageType: 'rental',
+    legalStructure: 'private',
     listPrice: property.price ? parseFloat(String(property.price)) : null,
     desiredPrice: property.price ? parseFloat(String(property.price)) : null,
     maklerPct: 0.036,
@@ -140,6 +141,11 @@ function blankAnalysis(property: Property): Omit<PropertyAnalysis, 'id' | 'prope
     repairsPct: 0.02,
     rentGrowthPct: 0.02,
     valueGrowthPct: 0.02,
+    purchaseDate: null,
+    gebaeudeAnteilPct: 0.60,
+    grenzsteuersatzPct: null,
+    gmbhAccountingCostsAnnual: null,
+    distributeProfit: false,
     flipDurationMonths: null,
     flipResalePrice: null,
   };
@@ -204,6 +210,12 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
             repairsPct: parseFloat(String(a.repairsPct)),
             rentGrowthPct: parseFloat(String(a.rentGrowthPct)),
             valueGrowthPct: parseFloat(String(a.valueGrowthPct)),
+            purchaseDate: a.purchaseDate ?? null,
+            gebaeudeAnteilPct: a.gebaeudeAnteilPct ? parseFloat(String(a.gebaeudeAnteilPct)) : 0.60,
+            grenzsteuersatzPct: a.grenzsteuersatzPct ? parseFloat(String(a.grenzsteuersatzPct)) : null,
+            gmbhAccountingCostsAnnual: a.gmbhAccountingCostsAnnual ? parseFloat(String(a.gmbhAccountingCostsAnnual)) : null,
+            distributeProfit: a.distributeProfit ?? false,
+            legalStructure: (a.legalStructure as 'private' | 'gmbh') ?? 'private',
             flipDurationMonths: a.flipDurationMonths,
             flipResalePrice: a.flipResalePrice ? parseFloat(String(a.flipResalePrice)) : null,
           });
