@@ -788,9 +788,8 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <NumInput label={t('rental.bkUmlagefaehig')} value={draft.bkUmlagefaehig} onChange={v => set('bkUmlagefaehig', v)} prefix={'\u20AC'} />
-                    <NumInput label={t('rental.bkNichtUmlagefaehig')} value={draft.bkNichtUmlagefaehig} onChange={v => set('bkNichtUmlagefaehig', v)} prefix={'\u20AC'} />
-                    <NumInput label={t('rental.reparaturruecklage')} value={draft.reparaturruecklageMon} onChange={v => set('reparaturruecklageMon', v)} prefix={'\u20AC'} hint={t('rental.reparaturruecklageHint')} />
+                    <NumInput label={t('rental.bkUmlagefaehig')} value={draft.bkUmlagefaehig} onChange={v => set('bkUmlagefaehig', v)} prefix={'\u20AC'} hint={t('rental.bkUmlagefaehigHint')} />
+                    <NumInput label={t('rental.bkNichtUmlagefaehig')} value={draft.bkNichtUmlagefaehig} onChange={v => set('bkNichtUmlagefaehig', v)} prefix={'\u20AC'} hint={t('rental.bkNichtUmlagefaehigHint')} />
                     <NumInput label={t('rental.vacancy')} value={draft.vacancyPct * 100} onChange={v => set('vacancyPct', (v ?? 0) / 100)} suffix="%" />
                     <NumInput label={t('rental.repairReserve')} value={draft.repairsPct * 100} onChange={v => set('repairsPct', (v ?? 0) / 100)} suffix="% p.a." hint={t('rental.repairReserveHint')} />
                     <NumInput label={t('rental.rentGrowth')} value={draft.rentGrowthPct * 100} onChange={v => set('rentGrowthPct', (v ?? 0) / 100)} suffix="%" />
@@ -804,9 +803,11 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
             {draft.usageType === 'flip' && (
               <div>
                 <SectionTitle>{t('flip.title')}</SectionTitle>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <NumInput label={t('flip.duration')} value={draft.flipDurationMonths} onChange={v => set('flipDurationMonths', v ? Math.round(v) : null)} suffix={t('flip.durationSuffix')} />
                   <NumInput label={t('flip.resalePrice')} value={draft.flipResalePrice} onChange={v => set('flipResalePrice', v)} prefix={'\u20AC'} />
+                  <NumInput label={t('flip.bkUmlagefaehig')} value={draft.bkUmlagefaehig} onChange={v => set('bkUmlagefaehig', v)} prefix={'\u20AC'} hint={t('flip.bkHint')} />
+                  <NumInput label={t('flip.bkNichtUmlagefaehig')} value={draft.bkNichtUmlagefaehig} onChange={v => set('bkNichtUmlagefaehig', v)} prefix={'\u20AC'} hint={t('flip.bkHint')} />
                 </div>
               </div>
             )}

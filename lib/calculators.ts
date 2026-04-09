@@ -502,8 +502,11 @@ export function calcFlipPrivate(
   const totalAbzugsfaehig = calcTotalAbzugsfaehig(a.rehabCosts);
 
   const monthlyLoan = calcTotalMonthlyLoan(a);
+  // Flip holding costs include loan + ALL BK (no tenant to cover recoverable portion)
+  const bkUmlagefaehig = a.bkUmlagefaehig ?? 0;
   const bkNichtUmlagefaehig = a.bkNichtUmlagefaehig ?? 0;
-  const monthlyHoldingCost = monthlyLoan + bkNichtUmlagefaehig;
+  const reparaturruecklage = a.reparaturruecklageMon ?? 0;
+  const monthlyHoldingCost = monthlyLoan + bkUmlagefaehig + bkNichtUmlagefaehig + reparaturruecklage;
   const holdingCosts = monthlyHoldingCost * holdingMonths;
 
   const totalCost = desiredPrice + kaufnebenkosten + totalRehab + holdingCosts;
@@ -556,8 +559,10 @@ export function calcFlipGmbH(a: PropertyAnalysis): FlipGmbHResults {
   const totalAbzugsfaehig = calcTotalAbzugsfaehig(a.rehabCosts);
 
   const monthlyLoan = calcTotalMonthlyLoan(a);
+  const bkUmlagefaehig = a.bkUmlagefaehig ?? 0;
   const bkNichtUmlagefaehig = a.bkNichtUmlagefaehig ?? 0;
-  const monthlyHoldingCost = monthlyLoan + bkNichtUmlagefaehig;
+  const reparaturruecklage = a.reparaturruecklageMon ?? 0;
+  const monthlyHoldingCost = monthlyLoan + bkUmlagefaehig + bkNichtUmlagefaehig + reparaturruecklage;
   const holdingCosts = monthlyHoldingCost * holdingMonths;
 
   const totalCost = desiredPrice + kaufnebenkosten + totalRehab + holdingCosts;
