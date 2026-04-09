@@ -20,8 +20,14 @@ import FilterBar, {
 import PresetFilters from '@/components/PresetFilters';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
+import dynamic from 'next/dynamic';
 import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
 import { updateProperty, reportUnavailable } from '@/lib/api';
+
+const PropertyAnalysisModal = dynamic(
+  () => import('@/components/PropertyAnalysisModal'),
+  { ssr: false },
+);
 
 // ─── Unified listing type ────────────────────────────────────────────────────
 
@@ -366,6 +372,7 @@ export default function EntdeckenPage() {
   const [scrapedTotal, setScrapedTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [scrapedLoading, setScrapedLoading] = useState(true);
+  const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveFilterError, setSaveFilterError] = useState<string | null>(null);
@@ -599,11 +606,17 @@ export default function EntdeckenPage() {
       }
     },
     onAnalyse: (item: CardProperty) => {
-      if (item.source === 'own') trackInteraction(item.id, 'analysis');
+      if (item.source === 'own') {
+        trackInteraction(item.id, 'analysis');
+        const prop = cachedProperties.find(p => p.id === item.id);
+        if (prop) setAnalyseProperty(prop);
+      }
     },
     onReportDead: (item: CardProperty) => {
-      optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
-      reportUnavailable(item.id).catch(() => {});
+      if (item.source === 'own') {
+        optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
+        reportUnavailable(item.id).catch(() => {});
+      }
     },
     onDismiss: (item: CardProperty) => {
       if (item.source === 'own') {
@@ -617,7 +630,7 @@ export default function EntdeckenPage() {
     onUrlClick: (item: CardProperty) => {
       if (item.source === 'own') trackInteraction(item.id, 'url_click');
     },
-  }), [updateProp, optimisticUpdate]);
+  }), [updateProp, optimisticUpdate, cachedProperties]);
 
   const totalResults = presetsActive
     ? listings.length
@@ -795,6 +808,13 @@ export default function EntdeckenPage() {
         </div>
       )}
 
+      {/* Analyse modal */}
+      {analyseProperty && (
+        <PropertyAnalysisModal
+          property={analyseProperty}
+          onClose={() => setAnalyseProperty(null)}
+        />
+      )}
     </div>
   );
 }
