@@ -65,6 +65,8 @@ function NumInput({
   readOnly?: boolean;
   hint?: string;
 }) {
+  // Round display value to avoid floating point artifacts (e.g. 4.499999 → 4.5)
+  const displayValue = value != null ? parseFloat(value.toFixed(4)) : '';
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide">{label}</label>
@@ -72,8 +74,9 @@ function NumInput({
         {prefix && <span className="px-3 py-2 bg-[#f8f9fb] text-[#6b7a99] text-sm border-r border-[#e2e6ed]">{prefix}</span>}
         <input
           type="number"
+          step="any"
           readOnly={readOnly}
-          value={value ?? ''}
+          value={displayValue}
           onChange={e => onChange?.(e.target.value === '' ? null : parseFloat(e.target.value))}
           className={`flex-1 px-3 py-2 text-sm text-[#0F1F3D] outline-none ${readOnly ? 'bg-[#f8f9fb] text-[#6b7a99]' : 'bg-white'}`}
         />
@@ -638,15 +641,6 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                 )}
               </div>
 
-              {/* Laufende Kosten */}
-              <div className="mb-4">
-                <span className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide block mb-2">{t('purchase.runningCosts')}</span>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <NumInput label={t('purchase.betriebskosten')} value={draft.ooBetriebskostenMonthly} onChange={v => set('ooBetriebskostenMonthly', v)} prefix={'\u20AC'} hint={t('purchase.betriebskostenHint')} />
-                  <NumInput label={t('purchase.reparaturruecklage')} value={draft.reparaturruecklageMon} onChange={v => set('reparaturruecklageMon', v)} prefix={'\u20AC'} hint={t('purchase.reparaturruecklageHint')} />
-                </div>
-              </div>
-
               {/* Totals */}
               <div className="flex gap-6 bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl px-4 py-3 text-sm">
                 <div>
@@ -748,6 +742,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
               <div>
                 <SectionTitle>{t('owner.title')}</SectionTitle>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <NumInput label={t('owner.betriebskosten')} value={draft.ooBetriebskostenMonthly} onChange={v => set('ooBetriebskostenMonthly', v)} prefix={'\u20AC'} hint={t('owner.betriebskostenHint')} />
                   <NumInput label={t('owner.maintenance')} value={draft.ooRepairsPct * 100} onChange={v => set('ooRepairsPct', (v ?? 0) / 100)} suffix="% p.a." hint={t('owner.maintenanceHint')} />
                   <NumInput label={t('owner.appreciation')} value={draft.ooAppreciationPct * 100} onChange={v => set('ooAppreciationPct', (v ?? 0) / 100)} suffix="%" />
                 </div>
@@ -795,6 +790,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <NumInput label={t('rental.bkUmlagefaehig')} value={draft.bkUmlagefaehig} onChange={v => set('bkUmlagefaehig', v)} prefix={'\u20AC'} />
                     <NumInput label={t('rental.bkNichtUmlagefaehig')} value={draft.bkNichtUmlagefaehig} onChange={v => set('bkNichtUmlagefaehig', v)} prefix={'\u20AC'} />
+                    <NumInput label={t('rental.reparaturruecklage')} value={draft.reparaturruecklageMon} onChange={v => set('reparaturruecklageMon', v)} prefix={'\u20AC'} hint={t('rental.reparaturruecklageHint')} />
                     <NumInput label={t('rental.vacancy')} value={draft.vacancyPct * 100} onChange={v => set('vacancyPct', (v ?? 0) / 100)} suffix="%" />
                     <NumInput label={t('rental.repairReserve')} value={draft.repairsPct * 100} onChange={v => set('repairsPct', (v ?? 0) / 100)} suffix="% p.a." hint={t('rental.repairReserveHint')} />
                     <NumInput label={t('rental.rentGrowth')} value={draft.rentGrowthPct * 100} onChange={v => set('rentGrowthPct', (v ?? 0) / 100)} suffix="%" />
