@@ -292,6 +292,17 @@ Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
 - Pagination: 20 per page (hidden when client-only presets active)
 - Reads preset + saved filter selections from URL params (from Dashboard)
 
+## Property Analysis Modal (ADR-003)
+- `components/PropertyAnalysisModal.tsx` — full-screen modal, multi-tab architecture
+- `lib/calculators.ts` — all pure calculation functions (purchase, loan, AfA, rental tax, flip tax)
+- Multi-analysis tabs: Chrome-style [+]/[✕], auto-naming ("Rental 1", "Flip 2"), dirty indicator
+- Tax section: Privat/GmbH toggle, AfA (accelerated post-2020), Grenzsteuersatz, KÖSt 23%, KESt 27.5%
+- Rental results: pre-tax metrics + after-tax (private: marginal tax; GmbH: retained vs distributed)
+- Flip results: private (ImmoESt 30% + Hauptwohnsitzbefreiung); GmbH (KÖSt + KESt side-by-side)
+- Liebhaberei warning (25-year cumulative cashflow check)
+- Cost structure: BK umlagefähig (tenant-paid) + BK nicht umlagefähig (owner costs incl. HV reserve) per usage type. Flip includes all BK in holding costs.
+- Backend: 6 tax fields on PropertyAnalysis model (legalStructure, purchaseDate, gebaeudeAnteilPct, grenzsteuersatzPct, gmbhAccountingCostsAnnual, distributeProfit)
+
 ## Performance Architecture
 - `useProperties`: 2-minute TTL module-level cache, `prefetchProperties()` called during auth init
 - `useSavedFilters`: 5-minute TTL module-level cache, `prefetchSavedFilters()` called during auth init
@@ -307,3 +318,5 @@ Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
 - **TD2** Impressum address — replace placeholder before public launch (needs GmbH registration)
 - **TD10** Saved filter `sources` enum maintenance — new scraped sources need corresponding values added to TEXT[] enum
 - **TD13** `platformListedAt` columns empty — schema added but no parser/scraper extracts listing dates yet
+- **TD14** Prisma migration history out of sync — schema changes applied via SQL Editor
+- **TD15** ImmoScout24 title not parsed — IS24 emails don't contain title, parser sets null
