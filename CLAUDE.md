@@ -270,7 +270,7 @@ Set in Vercel dashboard — never commit to git.
 - `lib/preset-filters.ts` — types, definitions, `passesPresetFilters()`, `passesSavedFilters()`, `togglePreset()`
 - `components/PresetFilters.tsx` — shared pill toggle component. Accepts optional `savedFilters` + `activeSavedFilterIds` + `onToggleSavedFilter` for amber saved filter pills alongside presets
 - Source presets: "Search Agents" / "Exclude Search Agents" (mutually exclusive, check `emailReceivedAt`)
-- Time presets: Last 24h / Last Week (mutually exclusive, use `emailReceivedAt` for email, `firstSeenAt` for scraped — both = arrival time to platform)
+- Stage presets: 9 funnel stages (New, Investigating, Interested, Visit Booked, Visited, Offer Made, Parked, Won, Not Relevant). OR within group. Scraped listings without status pass through.
 - State presets: 9 Austrian states (OR within group, AND with other groups). Sent server-side on Discover and Finder (resolved to postcodes via `getPostcodesByBundesland`)
 - Dashboard Discover tile pre-caches per-state scraped counts on mount (10 parallel calls) for instant toggle
 - i18n: `presetFilters` namespace in de.json + en.json
