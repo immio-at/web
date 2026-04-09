@@ -259,8 +259,7 @@ Set in Vercel dashboard — never commit to git.
 ## TODO — Active Work Queue (Priority Order)
 *Source of truth: `docs/IMMIO-Project-State.md`*
 1. **Email forwarding setup assistant** (P1) — in-app guide for Gmail/Outlook forwarding config. Must recommend auto-forward filter for Bazar
-2. **Recommended for You carousel** (P1) — Dashboard carousel based on funnel behaviour. Locked until ≥5 properties in `investigating`+
-3. **Kontakt page** (P1) — simple contact form
+2. **Kontakt page** (P1) — simple contact form. Deferred — needs company email setup
 4. **Apple Sign In + LinkedIn OAuth** (P2) — prerequisites for native mobile app
 5. **Native mobile app** (P2) — React Native / Expo, iOS + Android
 6. **Anna's landing page copy** (P3) — hero headline and problem section are placeholder
@@ -291,6 +290,14 @@ Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
 - Saving a listing invalidates the `useProperties` cache so Dashboard/Funnel update immediately
 - Pagination: 20 per page (hidden when client-only presets active)
 - Reads preset + saved filter selections from URL params (from Dashboard)
+
+## Recommendation Engine
+- `lib/recommendations.ts` — derives criteria from funnel properties, scores candidates
+- Weights: location=10 (exact postcode full, same state half), price=8, price/m²=5, size=4
+- 20% buffer around ranges for partial matches (half weight)
+- Locked until ≥5 funnel properties (any stage except not_relevant)
+- Dashboard carousel: own `new` properties scored from cache + scraped fetched async, session-cached
+- Carousel order: Recommended (top), Recently Viewed, New Arrivals (bottom)
 
 ## Property Analysis Modal (ADR-003)
 - `components/PropertyAnalysisModal.tsx` — full-screen modal, multi-tab architecture
