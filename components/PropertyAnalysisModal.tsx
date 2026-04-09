@@ -158,15 +158,79 @@ function blankAnalysis(property: Property): Omit<PropertyAnalysis, 'id' | 'prope
   };
 }
 
+// ─── Convert backend analysis to draft format ───────────────────────────────
+
+type Draft = Omit<PropertyAnalysis, 'id' | 'propertyId' | 'dealId' | 'createdAt' | 'updatedAt'>;
+
+function analysisToDraft(a: PropertyAnalysis): Draft {
+  return {
+    name: a.name,
+    usageType: a.usageType as 'owner' | 'rental' | 'flip',
+    legalStructure: (a.legalStructure as 'private' | 'gmbh') ?? 'private',
+    listPrice: a.listPrice ? parseFloat(String(a.listPrice)) : null,
+    desiredPrice: a.desiredPrice ? parseFloat(String(a.desiredPrice)) : null,
+    maklerPct: parseFloat(String(a.maklerPct)),
+    notarPct: parseFloat(String(a.notarPct)),
+    grundbuchPct: parseFloat(String(a.grundbuchPct)),
+    grunderwerbsteuerPct: parseFloat(String(a.grunderwerbsteuerPct)),
+    otherPurchaseCosts: parseFloat(String(a.otherPurchaseCosts)),
+    rehabCosts: Array.isArray(a.rehabCosts) ? a.rehabCosts : [],
+    financing: a.financing,
+    loan1AmountPct: parseFloat(String(a.loan1AmountPct)),
+    loan1Amount: a.loan1Amount ? parseFloat(String(a.loan1Amount)) : null,
+    loan1Rate: a.loan1Rate ? parseFloat(String(a.loan1Rate)) : null,
+    loan1TermYears: a.loan1TermYears,
+    loan2Enabled: a.loan2Enabled,
+    loan2Amount: a.loan2Amount ? parseFloat(String(a.loan2Amount)) : null,
+    loan2Rate: a.loan2Rate ? parseFloat(String(a.loan2Rate)) : null,
+    loan2TermYears: a.loan2TermYears,
+    ooBetriebskostenMonthly: a.ooBetriebskostenMonthly ? parseFloat(String(a.ooBetriebskostenMonthly)) : null,
+    ooRepairsPct: parseFloat(String(a.ooRepairsPct)),
+    ooAppreciationPct: parseFloat(String(a.ooAppreciationPct)),
+    rentType: (a.rentType as 'warm' | 'kalt') ?? 'warm',
+    rentMonthly: a.rentMonthly ? parseFloat(String(a.rentMonthly)) : null,
+    bkUmlagefaehig: a.bkUmlagefaehig ? parseFloat(String(a.bkUmlagefaehig)) : null,
+    bkNichtUmlagefaehig: a.bkNichtUmlagefaehig ? parseFloat(String(a.bkNichtUmlagefaehig)) : null,
+    reparaturruecklageMon: a.reparaturruecklageMon ? parseFloat(String(a.reparaturruecklageMon)) : null,
+    vacancyPct: parseFloat(String(a.vacancyPct)),
+    repairsPct: parseFloat(String(a.repairsPct)),
+    rentGrowthPct: parseFloat(String(a.rentGrowthPct)),
+    valueGrowthPct: parseFloat(String(a.valueGrowthPct)),
+    purchaseDate: a.purchaseDate ?? null,
+    gebaeudeAnteilPct: a.gebaeudeAnteilPct ? parseFloat(String(a.gebaeudeAnteilPct)) : 0.60,
+    grenzsteuersatzPct: a.grenzsteuersatzPct ? parseFloat(String(a.grenzsteuersatzPct)) : null,
+    gmbhAccountingCostsAnnual: a.gmbhAccountingCostsAnnual ? parseFloat(String(a.gmbhAccountingCostsAnnual)) : null,
+    distributeProfit: a.distributeProfit ?? false,
+    flipDurationMonths: a.flipDurationMonths,
+    flipResalePrice: a.flipResalePrice ? parseFloat(String(a.flipResalePrice)) : null,
+  };
+}
+
+// ─── Tab state ───────────────────────────────────────────────────────────────
+
+interface Tab {
+  id: string | null;    // null = unsaved new analysis
+  dealId: string | null;
+  draft: Draft;
+  dirty: boolean;       // has unsaved changes
+}
+
+function tabLabel(tab: Tab): string {
+  if (tab.draft.name) return tab.draft.name;
+  const type = tab.draft.usageType;
+  return type === 'rental' ? 'Vermietung' : type === 'owner' ? 'Eigennutzung' : 'Flip';
+}
+
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
 export default function PropertyAnalysisModal({ property, onClose }: Props) {
   const t = useTranslations('analysis');
-  const [analysis, setAnalysis] = useState<PropertyAnalysis | null>(null);
-  const [draft, setDraft] = useState<Omit<PropertyAnalysis, 'id' | 'propertyId' | 'dealId' | 'createdAt' | 'updatedAt'>>(blankAnalysis(property));
+  const [tabs, setTabs] = useState<Tab[]>([]);
+  const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
   // Documents
   const [documents, setDocuments] = useState<PropertyDocument[]>([]);
@@ -174,74 +238,75 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
   const [docLabel, setDocLabel] = useState(t('documents.types.0'));
   const [docError, setDocError] = useState<string | null>(null);
 
-  // Attach sizeSqm from property for price-per-sqm calculation
   const sizeSqm = property.sizeSqm;
 
-  // ── Load or create analysis on mount ──────────────────────────────────────
+  // Active tab's draft
+  const draft = tabs[activeTab]?.draft ?? blankAnalysis(property);
+
+  // ── Load all analyses on mount ────────────────────────────────────────────
   useEffect(() => {
     async function load() {
       try {
         const analyses = await getAnalyses(property.id);
         if (analyses.length > 0) {
-          const a = analyses[0];
-          setAnalysis(a);
-          setDraft({
-            name: a.name,
-            usageType: a.usageType as 'owner' | 'rental' | 'flip',
-            listPrice: a.listPrice ? parseFloat(String(a.listPrice)) : null,
-            desiredPrice: a.desiredPrice ? parseFloat(String(a.desiredPrice)) : null,
-            maklerPct: parseFloat(String(a.maklerPct)),
-            notarPct: parseFloat(String(a.notarPct)),
-            grundbuchPct: parseFloat(String(a.grundbuchPct)),
-            grunderwerbsteuerPct: parseFloat(String(a.grunderwerbsteuerPct)),
-            otherPurchaseCosts: parseFloat(String(a.otherPurchaseCosts)),
-            rehabCosts: Array.isArray(a.rehabCosts) ? a.rehabCosts : [],
-            financing: a.financing,
-            loan1AmountPct: parseFloat(String(a.loan1AmountPct)),
-            loan1Amount: a.loan1Amount ? parseFloat(String(a.loan1Amount)) : null,
-            loan1Rate: a.loan1Rate ? parseFloat(String(a.loan1Rate)) : null,
-            loan1TermYears: a.loan1TermYears,
-            loan2Enabled: a.loan2Enabled,
-            loan2Amount: a.loan2Amount ? parseFloat(String(a.loan2Amount)) : null,
-            loan2Rate: a.loan2Rate ? parseFloat(String(a.loan2Rate)) : null,
-            loan2TermYears: a.loan2TermYears,
-            ooBetriebskostenMonthly: a.ooBetriebskostenMonthly ? parseFloat(String(a.ooBetriebskostenMonthly)) : null,
-            ooRepairsPct: parseFloat(String(a.ooRepairsPct)),
-            ooAppreciationPct: parseFloat(String(a.ooAppreciationPct)),
-            rentType: (a.rentType as 'warm' | 'kalt') ?? 'warm',
-            rentMonthly: a.rentMonthly ? parseFloat(String(a.rentMonthly)) : null,
-            bkUmlagefaehig: a.bkUmlagefaehig ? parseFloat(String(a.bkUmlagefaehig)) : null,
-            bkNichtUmlagefaehig: a.bkNichtUmlagefaehig ? parseFloat(String(a.bkNichtUmlagefaehig)) : null,
-            reparaturruecklageMon: a.reparaturruecklageMon ? parseFloat(String(a.reparaturruecklageMon)) : null,
-            vacancyPct: parseFloat(String(a.vacancyPct)),
-            repairsPct: parseFloat(String(a.repairsPct)),
-            rentGrowthPct: parseFloat(String(a.rentGrowthPct)),
-            valueGrowthPct: parseFloat(String(a.valueGrowthPct)),
-            purchaseDate: a.purchaseDate ?? null,
-            gebaeudeAnteilPct: a.gebaeudeAnteilPct ? parseFloat(String(a.gebaeudeAnteilPct)) : 0.60,
-            grenzsteuersatzPct: a.grenzsteuersatzPct ? parseFloat(String(a.grenzsteuersatzPct)) : null,
-            gmbhAccountingCostsAnnual: a.gmbhAccountingCostsAnnual ? parseFloat(String(a.gmbhAccountingCostsAnnual)) : null,
-            distributeProfit: a.distributeProfit ?? false,
-            legalStructure: (a.legalStructure as 'private' | 'gmbh') ?? 'private',
-            flipDurationMonths: a.flipDurationMonths,
-            flipResalePrice: a.flipResalePrice ? parseFloat(String(a.flipResalePrice)) : null,
-          });
+          setTabs(analyses.map(a => ({
+            id: a.id,
+            dealId: a.dealId,
+            draft: analysisToDraft(a),
+            dirty: false,
+          })));
+        } else {
+          // No analyses yet — start with a blank tab
+          setTabs([{ id: null, dealId: null, draft: blankAnalysis(property), dirty: false }]);
         }
-        // Load documents in parallel
         const docs = await getDocuments(property.id);
         setDocuments(docs);
-      } catch (e) {
+      } catch {
         setError(t('errorLoading'));
+        setTabs([{ id: null, dealId: null, draft: blankAnalysis(property), dirty: false }]);
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [property.id, t]);
+  }, [property.id, t, property]);
 
-  // ── Field updater ─────────────────────────────────────────────────────────
-  function set<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
-    setDraft(prev => ({ ...prev, [key]: value }));
+  // ── Field updater (updates active tab's draft) ────────────────────────────
+  function set<K extends keyof Draft>(key: K, value: Draft[K]) {
+    setTabs(prev => prev.map((tab, i) =>
+      i === activeTab ? { ...tab, draft: { ...tab.draft, [key]: value }, dirty: true } : tab
+    ));
+  }
+
+  // ── Tab management ────────────────────────────────────────────────────────
+  function addTab() {
+    const newTab: Tab = { id: null, dealId: null, draft: blankAnalysis(property), dirty: false };
+    setTabs(prev => [...prev, newTab]);
+    setActiveTab(tabs.length);
+  }
+
+  async function deleteTab(index: number) {
+    const tab = tabs[index];
+    if (tab.id) {
+      try {
+        await deleteAnalysis(property.id, tab.id);
+      } catch { /* ignore */ }
+    }
+    setTabs(prev => prev.filter((_, i) => i !== index));
+    if (activeTab >= index && activeTab > 0) setActiveTab(activeTab - 1);
+    setDeleteConfirm(null);
+    // If no tabs left, add a blank one
+    if (tabs.length <= 1) {
+      setTabs([{ id: null, dealId: null, draft: blankAnalysis(property), dirty: false }]);
+      setActiveTab(0);
+    }
+  }
+
+  // ── Auto-name on save ─────────────────────────────────────────────────────
+  function autoName(d: Draft, allTabs: Tab[], currentIndex: number): string {
+    const typeLabel = d.usageType === 'rental' ? 'Rental' : d.usageType === 'owner' ? 'Eigennutzung' : 'Flip';
+    const sameTypeCount = allTabs.filter((t, i) => i !== currentIndex && t.draft.usageType === d.usageType).length;
+    return `${typeLabel} ${sameTypeCount + 1}`;
   }
 
   // ── Rehab line items ──────────────────────────────────────────────────────
@@ -256,21 +321,39 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
     set('rehabCosts', draft.rehabCosts.filter((_, idx) => idx !== i));
   }
 
-  // ── Save ──────────────────────────────────────────────────────────────────
+  // ── Save active tab ──────────────────────────────────────────────────────
   async function handleSave() {
     setSaving(true);
     setError(null);
     try {
-      const dto: UpdateAnalysisDto = { ...draft };
-      if (analysis) {
-        await updateAnalysis(property.id, analysis.id, dto);
-      } else {
-        const created = await createAnalysis(property.id, { usageType: draft.usageType, name: draft.name ?? undefined });
-        await updateAnalysis(property.id, created.id, dto);
-        setAnalysis(created);
+      const tab = tabs[activeTab];
+      const draftToSave = { ...tab.draft };
+      // Auto-name if no name set
+      if (!draftToSave.name) {
+        draftToSave.name = autoName(draftToSave, tabs, activeTab);
       }
-      onClose();
-    } catch (e) {
+
+      const dto: UpdateAnalysisDto = { ...draftToSave };
+
+      if (tab.id) {
+        // Update existing
+        await updateAnalysis(property.id, tab.id, dto);
+        setTabs(prev => prev.map((t, i) =>
+          i === activeTab ? { ...t, draft: draftToSave, dirty: false } : t
+        ));
+      } else {
+        // Create new
+        const created = await createAnalysis(property.id, {
+          usageType: draftToSave.usageType,
+          legalStructure: draftToSave.legalStructure,
+          name: draftToSave.name ?? undefined,
+        });
+        await updateAnalysis(property.id, created.id, dto);
+        setTabs(prev => prev.map((t, i) =>
+          i === activeTab ? { ...t, id: created.id, dealId: created.dealId, draft: draftToSave, dirty: false } : t
+        ));
+      }
+    } catch {
       setError(t('errorSaving'));
     } finally {
       setSaving(false);
@@ -319,12 +402,13 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
   }
 
   // ── Build a full PropertyAnalysis shape for calculators ───────────────────
+  const currentTab = tabs[activeTab];
   const calc: PropertyAnalysis = {
-    id: analysis?.id ?? '',
+    id: currentTab?.id ?? '',
     propertyId: property.id,
-    dealId: analysis?.dealId ?? '',
-    createdAt: analysis?.createdAt ?? '',
-    updatedAt: analysis?.updatedAt ?? '',
+    dealId: currentTab?.dealId ?? '',
+    createdAt: '',
+    updatedAt: '',
     ...draft,
   };
 
@@ -368,18 +452,68 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
       <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl my-auto">
 
         {/* ── Header ── */}
-        <div className="flex items-start justify-between p-6 border-b border-[#e2e6ed]">
+        <div className="flex items-start justify-between p-6 pb-3 border-b border-[#e2e6ed]">
           <div>
             <p className="text-xs text-[#6b7a99] uppercase tracking-widest mb-1">{t('header')}</p>
             <h2 className="text-lg font-semibold text-[#0F1F3D] leading-tight">{property.title ?? t('defaultPropertyTitle')}</h2>
-            {analysis?.dealId && (
+            {currentTab?.dealId && (
               <span className="inline-block mt-1 text-xs font-mono bg-[#f8f9fb] border border-[#e2e6ed] px-2 py-0.5 rounded text-[#6b7a99]">
-                {analysis.dealId}
+                {currentTab.dealId}
               </span>
             )}
           </div>
           <button onClick={onClose} className="text-[#6b7a99] hover:text-[#0F1F3D] transition-colors text-2xl leading-none">✕</button>
         </div>
+
+        {/* ── Tab Bar ── */}
+        {!loading && tabs.length > 0 && (
+          <div className="flex items-center gap-1 px-6 pt-3 pb-0 overflow-x-auto border-b border-[#e2e6ed]">
+            {tabs.map((tab, i) => (
+              <div
+                key={tab.id ?? `new-${i}`}
+                className={`group flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-lg cursor-pointer transition-colors ${
+                  i === activeTab
+                    ? 'bg-white border border-[#e2e6ed] border-b-white -mb-px text-[#0F1F3D]'
+                    : 'text-[#6b7a99] hover:text-[#0F1F3D] hover:bg-[#f8f9fb]'
+                }`}
+                onClick={() => setActiveTab(i)}
+              >
+                <span className="truncate max-w-[120px]">
+                  {tabLabel(tab)}
+                  {tab.dirty && <span className="text-amber-500 ml-0.5">*</span>}
+                </span>
+                {tabs.length > 1 && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setDeleteConfirm(i); }}
+                    className="opacity-0 group-hover:opacity-100 text-[#6b7a99] hover:text-rose-500 text-xs transition-opacity"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              onClick={addTab}
+              className="px-2.5 py-2 text-[#6b7a99] hover:text-[#0F1F3D] hover:bg-[#f8f9fb] rounded-t-lg text-sm font-bold transition-colors"
+              title={t('tabs.addNew')}
+            >
+              +
+            </button>
+          </div>
+        )}
+
+        {/* Delete confirmation modal */}
+        {deleteConfirm !== null && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30">
+            <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 max-w-sm w-full mx-4">
+              <p className="text-sm text-gray-900 mb-4">{t('tabs.deleteConfirm')}</p>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg">{t('tabs.cancel')}</button>
+                <button onClick={() => deleteTab(deleteConfirm)} className="px-4 py-2 text-sm bg-rose-600 text-white rounded-lg hover:bg-rose-700">{t('tabs.delete')}</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="p-12 text-center text-[#6b7a99]">{t('loading')}</div>

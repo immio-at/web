@@ -551,6 +551,12 @@
     "loading": "Loading analysis…",
     "errorLoading": "Error loading analysis.",
     "errorSaving": "Error saving.",
+    "tabs": {
+      "addNew": "New Analysis",
+      "deleteConfirm": "Delete this analysis? This action cannot be undone.",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    },
     "openListing": "Open ↗",
     "rooms": "rooms",
     "usage": {

@@ -551,6 +551,12 @@
     "loading": "Lade Analyse…",
     "errorLoading": "Fehler beim Laden der Analyse.",
     "errorSaving": "Fehler beim Speichern.",
+    "tabs": {
+      "addNew": "Neue Analyse",
+      "deleteConfirm": "Diese Analyse löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "cancel": "Abbrechen",
+      "delete": "Löschen"
+    },
     "openListing": "Öffnen ↗",
     "rooms": "Zimmer",
     "usage": {
