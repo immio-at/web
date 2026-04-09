@@ -179,7 +179,7 @@ export interface RentalResults {
   monthlyRepairsReserve: number;
   monthlyOutgoings: number;
   cashflowMonthly: number;
-  cashflowAfterTax: number; // deferred — same as cashflowMonthly for MVP
+  cashflowAfterTax: number; // pre-tax value — use calcRentalTaxPrivate/GmbH for actual after-tax
   eigenkapitalrendite_cashflow: number;  // cash-on-cash: annual cashflow / EK
   eigenkapitalrendite_total: number;     // total return: (cashflow + principal paydown + appreciation) / EK
   yearlyData: RentalYearlyDataPoint[];
@@ -277,7 +277,203 @@ export function calcRentalResults(a: PropertyAnalysis): RentalResults {
   };
 }
 
-// ─── Flip Results ─────────────────────────────────────────────────────────────
+// ─── AfA Calculation (§ 8 EStG) ─────────────────────────────────────────────
+
+export interface AfAResult {
+  buildingBasis: number;
+  afaYr1: number;
+  afaYr2: number;
+  afaStd: number;
+  isAccelerated: boolean;
+  afaForYear: (year: number) => number;
+}
+
+export function calcAfA(
+  acquisitionBasis: number,
+  gebaeudeAnteilPct: number,
+  purchaseDate: string | null,
+  legalStructure: 'private' | 'gmbh' = 'private',
+): AfAResult {
+  const buildingBasis = acquisitionBasis * gebaeudeAnteilPct;
+
+  // GmbH uses flat 2.5% (business asset classification)
+  if (legalStructure === 'gmbh') {
+    const afaGmbh = buildingBasis * 0.025;
+    return {
+      buildingBasis,
+      afaYr1: afaGmbh,
+      afaYr2: afaGmbh,
+      afaStd: afaGmbh,
+      isAccelerated: false,
+      afaForYear: () => afaGmbh,
+    };
+  }
+
+  // Private: accelerated AfA for purchases after 2020-06-30
+  const isAccelerated = purchaseDate ? new Date(purchaseDate) > new Date('2020-06-30') : true;
+
+  const afaYr1 = buildingBasis * (isAccelerated ? 0.045 : 0.015);
+  const afaYr2 = buildingBasis * (isAccelerated ? 0.030 : 0.015);
+  const afaStd = buildingBasis * 0.015;
+
+  return {
+    buildingBasis,
+    afaYr1,
+    afaYr2,
+    afaStd,
+    isAccelerated,
+    afaForYear: (year: number) => {
+      if (year === 1) return afaYr1;
+      if (year === 2) return afaYr2;
+      return afaStd;
+    },
+  };
+}
+
+// ─── Annual interest from loan amortisation ──────────────────────────────────
+
+function calcAnnualInterest(
+  loanAmount: number,
+  annualRate: number,
+  termYears: number,
+  year: number,
+): number {
+  if (loanAmount <= 0 || annualRate <= 0 || termYears <= 0) return 0;
+  const r = annualRate / 12;
+  const monthly = calcMonthlyPayment(loanAmount, annualRate, termYears);
+  let balance = loanAmount;
+  let totalInterest = 0;
+  const startMonth = (year - 1) * 12;
+  const endMonth = year * 12;
+  for (let m = 0; m < endMonth && m < termYears * 12; m++) {
+    const interest = balance * r;
+    const principal = monthly - interest;
+    if (m >= startMonth) totalInterest += interest;
+    balance = Math.max(0, balance - principal);
+  }
+  return totalInterest;
+}
+
+// ─── Rental Tax — Private ────────────────────────────────────────────────────
+
+export interface RentalTaxPrivateResult {
+  interestAnnual: number;
+  maintenanceAnnual: number;
+  afaAnnual: number;
+  werbungskostenAnnual: number;
+  grossRentalAnnual: number;
+  taxableIncomeAnnual: number;
+  taxAnnual: number;
+  cashflowAfterTaxMonthly: number;
+  eigenkapitalrendite_total_aftertax: number;
+}
+
+export function calcRentalTaxPrivate(a: PropertyAnalysis, rentalResults: RentalResults): RentalTaxPrivateResult {
+  const grenzsteuersatz = a.grenzsteuersatzPct ?? 0;
+  const acquisitionBasis = (a.desiredPrice ?? 0) + calcKaufnebenkosten(a);
+  const afa = calcAfA(acquisitionBasis, a.gebaeudeAnteilPct, a.purchaseDate, 'private');
+
+  const interestAnnual =
+    calcAnnualInterest(resolveL1Amount(a), a.loan1Rate ?? 0, a.loan1TermYears ?? 0, 1) +
+    calcAnnualInterest(resolveL2Amount(a), a.loan2Rate ?? 0, a.loan2TermYears ?? 0, 1);
+
+  const maintenanceAnnual =
+    (a.bkNichtUmlagefaehig ?? 0) * 12 +
+    (a.reparaturruecklageMon ?? 0) * 12;
+
+  const afaAnnual = afa.afaYr1; // year 1
+  const werbungskostenAnnual = interestAnnual + maintenanceAnnual + afaAnnual;
+
+  const grossRentalAnnual = rentalResults.kaltmieteYearly;
+  const taxableIncomeAnnual = grossRentalAnnual - werbungskostenAnnual;
+  const taxAnnual = taxableIncomeAnnual * grenzsteuersatz;
+
+  const cashflowAfterTaxMonthly = rentalResults.cashflowMonthly - (taxAnnual / 12);
+
+  // After-tax EK-Rendite (total return)
+  const eigenkapital = calcEigenkapital(a);
+  const desiredPrice = a.desiredPrice ?? 0;
+  const l1AfterYear1 = calcRemainingBalance(resolveL1Amount(a), a.loan1Rate ?? 0, a.loan1TermYears ?? 0, 12);
+  const l2AfterYear1 = calcRemainingBalance(resolveL2Amount(a), a.loan2Rate ?? 0, a.loan2TermYears ?? 0, 12);
+  const principalPaydownYr1 = (resolveL1Amount(a) - l1AfterYear1) + (resolveL2Amount(a) - l2AfterYear1);
+  const appreciationYr1 = desiredPrice * a.valueGrowthPct;
+  const totalReturnAfterTax = (cashflowAfterTaxMonthly * 12) + principalPaydownYr1 + appreciationYr1;
+  const eigenkapitalrendite_total_aftertax = eigenkapital > 0 ? totalReturnAfterTax / eigenkapital : 0;
+
+  return {
+    interestAnnual,
+    maintenanceAnnual,
+    afaAnnual,
+    werbungskostenAnnual,
+    grossRentalAnnual,
+    taxableIncomeAnnual,
+    taxAnnual,
+    cashflowAfterTaxMonthly,
+    eigenkapitalrendite_total_aftertax,
+  };
+}
+
+// ─── Rental Tax — GmbH ──────────────────────────────────────────────────────
+
+export interface RentalTaxGmbHResult {
+  werbungskostenGmbH: number;
+  taxableProfitGmbH: number;
+  koest: number;
+  profitAfterKoest: number;
+  kest: number;
+  totalTaxDistributed: number;
+  cashflowRetainedMonthly: number;
+  cashflowDistributedMonthly: number;
+  effectiveRateRetained: number;
+  effectiveRateDistributed: number;
+}
+
+export function calcRentalTaxGmbH(a: PropertyAnalysis, rentalResults: RentalResults): RentalTaxGmbHResult {
+  const acquisitionBasis = (a.desiredPrice ?? 0) + calcKaufnebenkosten(a);
+  const afa = calcAfA(acquisitionBasis, a.gebaeudeAnteilPct, a.purchaseDate, 'gmbh');
+
+  const interestAnnual =
+    calcAnnualInterest(resolveL1Amount(a), a.loan1Rate ?? 0, a.loan1TermYears ?? 0, 1) +
+    calcAnnualInterest(resolveL2Amount(a), a.loan2Rate ?? 0, a.loan2TermYears ?? 0, 1);
+
+  const maintenanceAnnual =
+    (a.bkNichtUmlagefaehig ?? 0) * 12 +
+    (a.reparaturruecklageMon ?? 0) * 12;
+
+  const gmbhAccounting = a.gmbhAccountingCostsAnnual ?? 0;
+  const werbungskostenGmbH = interestAnnual + maintenanceAnnual + afa.afaStd + gmbhAccounting;
+
+  const taxableProfitGmbH = rentalResults.kaltmieteYearly - werbungskostenGmbH;
+
+  // KÖSt 23%
+  const koest = Math.max(taxableProfitGmbH * 0.23, 0);
+  const profitAfterKoest = taxableProfitGmbH - koest;
+
+  // KESt 27.5% on distributed profits
+  const kest = Math.max(profitAfterKoest * 0.275, 0);
+  const totalTaxDistributed = koest + kest;
+
+  const cashflowRetainedMonthly = rentalResults.cashflowMonthly - (koest / 12);
+  const cashflowDistributedMonthly = rentalResults.cashflowMonthly - (totalTaxDistributed / 12);
+
+  const effectiveRateRetained = taxableProfitGmbH > 0 ? koest / taxableProfitGmbH : 0;
+  const effectiveRateDistributed = taxableProfitGmbH > 0 ? totalTaxDistributed / taxableProfitGmbH : 0;
+
+  return {
+    werbungskostenGmbH,
+    taxableProfitGmbH,
+    koest,
+    profitAfterKoest,
+    kest,
+    totalTaxDistributed,
+    cashflowRetainedMonthly,
+    cashflowDistributedMonthly,
+    effectiveRateRetained,
+    effectiveRateDistributed,
+  };
+}
+
+// ─── Flip Results — Private ──────────────────────────────────────────────────
 
 export interface FlipResults {
   kaufnebenkosten: number;
@@ -286,12 +482,17 @@ export interface FlipResults {
   totalCost: number;
   grossProfit: number;
   totalAbzugsfaehig: number;
-  taxableProfit: number;
-  tax: number;
+  deductibleCosts: number;
+  taxableGain: number;
+  immoest: number;
   netProfit: number;
+  hauptwohnsitzApplied: boolean;
 }
 
-export function calcFlipResults(a: PropertyAnalysis): FlipResults {
+export function calcFlipPrivate(
+  a: PropertyAnalysis,
+  hauptwohnsitzBefreiung = false,
+): FlipResults {
   const desiredPrice = a.desiredPrice ?? 0;
   const flipResalePrice = a.flipResalePrice ?? 0;
   const holdingMonths = a.flipDurationMonths ?? 0;
@@ -308,11 +509,11 @@ export function calcFlipResults(a: PropertyAnalysis): FlipResults {
   const totalCost = desiredPrice + kaufnebenkosten + totalRehab + holdingCosts;
   const grossProfit = flipResalePrice - totalCost;
 
-  // Austrian Immobilienertragsteuer — 30% flat rate (MVP approximation)
-  // Tax is only applied if there is a positive taxable profit
-  const taxableProfit = grossProfit - totalAbzugsfaehig;
-  const tax = Math.max(taxableProfit * 0.30, 0);
-  const netProfit = grossProfit - tax;
+  // ImmoESt (§ 30 EStG — 30% flat rate for private individuals)
+  const deductibleCosts = kaufnebenkosten + totalAbzugsfaehig;
+  const taxableGain = flipResalePrice - desiredPrice - deductibleCosts;
+  const immoest = hauptwohnsitzBefreiung ? 0 : Math.max(taxableGain * 0.30, 0);
+  const netProfit = grossProfit - immoest;
 
   return {
     kaufnebenkosten,
@@ -321,10 +522,151 @@ export function calcFlipResults(a: PropertyAnalysis): FlipResults {
     totalCost,
     grossProfit,
     totalAbzugsfaehig,
-    taxableProfit,
-    tax,
+    deductibleCosts,
+    taxableGain,
+    immoest,
     netProfit,
+    hauptwohnsitzApplied: hauptwohnsitzBefreiung,
   };
+}
+
+// ─── Flip Results — GmbH ─────────────────────────────────────────────────────
+
+export interface FlipGmbHResults {
+  kaufnebenkosten: number;
+  totalRehab: number;
+  holdingCosts: number;
+  totalCost: number;
+  grossProfit: number;
+  deductibleCosts: number;
+  taxableGain: number;
+  koest: number;
+  netProfitRetained: number;
+  kest: number;
+  netProfitDistributed: number;
+}
+
+export function calcFlipGmbH(a: PropertyAnalysis): FlipGmbHResults {
+  const desiredPrice = a.desiredPrice ?? 0;
+  const flipResalePrice = a.flipResalePrice ?? 0;
+  const holdingMonths = a.flipDurationMonths ?? 0;
+
+  const kaufnebenkosten = calcKaufnebenkosten(a);
+  const totalRehab = calcTotalRehab(a.rehabCosts);
+  const totalAbzugsfaehig = calcTotalAbzugsfaehig(a.rehabCosts);
+
+  const monthlyLoan = calcTotalMonthlyLoan(a);
+  const bkNichtUmlagefaehig = a.bkNichtUmlagefaehig ?? 0;
+  const monthlyHoldingCost = monthlyLoan + bkNichtUmlagefaehig;
+  const holdingCosts = monthlyHoldingCost * holdingMonths;
+
+  const totalCost = desiredPrice + kaufnebenkosten + totalRehab + holdingCosts;
+  const grossProfit = flipResalePrice - totalCost;
+
+  const deductibleCosts = kaufnebenkosten + totalAbzugsfaehig;
+  const taxableGain = flipResalePrice - desiredPrice - deductibleCosts;
+
+  // KÖSt 23% (no ImmoESt for GmbH)
+  const koest = Math.max(taxableGain * 0.23, 0);
+  const netProfitRetained = grossProfit - koest;
+
+  // Distributed: additional KESt 27.5%
+  const kest = Math.max((taxableGain - koest) * 0.275, 0);
+  const netProfitDistributed = grossProfit - koest - kest;
+
+  return {
+    kaufnebenkosten,
+    totalRehab,
+    holdingCosts,
+    totalCost,
+    grossProfit,
+    deductibleCosts,
+    taxableGain,
+    koest,
+    netProfitRetained,
+    kest,
+    netProfitDistributed,
+  };
+}
+
+// ─── Liebhaberei Warning ─────────────────────────────────────────────────────
+
+/**
+ * Returns true if cumulative pre-tax cashflow over 25 years remains negative.
+ * In Austria, the tax office (Finanzamt) may classify the rental as
+ * Liebhaberei (hobby) and retroactively disallow all tax deductions.
+ */
+export function calcLiebhabereiWarning(yearlyData: RentalYearlyDataPoint[]): boolean {
+  let cumulative = 0;
+  const years = Math.min(yearlyData.length, 25);
+  for (let i = 0; i < years; i++) {
+    cumulative += yearlyData[i].cashflow;
+  }
+  return cumulative < 0;
+}
+
+// ─── Year-by-Year Rental Projection with Tax ─────────────────────────────────
+
+export interface RentalYearlyTaxDataPoint extends RentalYearlyDataPoint {
+  afaForYear: number;
+  interestForYear: number;
+  werbungskostenForYear: number;
+  taxableForYear: number;
+  taxForYear: number;
+  cashflowAfterTax: number;
+}
+
+export function calcYearlyRentalProjection(
+  a: PropertyAnalysis,
+  rentalResults: RentalResults,
+  years?: number,
+): RentalYearlyTaxDataPoint[] {
+  const desiredPrice = a.desiredPrice ?? 0;
+  const grenzsteuersatz = a.grenzsteuersatzPct ?? 0;
+  const acquisitionBasis = desiredPrice + calcKaufnebenkosten(a);
+  const afa = calcAfA(acquisitionBasis, a.gebaeudeAnteilPct, a.purchaseDate, a.legalStructure);
+
+  const maintenanceAnnual =
+    (a.bkNichtUmlagefaehig ?? 0) * 12 +
+    (a.reparaturruecklageMon ?? 0) * 12;
+
+  const projectionYears = years ?? Math.max(a.loan1TermYears ?? 20, 20);
+  const result: RentalYearlyTaxDataPoint[] = [];
+
+  for (let y = 1; y <= projectionYears; y++) {
+    const base = rentalResults.yearlyData[y - 1];
+    if (!base) break;
+
+    const afaForYear = afa.afaForYear(y);
+    const interestForYear =
+      calcAnnualInterest(resolveL1Amount(a), a.loan1Rate ?? 0, a.loan1TermYears ?? 0, y) +
+      calcAnnualInterest(resolveL2Amount(a), a.loan2Rate ?? 0, a.loan2TermYears ?? 0, y);
+
+    const werbungskostenForYear = interestForYear + maintenanceAnnual + afaForYear;
+    const taxableForYear = base.yearlyRentIncome - werbungskostenForYear;
+
+    const taxRate = a.legalStructure === 'gmbh' ? 0.23 : grenzsteuersatz;
+    const taxForYear = taxableForYear * taxRate;
+    const cashflowAfterTax = base.cashflow - taxForYear;
+
+    result.push({
+      ...base,
+      afaForYear,
+      interestForYear,
+      werbungskostenForYear,
+      taxableForYear,
+      taxForYear,
+      cashflowAfterTax,
+    });
+  }
+
+  return result;
+}
+
+// ─── Legacy compatibility — calcFlipResults wraps calcFlipPrivate ────────────
+
+export function calcFlipResults(a: PropertyAnalysis): FlipResults {
+  return calcFlipPrivate(a);
 }
 
 // ─── Formatting Helpers ───────────────────────────────────────────────────────

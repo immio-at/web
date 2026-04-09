@@ -742,8 +742,8 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                   <ResultRow label={t('flip.minusTotalCost')} value={formatEuro(flipResults.totalCost)} indent />
                   <ResultRow label={t('flip.grossProfit')} value={formatEuro(flipResults.grossProfit)} highlight />
                   <ResultRow label={t('flip.deductibleCosts')} value={formatEuro(flipResults.totalAbzugsfaehig)} indent />
-                  <ResultRow label={t('flip.taxableProfit')} value={formatEuro(flipResults.taxableProfit)} />
-                  <ResultRow label={t('flip.tax')} value={formatEuro(flipResults.tax)} indent />
+                  <ResultRow label={t('flip.taxableProfit')} value={formatEuro(flipResults.taxableGain)} />
+                  <ResultRow label={t('flip.tax')} value={formatEuro(flipResults.immoest)} indent />
                   <ResultRow label={t('flip.netProfit')} value={formatEuro(flipResults.netProfit)} highlight />
                 </div>
                 <p className="text-xs text-[#6b7a99] mt-3 flex items-center gap-1">
