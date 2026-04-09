@@ -132,64 +132,67 @@ export default function DiscoverTile({
   const labelClass = 'text-xs text-gray-400 font-medium';
 
   // Preset + saved filter pill groups
-  const presetGroups = [
-    { key: 'source', items: PRESET_FILTERS.filter(f => f.group === 'source') },
-    { key: 'stage', items: PRESET_FILTERS.filter(f => f.group === 'stage') },
-    { key: 'state', items: PRESET_FILTERS.filter(f => f.group === 'state') },
-  ];
+  const stageFilters = PRESET_FILTERS.filter(f => f.group === 'stage');
+  const stateFilters = PRESET_FILTERS.filter(f => f.group === 'state');
+  const sourceFilters = PRESET_FILTERS.filter(f => f.group === 'source');
+
+  function Pill({ filterKey, labelKey }: { filterKey: PresetFilterKey; labelKey: string }) {
+    const isActive = activePresets.has(filterKey);
+    return (
+      <button
+        onClick={() => setActivePresets(togglePreset(activePresets, filterKey))}
+        className={`rounded-full px-2 py-0.5 text-[10px] font-medium border transition-colors whitespace-nowrap ${
+          isActive
+            ? 'bg-blue-600 text-white border-blue-600'
+            : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+        }`}
+      >
+        {tp(labelKey)}
+      </button>
+    );
+  }
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
       <h3 className="text-base font-semibold text-gray-900 mb-1">{t('title')}</h3>
       <p className="text-sm text-gray-400 mb-3">{t('subtitle')}</p>
 
-      {/* Preset + Saved filter pills */}
-      <div className="flex flex-wrap items-center gap-1 mb-3">
-        {presetGroups.map((group, gi) => (
-          <span key={group.key} className="contents">
-            {gi > 0 && <span className="w-px h-4 bg-gray-200 mx-0.5" />}
-            {group.items.map(f => {
-              const isActive = activePresets.has(f.key);
-              return (
-                <button
-                  key={f.key}
-                  onClick={() => setActivePresets(togglePreset(activePresets, f.key))}
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium border transition-colors whitespace-nowrap ${
-                    isActive
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  {tp(f.labelKey)}
-                </button>
-              );
-            })}
-          </span>
-        ))}
-
-        {/* Saved filters as pills */}
-        {savedFilters.length > 0 && (
-          <>
-            <span className="w-px h-4 bg-gray-200 mx-0.5" />
-            {savedFilters.map(sf => {
-              const isActive = activeSavedFilterIds.has(sf.id);
-              return (
-                <button
-                  key={sf.id}
-                  onClick={() => toggleSavedFilter(sf.id)}
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium border transition-colors whitespace-nowrap max-w-[120px] truncate ${
-                    isActive
-                      ? 'bg-amber-500 text-white border-amber-500'
-                      : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
-                  }`}
-                  title={sf.name}
-                >
-                  {sf.name}
-                </button>
-              );
-            })}
-          </>
-        )}
+      {/* Preset + Saved filter pills — 3 rows */}
+      <div className="space-y-1 mb-3">
+        {/* Row 1: Funnel stages */}
+        <div className="flex flex-wrap items-center gap-1">
+          {stageFilters.map(f => <Pill key={f.key} filterKey={f.key} labelKey={f.labelKey} />)}
+        </div>
+        {/* Row 2: Austrian states */}
+        <div className="flex flex-wrap items-center gap-1">
+          {stateFilters.map(f => <Pill key={f.key} filterKey={f.key} labelKey={f.labelKey} />)}
+        </div>
+        {/* Row 3: Source + saved filters */}
+        <div className="flex flex-wrap items-center gap-1">
+          {sourceFilters.map(f => <Pill key={f.key} filterKey={f.key} labelKey={f.labelKey} />)}
+          {savedFilters.length > 0 && (
+            <>
+              <span className="w-px h-4 bg-gray-200 mx-0.5" />
+              {savedFilters.map(sf => {
+                const isActive = activeSavedFilterIds.has(sf.id);
+                return (
+                  <button
+                    key={sf.id}
+                    onClick={() => toggleSavedFilter(sf.id)}
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium border transition-colors whitespace-nowrap max-w-[120px] truncate ${
+                      isActive
+                        ? 'bg-amber-500 text-white border-amber-500'
+                        : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                    }`}
+                    title={sf.name}
+                  >
+                    {sf.name}
+                  </button>
+                );
+              })}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Filter fields */}
