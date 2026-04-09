@@ -79,12 +79,7 @@ export default function DashboardClient({
       </div>
 
       {/* Carousels */}
-      <PropertyCarousel
-        title={t('newArrivals')}
-        properties={newArrivals}
-        emptyMessage={t('newArrivalsEmpty')}
-        actions={cardActions}
-      />
+      <RecommendedCarousel properties={properties} actions={cardActions} />
 
       <PropertyCarousel
         title={t('recentlyViewed')}
@@ -93,7 +88,12 @@ export default function DashboardClient({
         actions={cardActions}
       />
 
-      <RecommendedCarousel properties={properties} actions={cardActions} />
+      <PropertyCarousel
+        title={t('newArrivals')}
+        properties={newArrivals}
+        emptyMessage={t('newArrivalsEmpty')}
+        actions={cardActions}
+      />
 
       {analyseProperty && (
         <PropertyAnalysisModal
