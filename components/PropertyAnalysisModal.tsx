@@ -25,6 +25,13 @@ import {
   calcOwnerResults,
   calcRentalResults,
   calcFlipResults,
+  calcFlipPrivate,
+  calcFlipGmbH,
+  calcRentalTaxPrivate,
+  calcRentalTaxGmbH,
+  calcAfA,
+  calcLiebhabereiWarning,
+  calcYearlyRentalProjection,
   calcTotalInvestment,
   calcEigenkapital,
   calcKaufnebenkosten,
@@ -334,7 +341,20 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
 
   const ownerResults = draft.usageType === 'owner' ? calcOwnerResults(calc) : null;
   const rentalResults = draft.usageType === 'rental' ? calcRentalResults(calc) : null;
-  const flipResults = draft.usageType === 'flip' ? calcFlipResults(calc) : null;
+  const flipResults = draft.usageType === 'flip'
+    ? (draft.legalStructure === 'gmbh' ? null : calcFlipPrivate(calc))
+    : null;
+  const flipGmbHResults = draft.usageType === 'flip' && draft.legalStructure === 'gmbh'
+    ? calcFlipGmbH(calc) : null;
+
+  // Tax results
+  const rentalTaxPrivate = rentalResults && draft.legalStructure === 'private'
+    ? calcRentalTaxPrivate(calc, rentalResults) : null;
+  const rentalTaxGmbH = rentalResults && draft.legalStructure === 'gmbh'
+    ? calcRentalTaxGmbH(calc, rentalResults) : null;
+  const liebhabereiWarning = rentalResults ? calcLiebhabereiWarning(rentalResults.yearlyData) : false;
+  const yearlyTaxProjection = rentalResults
+    ? calcYearlyRentalProjection(calc, rentalResults) : null;
 
   // Document type options from translations
   const docTypes = Array.from({ length: 10 }, (_, i) => t(`documents.types.${i}`));
@@ -661,7 +681,117 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
               </div>
             )}
 
-            {/* ── Section 5: Results ── */}
+            {/* ── Section 5: Steuer ── */}
+            <div>
+              <SectionTitle>{t('tax.title')}</SectionTitle>
+
+              {/* Legal structure toggle */}
+              <div className="flex gap-3 mb-4">
+                {(['private', 'gmbh'] as const).map(ls => (
+                  <button
+                    key={ls}
+                    onClick={() => set('legalStructure', ls)}
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium border transition-all ${
+                      draft.legalStructure === ls
+                        ? 'bg-[#0F1F3D] text-white border-[#0F1F3D]'
+                        : 'bg-white text-[#6b7a99] border-[#e2e6ed] hover:border-[#0F1F3D]'
+                    }`}
+                  >
+                    {ls === 'private' ? t('tax.private') : t('tax.gmbh')}
+                  </button>
+                ))}
+              </div>
+
+              {/* GmbH-specific inputs */}
+              {draft.legalStructure === 'gmbh' && (
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <NumInput
+                    label={t('tax.gmbhAccountingCosts')}
+                    value={draft.gmbhAccountingCostsAnnual}
+                    onChange={v => set('gmbhAccountingCostsAnnual', v)}
+                    prefix={'\u20AC'}
+                    hint={t('tax.gmbhAccountingHint')}
+                  />
+                  <div className="flex items-center gap-3 pt-5">
+                    <input
+                      type="checkbox"
+                      checked={draft.distributeProfit}
+                      onChange={e => set('distributeProfit', e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300"
+                    />
+                    <label className="text-sm text-[#0F1F3D]">{t('tax.distributeProfit')}</label>
+                  </div>
+                </div>
+              )}
+
+              {/* Rental + Flip tax inputs */}
+              {(draft.usageType === 'rental' || draft.usageType === 'flip') && (
+                <div className="space-y-4">
+                  {/* Purchase date + Gebäudeanteil (rental) */}
+                  {draft.usageType === 'rental' && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide">{t('tax.purchaseDate')}</label>
+                        <input
+                          type="date"
+                          value={draft.purchaseDate ?? ''}
+                          onChange={e => set('purchaseDate', e.target.value || null)}
+                          className="border border-[#e2e6ed] rounded-lg px-3 py-2 text-sm text-[#0F1F3D] bg-white focus:outline-none focus:ring-2 focus:ring-[#F5A623]"
+                        />
+                      </div>
+                      <NumInput
+                        label={t('tax.gebaeudeAnteil')}
+                        value={draft.gebaeudeAnteilPct * 100}
+                        onChange={v => set('gebaeudeAnteilPct', (v ?? 60) / 100)}
+                        suffix="%"
+                        hint={t('tax.gebaeudeAnteilHint')}
+                      />
+                      {draft.legalStructure === 'private' && (
+                        <NumInput
+                          label={t('tax.grenzsteuersatz')}
+                          value={draft.grenzsteuersatzPct !== null ? draft.grenzsteuersatzPct * 100 : null}
+                          onChange={v => set('grenzsteuersatzPct', v !== null ? v / 100 : null)}
+                          suffix="%"
+                          hint={t('tax.grenzsteuersatzHint')}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Flip-specific: Hauptwohnsitz + commercial warning */}
+                  {draft.usageType === 'flip' && draft.legalStructure === 'private' && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          id="hauptwohnsitz"
+                          className="w-4 h-4 rounded border-gray-300"
+                        />
+                        <label htmlFor="hauptwohnsitz" className="text-sm text-[#0F1F3D]">{t('tax.hauptwohnsitz')}</label>
+                      </div>
+                      <p className="text-xs text-[#6b7a99] italic">{t('tax.flipCommercialNote')}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Owner: simplified note */}
+              {draft.usageType === 'owner' && (
+                <p className="text-xs text-[#6b7a99] italic flex items-center gap-1">
+                  <span>ℹ</span>
+                  <span>{t('tax.ownerSimplified')}</span>
+                </p>
+              )}
+
+              {/* General disclaimer */}
+              <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-xs text-amber-800">
+                  ℹ {t('tax.disclaimer')}
+                </p>
+              </div>
+            </div>
+
+            {/* ── Section 6: Results ── */}
 
             {/* Owner results */}
             {draft.usageType === 'owner' && ownerResults && (
@@ -698,15 +828,56 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                   <MetricCard label={t('rental.coldRentMonthly')} value={formatEuro(rentalResults.kaltmieteMonthly)} />
                   <MetricCard label={t('rental.coldRentYearly')} value={formatEuro(rentalResults.kaltmieteYearly)} />
-                  <MetricCard label={t('rental.cashflowMonthly')} value={formatEuro(rentalResults.cashflowMonthly)} sub={rentalResults.cashflowMonthly >= 0 ? t('rental.cashflowPositive') : t('rental.cashflowNegative')} />
+                  <MetricCard label={t('rental.cashflowMonthly')} value={formatEuro(rentalResults.cashflowMonthly)} sub={t('rental.preTax')} />
                   <MetricCard label={t('rental.faktor')} value={formatFaktor(rentalResults.faktor)} sub={t('rental.faktorSub')} />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                   <MetricCard label={t('rental.bruttomietrendite')} value={formatPct(rentalResults.bruttomietrendite)} />
                   <MetricCard label={t('rental.nettomietrendite')} value={formatPct(rentalResults.nettomietrendite)} />
                   <MetricCard label={t('rental.eigenkapitalrenditeCashflow')} value={formatPct(rentalResults.eigenkapitalrendite_cashflow)} sub={t('rental.cashOnCash')} />
-                  <MetricCard label={t('rental.eigenkapitalrenditeTotal')} value={formatPct(rentalResults.eigenkapitalrendite_total)} sub={t('rental.eigenkapitalrenditeTotalSub')} />
+                  <MetricCard label={t('rental.eigenkapitalrenditeTotal')} value={formatPct(rentalResults.eigenkapitalrendite_total)} sub={t('rental.preTax')} />
                 </div>
+
+                {/* After-tax results — Private */}
+                {rentalTaxPrivate && (
+                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 mb-4">
+                    <p className="text-xs font-medium text-violet-700 uppercase tracking-wide mb-3">{t('rental.afterTaxTitle')} ({t('tax.private')})</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <MetricCard label={t('rental.cashflowAfterTax')} value={formatEuro(rentalTaxPrivate.cashflowAfterTaxMonthly)} sub={t('rental.perMonth')} />
+                      <MetricCard label={t('rental.taxAnnual')} value={formatEuro(rentalTaxPrivate.taxAnnual)} sub={rentalTaxPrivate.taxAnnual < 0 ? t('rental.taxRefund') : ''} />
+                      <MetricCard label={t('rental.eigenkapitalrenditeTotal')} value={formatPct(rentalTaxPrivate.eigenkapitalrendite_total_aftertax)} sub={t('rental.afterTax')} />
+                    </div>
+                    {liebhabereiWarning && (
+                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mt-3">
+                        ⚠ {t('rental.liebhabereiWarning')}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* After-tax results — GmbH */}
+                {rentalTaxGmbH && (
+                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 mb-4">
+                    <p className="text-xs font-medium text-violet-700 uppercase tracking-wide mb-3">{t('rental.afterTaxTitle')} ({t('tax.gmbh')})</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-[10px] font-semibold text-[#6b7a99] uppercase mb-2">{t('rental.gmbhRetained')}</p>
+                        <MetricCard label={t('rental.koest')} value={formatEuro(rentalTaxGmbH.koest)} sub="23%" />
+                        <div className="mt-2">
+                          <MetricCard label={t('rental.cashflowAfterTax')} value={formatEuro(rentalTaxGmbH.cashflowRetainedMonthly)} sub={t('rental.perMonth')} />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-semibold text-[#6b7a99] uppercase mb-2">{t('rental.gmbhDistributed')}</p>
+                        <MetricCard label={t('rental.koest')} value={formatEuro(rentalTaxGmbH.koest)} sub="23%" />
+                        <div className="mt-1"><MetricCard label={t('rental.kest')} value={formatEuro(rentalTaxGmbH.kest)} sub="27.5%" /></div>
+                        <div className="mt-2">
+                          <MetricCard label={t('rental.cashflowAfterTax')} value={formatEuro(rentalTaxGmbH.cashflowDistributedMonthly)} sub={t('rental.perMonth')} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {rentalResults.yearlyData.length > 0 && (
                   <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
                     <p className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide mb-3">{t('rental.projectionTitle', { years: rentalResults.yearlyData.length })}</p>
@@ -728,10 +899,10 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
               </div>
             )}
 
-            {/* Flip results */}
-            {draft.usageType === 'flip' && flipResults && (
+            {/* Flip results — Private */}
+            {draft.usageType === 'flip' && flipResults && draft.legalStructure === 'private' && (
               <div>
-                <SectionTitle>{t('flip.resultsTitle')}</SectionTitle>
+                <SectionTitle>{t('flip.resultsTitle')} ({t('tax.private')})</SectionTitle>
                 <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl divide-y divide-[#e2e6ed] px-4">
                   <ResultRow label={t('flip.purchasePrice')} value={formatEuro(draft.desiredPrice ?? 0)} />
                   <ResultRow label={t('flip.purchaseCosts')} value={formatEuro(flipResults.kaufnebenkosten)} indent />
@@ -739,17 +910,38 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
                   <ResultRow label={t('flip.holdingCosts')} value={formatEuro(flipResults.holdingCosts)} indent />
                   <ResultRow label={t('flip.totalCost')} value={formatEuro(flipResults.totalCost)} highlight />
                   <ResultRow label={t('flip.resalePriceResult')} value={formatEuro(draft.flipResalePrice ?? 0)} />
-                  <ResultRow label={t('flip.minusTotalCost')} value={formatEuro(flipResults.totalCost)} indent />
                   <ResultRow label={t('flip.grossProfit')} value={formatEuro(flipResults.grossProfit)} highlight />
-                  <ResultRow label={t('flip.deductibleCosts')} value={formatEuro(flipResults.totalAbzugsfaehig)} indent />
                   <ResultRow label={t('flip.taxableProfit')} value={formatEuro(flipResults.taxableGain)} />
-                  <ResultRow label={t('flip.tax')} value={formatEuro(flipResults.immoest)} indent />
+                  <ResultRow label={t('flip.immoest')} value={formatEuro(flipResults.immoest)} indent />
                   <ResultRow label={t('flip.netProfit')} value={formatEuro(flipResults.netProfit)} highlight />
                 </div>
-                <p className="text-xs text-[#6b7a99] mt-3 flex items-center gap-1">
-                  <span>⚠</span>
-                  <span>{t('flip.disclaimer')}</span>
-                </p>
+                {flipResults.hauptwohnsitzApplied && (
+                  <p className="text-xs text-emerald-700 mt-2">✓ {t('flip.hauptwohnsitzApplied')}</p>
+                )}
+              </div>
+            )}
+
+            {/* Flip results — GmbH */}
+            {draft.usageType === 'flip' && flipGmbHResults && draft.legalStructure === 'gmbh' && (
+              <div>
+                <SectionTitle>{t('flip.resultsTitle')} ({t('tax.gmbh')})</SectionTitle>
+                <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl divide-y divide-[#e2e6ed] px-4">
+                  <ResultRow label={t('flip.totalCost')} value={formatEuro(flipGmbHResults.totalCost)} highlight />
+                  <ResultRow label={t('flip.grossProfit')} value={formatEuro(flipGmbHResults.grossProfit)} highlight />
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-4">
+                    <p className="text-[10px] font-semibold text-violet-700 uppercase mb-2">{t('rental.gmbhRetained')}</p>
+                    <ResultRow label={t('flip.koest')} value={formatEuro(flipGmbHResults.koest)} />
+                    <ResultRow label={t('flip.netProfit')} value={formatEuro(flipGmbHResults.netProfitRetained)} highlight />
+                  </div>
+                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-4">
+                    <p className="text-[10px] font-semibold text-violet-700 uppercase mb-2">{t('rental.gmbhDistributed')}</p>
+                    <ResultRow label={t('flip.koest')} value={formatEuro(flipGmbHResults.koest)} />
+                    <ResultRow label={t('flip.kest')} value={formatEuro(flipGmbHResults.kest)} />
+                    <ResultRow label={t('flip.netProfit')} value={formatEuro(flipGmbHResults.netProfitDistributed)} highlight />
+                  </div>
+                </div>
               </div>
             )}
 
