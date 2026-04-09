@@ -28,7 +28,7 @@ export default function PresetFilters({
     onChange(togglePreset(active, key));
   }
 
-  const groups: PresetGroup[] = ['source', 'time', 'state'];
+  const groups: PresetGroup[] = ['source', 'stage', 'state'];
   const hasAnySavedActive = activeSavedFilterIds && activeSavedFilterIds.size > 0;
   const hasAnyActive = active.size > 0 || hasAnySavedActive;
 

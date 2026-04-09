@@ -11,14 +11,18 @@ import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+export type FunnelStageKey =
+  | 'stage_new' | 'stage_investigating' | 'stage_interested'
+  | 'stage_visit_booked' | 'stage_visited' | 'stage_offer_made'
+  | 'stage_parked' | 'stage_won' | 'stage_not_relevant';
+
 export type PresetFilterKey =
   | 'searchAgents'
   | 'excludeSearchAgents'
-  | 'last24h'
-  | 'lastWeek'
+  | FunnelStageKey
   | BundeslandAbbreviation;
 
-export type PresetGroup = 'source' | 'time' | 'state';
+export type PresetGroup = 'source' | 'stage' | 'state';
 
 export interface PresetFilterDef {
   key: PresetFilterKey;
@@ -31,8 +35,15 @@ export interface PresetFilterDef {
 export const PRESET_FILTERS: PresetFilterDef[] = [
   { key: 'searchAgents', labelKey: 'searchAgents', group: 'source' },
   { key: 'excludeSearchAgents', labelKey: 'excludeSearchAgents', group: 'source' },
-  { key: 'last24h', labelKey: 'last24h', group: 'time' },
-  { key: 'lastWeek', labelKey: 'lastWeek', group: 'time' },
+  { key: 'stage_new', labelKey: 'stageNew', group: 'stage' },
+  { key: 'stage_investigating', labelKey: 'stageInvestigating', group: 'stage' },
+  { key: 'stage_interested', labelKey: 'stageInterested', group: 'stage' },
+  { key: 'stage_visit_booked', labelKey: 'stageVisitBooked', group: 'stage' },
+  { key: 'stage_visited', labelKey: 'stageVisited', group: 'stage' },
+  { key: 'stage_offer_made', labelKey: 'stageOfferMade', group: 'stage' },
+  { key: 'stage_parked', labelKey: 'stageParked', group: 'stage' },
+  { key: 'stage_won', labelKey: 'stageWon', group: 'stage' },
+  { key: 'stage_not_relevant', labelKey: 'stageNotRelevant', group: 'stage' },
   { key: 'W', labelKey: 'W', group: 'state' },
   { key: 'NÖ', labelKey: 'NO', group: 'state' },
   { key: 'OÖ', labelKey: 'OO', group: 'state' },
@@ -45,7 +56,6 @@ export const PRESET_FILTERS: PresetFilterDef[] = [
 ];
 
 // Mutually exclusive groups
-const TIME_KEYS = new Set<PresetFilterKey>(['last24h', 'lastWeek']);
 const SOURCE_KEYS = new Set<PresetFilterKey>(['searchAgents', 'excludeSearchAgents']);
 
 // ─── Toggle logic ────────────────────────────────────────────────────────────
@@ -58,10 +68,6 @@ export function togglePreset(
   if (next.has(key)) {
     next.delete(key);
   } else {
-    // Time filters are mutually exclusive
-    if (TIME_KEYS.has(key)) {
-      for (const tk of TIME_KEYS) next.delete(tk);
-    }
     // Source filters are mutually exclusive
     if (SOURCE_KEYS.has(key)) {
       for (const sk of SOURCE_KEYS) next.delete(sk);
@@ -90,11 +96,26 @@ const STATE_KEYS: BundeslandAbbreviation[] = ['W', 'NÖ', 'OÖ', 'ST', 'K', 'S',
 
 interface Filterable {
   zipCode: string | null;
+  status?: string;
   createdAt?: string;
   emailReceivedAt?: string | null;
   firstSeenAt?: string;
   source?: string;
 }
+
+// Map stage preset keys to actual status values
+const STAGE_KEY_TO_STATUS: Record<string, string> = {
+  stage_new: 'new',
+  stage_investigating: 'investigating',
+  stage_interested: 'interested',
+  stage_visit_booked: 'visit_booked',
+  stage_visited: 'visited',
+  stage_offer_made: 'offer_made',
+  stage_parked: 'parked',
+  stage_won: 'won',
+  stage_not_relevant: 'not_relevant',
+};
+const ALL_STAGE_KEYS = Object.keys(STAGE_KEY_TO_STATUS);
 
 /**
  * Returns true if the item passes all active preset filters.
@@ -117,15 +138,13 @@ export function passesPresetFilters<T extends Filterable>(
     if (item.emailReceivedAt) return false;
   }
 
-  // Time filter
-  const now = Date.now();
-  if (active.has('last24h')) {
-    const ref = item.emailReceivedAt || item.firstSeenAt || item.createdAt;
-    if (!ref || now - new Date(ref).getTime() > 24 * 60 * 60 * 1000) return false;
-  }
-  if (active.has('lastWeek')) {
-    const ref = item.emailReceivedAt || item.firstSeenAt || item.createdAt;
-    if (!ref || now - new Date(ref).getTime() > 7 * 24 * 60 * 60 * 1000) return false;
+  // Stage filters — OR within group (like states).
+  // Scraped listings without a status pass if any stage filter is active
+  // (they haven't been assigned a stage yet).
+  const activeStageKeys = ALL_STAGE_KEYS.filter(k => active.has(k as PresetFilterKey));
+  if (activeStageKeys.length > 0 && item.status) {
+    const allowedStatuses = activeStageKeys.map(k => STAGE_KEY_TO_STATUS[k]);
+    if (!allowedStatuses.includes(item.status)) return false;
   }
 
   // State filters — OR within group

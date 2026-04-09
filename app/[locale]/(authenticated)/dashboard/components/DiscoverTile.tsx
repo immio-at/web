@@ -134,7 +134,7 @@ export default function DiscoverTile({
   // Preset + saved filter pill groups
   const presetGroups = [
     { key: 'source', items: PRESET_FILTERS.filter(f => f.group === 'source') },
-    { key: 'time', items: PRESET_FILTERS.filter(f => f.group === 'time') },
+    { key: 'stage', items: PRESET_FILTERS.filter(f => f.group === 'stage') },
     { key: 'state', items: PRESET_FILTERS.filter(f => f.group === 'state') },
   ];
 

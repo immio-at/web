@@ -555,7 +555,8 @@ export default function EntdeckenPage() {
   // When preset/saved filter pills are active, use actual displayed count
   // Only client-side-only presets (time, source, saved filters) affect count accuracy.
   // State presets are now sent server-side, so pagination is accurate with them.
-  const hasClientOnlyPresets = activePresets.has('searchAgents') || activePresets.has('last24h') || activePresets.has('lastWeek');
+  const hasClientOnlyPresets = activePresets.has('searchAgents') || activePresets.has('excludeSearchAgents') ||
+    Array.from(activePresets).some(k => k.startsWith('stage_'));
   const presetsActive = hasClientOnlyPresets || activeSavedFilterIds.size > 0;
   // ── Convert UnifiedListing to CardProperty ──
   function listingToCard(l: UnifiedListing): CardProperty {
