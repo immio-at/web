@@ -492,6 +492,23 @@
       "revoke": "Revoke",
       "approve": "Approve"
     },
+    "scrapers": {
+      "title": "Scraper Health",
+      "source": "Source",
+      "status": "Status",
+      "lastRun": "Last Run",
+      "listings": "Listings",
+      "action": "Action",
+      "healthy": "OK",
+      "degraded": "Degraded",
+      "disabled": "Disabled",
+      "noData": "N/A",
+      "enable": "Enable",
+      "disable": "Disable",
+      "triggerCheck": "Run Check",
+      "history": "Recent Checks",
+      "noHistory": "No checks yet."
+    },
     "inviteCodes": {
       "title": "Invite codes",
       "placeholder": "IMMIO-XXXX-XXX",

@@ -26,6 +26,36 @@ interface InviteCode {
   createdAt: string;
 }
 
+interface ScraperHealth {
+  platform: string;
+  displayName: string;
+  enabled: boolean;
+  disabledAt: string | null;
+  disabledReason: string | null;
+  lastRun: {
+    status: string;
+    runAt: string;
+    probeCount: number | null;
+    httpStatus: number | null;
+    responseTimeMs: number | null;
+    errorMessage: string | null;
+  } | null;
+}
+
+interface HealthRun {
+  id: string;
+  platform: string;
+  runAt: string;
+  status: string;
+  probeCount: number | null;
+  expectedMin: number | null;
+  selectorMatch: boolean | null;
+  httpStatus: number | null;
+  responseTimeMs: number | null;
+  errorMessage: string | null;
+  alertSent: boolean;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string) {
@@ -69,6 +99,11 @@ export default function AdminPage() {
   const [newCode, setNewCode] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Scraper health
+  const [scrapers, setScrapers] = useState<ScraperHealth[]>([]);
+  const [selectedScraper, setSelectedScraper] = useState<string | null>(null);
+  const [healthHistory, setHealthHistory] = useState<HealthRun[]>([]);
+
   // ── Guard: redirect non-admins ─────────────────────────────────────────────
   // Wait for AuthContext to finish loading before checking — avoids false
   // redirects while the context is still seeding from localStorage on mount.
@@ -93,9 +128,10 @@ export default function AdminPage() {
     setLoading(true);
     setError('');
     try {
-      const [usersRes, codesRes] = await Promise.all([
+      const [usersRes, codesRes, scrapersRes] = await Promise.all([
         fetch(`${API_URL}/admin/users`, { headers: authHeaders() }),
         fetch(`${API_URL}/admin/invite-codes`, { headers: authHeaders() }),
+        fetch(`${API_URL}/admin/scrapers/health`, { headers: authHeaders() }),
       ]);
 
       if (!usersRes.ok || !codesRes.ok) {
@@ -105,6 +141,7 @@ export default function AdminPage() {
 
       setUsers(await usersRes.json());
       setInviteCodes(await codesRes.json());
+      if (scrapersRes.ok) setScrapers(await scrapersRes.json());
     } catch {
       setError(t('errorConnection'));
     } finally {
@@ -157,6 +194,40 @@ export default function AdminPage() {
     }
   }
 
+  // ── Scraper actions ────────────────────────────────────────────────────────
+  async function toggleScraper(platform: string, enable: boolean) {
+    setActionLoading(`scraper-${platform}`);
+    try {
+      await fetch(`${API_URL}/admin/scrapers/${platform}/${enable ? 'enable' : 'disable'}`, {
+        method: 'PATCH', headers: authHeaders(),
+      });
+      setScrapers(prev => prev.map(s =>
+        s.platform === platform ? { ...s, enabled: enable, disabledAt: enable ? null : new Date().toISOString(), disabledReason: enable ? null : 'Manually disabled' } : s
+      ));
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function triggerHealthCheck() {
+    setActionLoading('health-check');
+    try {
+      await fetch(`${API_URL}/admin/scrapers/trigger-check`, { headers: authHeaders() });
+      await fetchData();
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function loadHistory(platform: string) {
+    if (selectedScraper === platform) { setSelectedScraper(null); return; }
+    setSelectedScraper(platform);
+    try {
+      const res = await fetch(`${API_URL}/admin/scrapers/health/${platform}`, { headers: authHeaders() });
+      if (res.ok) setHealthHistory(await res.json());
+    } catch { /* ignore */ }
+  }
+
   // ── Derived data ───────────────────────────────────────────────────────────
   const pending = users.filter(u => !u.approved);
   const unusedCodes = inviteCodes.filter(c => !c.usedAt);
@@ -197,6 +268,106 @@ export default function AdminPage() {
               <p className="text-3xl font-light text-primary">{stat.value}</p>
             </div>
           ))}
+        </div>
+
+        {/* ── Scraper Health ── */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <SectionHeader title={t('scrapers.title')} count={scrapers.length} />
+            <button
+              onClick={triggerHealthCheck}
+              disabled={actionLoading === 'health-check'}
+              className="text-xs font-medium bg-slate-100 hover:bg-slate-200 text-gray-700 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {actionLoading === 'health-check' ? '…' : t('scrapers.triggerCheck')}
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b border-gray-100">
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">{t('scrapers.source')}</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">{t('scrapers.status')}</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">{t('scrapers.lastRun')}</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal pr-4">{t('scrapers.listings')}</th>
+                  <th className="font-mono text-[10px] uppercase tracking-widest text-gray-400 pb-3 font-normal">{t('scrapers.action')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scrapers.map(s => (
+                  <>
+                    <tr
+                      key={s.platform}
+                      className="border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50"
+                      onClick={() => loadHistory(s.platform)}
+                    >
+                      <td className="py-3 pr-4 font-medium text-primary">{s.displayName}</td>
+                      <td className="py-3 pr-4">
+                        {!s.enabled ? (
+                          <span className="text-xs font-mono bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded-full">{t('scrapers.disabled')}</span>
+                        ) : !s.lastRun ? (
+                          <span className="text-xs font-mono bg-gray-50 text-gray-400 border border-gray-200 px-2 py-0.5 rounded-full">{t('scrapers.noData')}</span>
+                        ) : s.lastRun.status === 'healthy' ? (
+                          <span className="text-xs font-mono bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full">✅ {t('scrapers.healthy')}</span>
+                        ) : s.lastRun.status === 'degraded' ? (
+                          <span className="text-xs font-mono bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">🟡 {t('scrapers.degraded')}</span>
+                        ) : (
+                          <span className="text-xs font-mono bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded-full">🔴 {s.lastRun.status}</span>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4 text-xs text-gray-500">
+                        {s.lastRun ? new Date(s.lastRun.runAt).toLocaleString('de-AT', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—'}
+                      </td>
+                      <td className="py-3 pr-4 text-xs font-mono text-gray-600">
+                        {s.lastRun?.probeCount ?? '—'}
+                      </td>
+                      <td className="py-3">
+                        <button
+                          onClick={e => { e.stopPropagation(); toggleScraper(s.platform, !s.enabled); }}
+                          disabled={actionLoading === `scraper-${s.platform}`}
+                          className={`text-xs font-medium px-3 py-1 rounded-lg transition-colors disabled:opacity-50 ${
+                            s.enabled
+                              ? 'text-red-600 hover:bg-red-50'
+                              : 'text-teal-600 hover:bg-teal-50'
+                          }`}
+                        >
+                          {actionLoading === `scraper-${s.platform}` ? '…' : s.enabled ? t('scrapers.disable') : t('scrapers.enable')}
+                        </button>
+                      </td>
+                    </tr>
+                    {/* Health history (expanded) */}
+                    {selectedScraper === s.platform && (
+                      <tr key={`${s.platform}-history`}>
+                        <td colSpan={5} className="py-3 px-4 bg-gray-50">
+                          <p className="text-xs font-mono text-gray-400 uppercase tracking-widest mb-2">{t('scrapers.history')}</p>
+                          {healthHistory.length === 0 ? (
+                            <p className="text-xs text-gray-400">{t('scrapers.noHistory')}</p>
+                          ) : (
+                            <div className="space-y-1">
+                              {healthHistory.map(run => (
+                                <div key={run.id} className="flex items-center gap-4 text-xs">
+                                  <span className="text-gray-500 w-28">{new Date(run.runAt).toLocaleString('de-AT', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</span>
+                                  <span className={`font-mono px-1.5 py-0.5 rounded ${
+                                    run.status === 'healthy' ? 'bg-teal-50 text-teal-700' :
+                                    run.status === 'degraded' ? 'bg-amber-50 text-amber-700' :
+                                    'bg-red-50 text-red-700'
+                                  }`}>{run.status}</span>
+                                  <span className="text-gray-600">{run.probeCount ?? 0} / {run.expectedMin ?? '?'}</span>
+                                  <span className="text-gray-400">{run.responseTimeMs}ms</span>
+                                  {run.errorMessage && <span className="text-red-500 truncate max-w-xs">{run.errorMessage}</span>}
+                                  {run.alertSent && <span className="text-amber-600">📧</span>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* ── Pending approvals ── */}

@@ -492,6 +492,23 @@
       "revoke": "Sperren",
       "approve": "Freischalten"
     },
+    "scrapers": {
+      "title": "Scraper Health",
+      "source": "Quelle",
+      "status": "Status",
+      "lastRun": "Letzter Lauf",
+      "listings": "Inserate",
+      "action": "Aktion",
+      "healthy": "OK",
+      "degraded": "Eingeschränkt",
+      "disabled": "Deaktiviert",
+      "noData": "N/A",
+      "enable": "Aktivieren",
+      "disable": "Deaktivieren",
+      "triggerCheck": "Prüfung starten",
+      "history": "Letzte Prüfungen",
+      "noHistory": "Noch keine Prüfungen."
+    },
     "inviteCodes": {
       "title": "Einladungscodes",
       "placeholder": "IMMIO-XXXX-XXX",
