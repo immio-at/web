@@ -246,7 +246,8 @@
       "recommended": "Recommended for you",
       "newArrivalsEmpty": "No listings yet. Set up your email forwarding.",
       "recentlyViewedEmpty": "No recently viewed listings yet.",
-      "recommendedLocked": "Add listings to your funnel to get personalised recommendations.",
+      "recommendedLocked": "Add at least 5 listings to your funnel to get personalised recommendations.",
+      "recommendedEmpty": "No matching recommendations found. Expand your funnel for better results.",
       "analyse": "Analyse"
     }
   },

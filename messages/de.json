@@ -246,7 +246,8 @@
       "recommended": "Empfohlen für Sie",
       "newArrivalsEmpty": "Noch keine Inserate. Richte deine E-Mail-Weiterleitung ein.",
       "recentlyViewedEmpty": "Noch keine angesehenen Inserate.",
-      "recommendedLocked": "Füge Inserate zu deinem Funnel hinzu, um personalisierte Empfehlungen zu erhalten.",
+      "recommendedLocked": "Füge mindestens 5 Inserate zu deinem Funnel hinzu, um personalisierte Empfehlungen zu erhalten.",
+      "recommendedEmpty": "Keine passenden Empfehlungen gefunden. Erweitere deinen Funnel für bessere Ergebnisse.",
       "analyse": "Analyse"
     }
   },

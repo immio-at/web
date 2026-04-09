@@ -93,7 +93,7 @@ export default function DashboardClient({
         actions={cardActions}
       />
 
-      <RecommendedCarousel />
+      <RecommendedCarousel properties={properties} actions={cardActions} />
 
       {analyseProperty && (
         <PropertyAnalysisModal
