@@ -19,6 +19,15 @@ let analyticsCache: AnalyticsSummary | null = null;
 let analyticsCacheTimestamp = 0;
 const ANALYTICS_CACHE_TTL_MS = 300_000; // 5 minutes
 
+/**
+ * Wipe the analytics cache. Called by AuthContext on sign-out and
+ * session-change to prevent the previous user's analytics from leaking.
+ */
+export function clearAnalyticsCache(): void {
+  analyticsCache = null;
+  analyticsCacheTimestamp = 0;
+}
+
 export default function AnalyticsSnapshotTile({ properties }: { properties: Property[] }) {
   const t = useTranslations('dashboard.analyticsTile');
   const ta = useTranslations('analytics');

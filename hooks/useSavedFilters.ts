@@ -20,6 +20,18 @@ function notifyFilterListeners(filters: SavedFilter[]) {
   filterListeners.forEach(fn => fn(filters));
 }
 
+/**
+ * Wipe the saved-filters cache and notify all subscribed components with
+ * an empty array. Called by AuthContext on sign-out and session-change to
+ * prevent the previous user's filters from leaking into the next user's
+ * session.
+ */
+export function clearSavedFiltersCache(): void {
+  filterCache = null;
+  filterCacheTimestamp = 0;
+  notifyFilterListeners([]);
+}
+
 export function useSavedFilters() {
   const { session, loading: authLoading } = useAuth();
   const [filters, setFilters] = useState<SavedFilter[]>(filterCache ?? []);

@@ -1,11 +1,25 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { setTokenGetter } from '@/lib/api';
-import { prefetchProperties } from '@/hooks/useProperties';
-import { prefetchSavedFilters } from '@/hooks/useSavedFilters';
+import { prefetchProperties, clearPropertiesCache } from '@/hooks/useProperties';
+import { prefetchSavedFilters, clearSavedFiltersCache } from '@/hooks/useSavedFilters';
+import { clearAnalyticsCache } from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
+
+/**
+ * Wipe every module-level cache that holds user-scoped data. Called on
+ * sign-out and on any session userId change. CRITICAL for security:
+ * without this, the previous user's properties / filters / analytics
+ * remain in memory after sign-out and leak to the next user when they
+ * sign in on the same tab.
+ */
+function clearAllUserCaches(): void {
+  clearPropertiesCache();
+  clearSavedFiltersCache();
+  clearAnalyticsCache();
+}
 
 // ─── App-specific fields Supabase doesn't know about ─────────────────────────
 
@@ -155,6 +169,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
+    // Wipe in-memory caches BEFORE Supabase fires its event so any
+    // listening components don't briefly read stale data.
+    clearAllUserCaches();
+
     await supabase.auth.signOut();
     // Clear app-specific fields from both state and localStorage
     setImmioEmail(null);
@@ -170,6 +188,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userId');
   };
+
+  // ── Defense in depth: clear caches on any userId change ────────────────
+  // Catches paths that don't go through signOut() — e.g. session expiry +
+  // re-login, OAuth callback for a different user, manual session swap.
+  // First mount transitions undefined → first userId, which is a no-op
+  // (caches are already empty in a fresh process).
+  const lastUserIdRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const currentUserId = session?.user?.id ?? null;
+    const prev = lastUserIdRef.current;
+    if (prev !== undefined && prev !== currentUserId) {
+      clearAllUserCaches();
+    }
+    lastUserIdRef.current = currentUserId;
+  }, [session?.user?.id]);
 
   return (
     <AuthContext.Provider value={{

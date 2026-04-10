@@ -24,6 +24,18 @@ function notifyListeners(properties: Property[]) {
   listeners.forEach(fn => fn(properties));
 }
 
+/**
+ * Wipe the properties cache and notify all subscribed components with an
+ * empty array. Called by AuthContext on sign-out and on any session userId
+ * change to prevent the previous user's data from leaking into the next
+ * user's session.
+ */
+export function clearPropertiesCache(): void {
+  cache = null;
+  cacheTimestamp = 0;
+  notifyListeners([]);
+}
+
 import { TERMINAL_STAGES } from '@/lib/constants';
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
