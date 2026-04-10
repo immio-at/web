@@ -7,7 +7,7 @@
 
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from './austria-plz-bundesland';
 import { type SavedFilter } from '@/lib/api';
-import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
+import { savedFilterToValues, resolvePostcodes, type FilterValues } from '@/components/FilterBar';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -171,6 +171,54 @@ export function savedFilterHasLocation(sf: SavedFilter): boolean {
   return (sf.postcodes?.length ?? 0) > 0
     || (sf.bezirke?.length ?? 0) > 0
     || (sf.bundeslaender?.length ?? 0) > 0;
+}
+
+// ─── FilterValues matching (client-side property filtering) ─────────────────
+
+interface FilterValuesItem {
+  price?: number | null;
+  sizeSqm?: number | null;
+  rooms?: number | null;
+  zipCode?: string | null;
+  title?: string | null;
+  location?: string | null;
+}
+
+/**
+ * Returns true if a property matches the given FilterValues form state.
+ * Used by the Dashboard Discover tile match count and the Filter Modal
+ * live count. Pure function — no side effects.
+ */
+export function passesFilterValues<T extends FilterValuesItem>(p: T, v: FilterValues): boolean {
+  const price = p.price != null ? parseFloat(String(p.price)) : null;
+  const size = p.sizeSqm ?? null;
+  const rooms = p.rooms != null ? parseFloat(String(p.rooms)) : null;
+
+  if (v.keyword) {
+    const kw = v.keyword.toLowerCase();
+    const title = (p.title ?? '').toLowerCase();
+    const location = (p.location ?? '').toLowerCase();
+    if (!title.includes(kw) && !location.includes(kw)) return false;
+  }
+  if (v.minPrice && price != null && price < parseFloat(v.minPrice)) return false;
+  if (v.maxPrice && price != null && price > parseFloat(v.maxPrice)) return false;
+  if (v.minPricePerSqm && price != null && size != null && size > 0) {
+    const ppsm = price / size;
+    if (ppsm < parseFloat(v.minPricePerSqm)) return false;
+  }
+  if (v.maxPricePerSqm && price != null && size != null && size > 0) {
+    const ppsm = price / size;
+    if (ppsm > parseFloat(v.maxPricePerSqm)) return false;
+  }
+  if (v.minSize && size != null && size < parseFloat(v.minSize)) return false;
+  if (v.maxSize && size != null && size > parseFloat(v.maxSize)) return false;
+  if (v.minRooms && rooms != null && rooms < parseFloat(v.minRooms)) return false;
+  if (v.maxRooms && rooms != null && rooms > parseFloat(v.maxRooms)) return false;
+
+  const postcodes = resolvePostcodes(v.location);
+  if (postcodes.length > 0 && (!p.zipCode || !postcodes.includes(p.zipCode))) return false;
+
+  return true;
 }
 
 // ─── Saved filter matching ──────────────────────────────────────────────────

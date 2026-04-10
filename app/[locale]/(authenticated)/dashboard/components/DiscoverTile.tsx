@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Property, SavedFilter, getScrapedListings } from '@/lib/api';
 import { FilterValues, EMPTY_FILTERS, savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
-import { type PresetFilterKey, passesPresetFilters } from '@/lib/preset-filters';
+import { type PresetFilterKey, passesPresetFilters, passesFilterValues } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
 import { useAuth } from '@/context/AuthContext';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
@@ -224,29 +224,4 @@ export default function DiscoverTile({
       </div>
     </div>
   );
-}
-
-// ── Helper: check if a property passes FilterValues criteria ──
-function passesFilterValues(p: Property, v: FilterValues): boolean {
-  const price = p.price ? parseFloat(String(p.price)) : null;
-  const size = p.sizeSqm ?? null;
-  const rooms = p.rooms ? parseFloat(String(p.rooms)) : null;
-
-  if (v.keyword) {
-    const kw = v.keyword.toLowerCase();
-    const title = (p.title ?? '').toLowerCase();
-    const location = (p.location ?? '').toLowerCase();
-    if (!title.includes(kw) && !location.includes(kw)) return false;
-  }
-  if (v.minPrice && price != null && price < parseFloat(v.minPrice)) return false;
-  if (v.maxPrice && price != null && price > parseFloat(v.maxPrice)) return false;
-  if (v.minSize && size != null && size < parseFloat(v.minSize)) return false;
-  if (v.maxSize && size != null && size > parseFloat(v.maxSize)) return false;
-  if (v.minRooms && rooms != null && rooms < parseFloat(v.minRooms)) return false;
-  if (v.maxRooms && rooms != null && rooms > parseFloat(v.maxRooms)) return false;
-
-  const postcodes = resolvePostcodes(v.location);
-  if (postcodes.length > 0 && (!p.zipCode || !postcodes.includes(p.zipCode))) return false;
-
-  return true;
 }

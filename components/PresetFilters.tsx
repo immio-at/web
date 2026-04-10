@@ -27,7 +27,7 @@
  *   `onDeleteFilter` (parents pass `useSavedFilters().remove`).
  */
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { SavedFilter } from '@/lib/api';
 import {
@@ -37,6 +37,7 @@ import {
   savedFilterHasLocation,
 } from '@/lib/preset-filters';
 import UserFilterPill from '@/components/filters/UserFilterPill';
+import FilterModal from '@/components/filters/FilterModal';
 
 const STATE_KEYS = new Set<PresetFilterKey>(['W', 'NÖ', 'OÖ', 'ST', 'K', 'S', 'T', 'V', 'B']);
 
@@ -47,8 +48,6 @@ interface Props {
   activeSavedFilterIds?: Set<string>;
   onToggleSavedFilter?: (id: string) => void;
   onDeleteFilter?: (id: string) => void | Promise<void>;
-  onCreateFilter?: () => void;
-  onEditFilter?: (id: string) => void;
   /** Populate parent's field state instead of toggling. Dashboard tile only. */
   dashboardMode?: boolean;
   onApplyToFields?: (filter: SavedFilter) => void;
@@ -66,8 +65,6 @@ export default function PresetFilters({
   activeSavedFilterIds,
   onToggleSavedFilter,
   onDeleteFilter,
-  onCreateFilter,
-  onEditFilter,
   dashboardMode = false,
   onApplyToFields,
   align = 'left',
@@ -75,6 +72,11 @@ export default function PresetFilters({
   compact = false,
 }: Props) {
   const t = useTranslations('presetFilters');
+
+  // Modal state — owned internally so each parent doesn't need to plumb it.
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [editingFilterId, setEditingFilterId] = useState<string | null>(null);
 
   const stageFilters = PRESET_FILTERS.filter(f => f.group === 'stage');
   const stateFilters = PRESET_FILTERS.filter(f => f.group === 'state');
@@ -166,25 +168,50 @@ export default function PresetFilters({
   }
 
   function handleCreate() {
-    if (onCreateFilter) {
-      onCreateFilter();
-    } else {
-      alert(t('comingSoon'));
-    }
+    setModalMode('create');
+    setEditingFilterId(null);
+    setModalOpen(true);
   }
 
   function handleEdit(id: string) {
-    if (onEditFilter) {
-      onEditFilter(id);
-    } else {
-      alert(t('comingSoon'));
-    }
+    setModalMode('edit');
+    setEditingFilterId(id);
+    setModalOpen(true);
   }
 
   async function handleDelete(id: string) {
     if (!onDeleteFilter) return;
     await onDeleteFilter(id);
   }
+
+  // Called by the modal after a successful create or update.
+  // Default mode: activate the filter ID. Dashboard mode: populate fields.
+  function handleApplyFromModal(filter: SavedFilter, isNew: boolean) {
+    if (dashboardMode) {
+      onApplyToFields?.(filter);
+      return;
+    }
+    if (!onToggleSavedFilter) return;
+    if (isNew) {
+      // For Save as New: deactivate any other active filters first if we're
+      // editing — keeps the new filter as the sole active selection.
+      if (modalMode === 'edit' && editingFilterId && activeSavedFilterIds?.has(editingFilterId)) {
+        onToggleSavedFilter(editingFilterId);
+      }
+      if (!activeSavedFilterIds?.has(filter.id)) {
+        onToggleSavedFilter(filter.id);
+      }
+    } else {
+      // Update path — already active, no toggle needed.
+      if (!activeSavedFilterIds?.has(filter.id)) {
+        onToggleSavedFilter(filter.id);
+      }
+    }
+  }
+
+  const editingFilter = editingFilterId
+    ? savedFilters?.find(f => f.id === editingFilterId) ?? null
+    : null;
 
   const justify = align === 'center' ? 'justify-center' : 'justify-start';
 
@@ -269,10 +296,19 @@ export default function PresetFilters({
   //   - Discover (showStages): Bundesland → Stages → Source
   //   - everywhere else:        Bundesland → Source
   return (
-    <div className={rowSpacing}>
-      {bundeslandRow}
-      {showStages && stagesRow}
-      {sourceRow}
-    </div>
+    <>
+      <div className={rowSpacing}>
+        {bundeslandRow}
+        {showStages && stagesRow}
+        {sourceRow}
+      </div>
+      <FilterModal
+        open={modalOpen}
+        mode={modalMode}
+        editingFilter={editingFilter}
+        onClose={() => setModalOpen(false)}
+        onApply={handleApplyFromModal}
+      />
+    </>
   );
 }
