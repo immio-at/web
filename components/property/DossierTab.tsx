@@ -34,9 +34,11 @@ import MrgWarningBanner from './MrgWarningBanner';
 
 interface Props {
   property: Property;
-  /** Called after a successful → Apply so the parent modal can refresh
-   *  the underlying property record (for analysis recalculation). */
-  onPropertyApplied?: () => void;
+  /** Called immediately after a → Apply click so the parent can sync
+   *  open analysis drafts with the new value (analyses keep their own
+   *  per-row copies of price / BK / purchaseDate that don't otherwise
+   *  refresh until the user reloads the modal). */
+  onPropertyApplied?: (field: PropertyDetailsApplyableField, value: unknown) => void;
 }
 
 const DOC_LABELS = [
@@ -197,7 +199,10 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
     const propertyColumn = APPLY_TARGET[field];
     optimisticUpdate(property.id, { [propertyColumn]: value } as Partial<Property>);
 
-    onPropertyApplied?.();
+    // Tell the parent so it can sync open analysis drafts that hold
+    // their own per-analysis copies of these fields (BK, list price,
+    // purchase date).
+    onPropertyApplied?.(field, value);
 
     // Fire the backend write in the background. Roll back the optimistic
     // confirmation if it fails.

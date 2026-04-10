@@ -10,6 +10,7 @@ import {
   Property,
   PropertyAnalysis,
   PropertyDocument,
+  PropertyDetailsApplyableField,
   RehabCostItem,
   UpdateAnalysisDto,
   getAnalyses,
@@ -291,6 +292,29 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
       .catch(() => setMrgRisk(null));
   }, [property.id, t, property]);
 
+  // ── Sync open analysis drafts when the user clicks → Apply in Dossier ──
+  // Analyses keep per-row copies of price / BK / purchaseDate that don't
+  // otherwise refresh until the modal is reloaded. This makes apply feel
+  // immediate in both the property record AND every open analysis tab.
+  // We mark the affected tabs dirty so the user knows to save.
+  const handleDossierApplied = useCallback(
+    (field: PropertyDetailsApplyableField, value: unknown) => {
+      const draftField: keyof Draft | null =
+        field === 'exposePrice' ? 'listPrice' :
+        field === 'purchaseDate' ? 'purchaseDate' :
+        field === 'bkUmlagefaehig' ? 'bkUmlagefaehig' :
+        field === 'bkNichtUmlagefaehig' ? 'bkNichtUmlagefaehig' :
+        null;
+      if (!draftField) return; // sizeSqmVerified / roomsVerified are read from property prop
+      setTabs(prev => prev.map(tab => ({
+        ...tab,
+        draft: { ...tab.draft, [draftField]: value as never },
+        dirty: true,
+      })));
+    },
+    [],
+  );
+
   // ── Field updater (updates active tab's draft) ────────────────────────────
   function set<K extends keyof Draft>(key: K, value: Draft[K]) {
     setTabs(prev => prev.map((tab, i) =>
@@ -564,7 +588,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
           <div className="p-12 text-center text-[#6b7a99]">{t('loading')}</div>
         ) : viewMode === 'dossier' ? (
           <div className="p-6">
-            <DossierTab property={property} />
+            <DossierTab property={property} onPropertyApplied={handleDossierApplied} />
           </div>
         ) : (
           <div className="p-6 space-y-8">
