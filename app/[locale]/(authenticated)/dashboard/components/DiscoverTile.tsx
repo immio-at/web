@@ -136,6 +136,7 @@ export default function DiscoverTile({
         onDeleteFilter={removeFilter}
         dashboardMode
         onApplyToFields={applyFilterToFields}
+        compact
       />
 
       {/* Filter fields */}

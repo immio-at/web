@@ -53,8 +53,10 @@ interface Props {
   dashboardMode?: boolean;
   onApplyToFields?: (filter: SavedFilter) => void;
   align?: 'left' | 'center';
-  /** Render Row 3 (funnel stages). Only Discover sets this true. */
+  /** Render the funnel stages row. Only Discover sets this true. */
   showStages?: boolean;
+  /** Smaller pills + tighter spacing — used on the Dashboard Discover tile. */
+  compact?: boolean;
 }
 
 export default function PresetFilters({
@@ -70,6 +72,7 @@ export default function PresetFilters({
   onApplyToFields,
   align = 'left',
   showStages = false,
+  compact = false,
 }: Props) {
   const t = useTranslations('presetFilters');
 
@@ -105,6 +108,17 @@ export default function PresetFilters({
   // Source filters (searchAgents, excludeSearchAgents) are mutually exclusive.
   // togglePreset() already enforces this on the model side.
 
+  // Size-dependent classes — `compact` shrinks pills for Dashboard tile use.
+  const pillSize = compact
+    ? 'rounded-full px-2 py-0.5 text-[10px] font-medium border'
+    : 'rounded-full px-3 py-1 text-xs font-medium border';
+  const plusSize = compact
+    ? 'rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium border border-dashed'
+    : 'rounded-full w-7 h-7 flex items-center justify-center text-sm font-medium border border-dashed';
+  const dividerHeight = compact ? 'h-4' : 'h-5';
+  const rowGap = compact ? 'gap-1' : 'gap-1.5';
+  const rowSpacing = compact ? 'space-y-1 py-1' : 'space-y-1.5 py-2';
+
   function StatePill({ filterKey, labelKey }: { filterKey: PresetFilterKey; labelKey: string }) {
     const isActive = !locationOverride && active.has(filterKey);
     const disabled = locationOverride;
@@ -113,7 +127,7 @@ export default function PresetFilters({
         onClick={() => !disabled && handleToggle(filterKey)}
         disabled={disabled}
         title={disabled ? t('locationFromFilter') : undefined}
-        className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors whitespace-nowrap ${
+        className={`${pillSize} transition-colors whitespace-nowrap ${
           disabled
             ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
             : isActive
@@ -131,7 +145,7 @@ export default function PresetFilters({
     return (
       <button
         onClick={() => handleToggle(filterKey)}
-        className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors whitespace-nowrap ${
+        className={`${pillSize} transition-colors whitespace-nowrap ${
           isActive
             ? 'bg-blue-600 text-white border-blue-600'
             : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
@@ -180,73 +194,85 @@ export default function PresetFilters({
     && activeSavedFilterIds.size > 0;
   const hasAnyActive = active.size > 0 || hasAnySavedActive;
 
-  return (
-    <div className="space-y-1.5 py-2">
-      {/* Row 1 — Bundesland */}
-      <div className={`flex flex-wrap items-center gap-1.5 ${justify}`}>
-        {stateFilters.map(f => (
-          <StatePill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
-        ))}
-      </div>
+  // Bundesland row
+  const bundeslandRow = (
+    <div className={`flex flex-wrap items-center ${rowGap} ${justify}`}>
+      {stateFilters.map(f => (
+        <StatePill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
+      ))}
+    </div>
+  );
 
-      {/* Row 2 — Source toggle · | · user filter pills · `+` */}
-      <div className={`flex flex-wrap items-center gap-1.5 ${justify}`}>
-        {sourceFilters.map(f => (
-          <PresetPill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
-        ))}
+  // Funnel stages row (Discover only)
+  const stagesRow = (
+    <div className={`flex flex-wrap items-center ${rowGap} ${justify}`}>
+      {stageFilters.map(f => (
+        <PresetPill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
+      ))}
+    </div>
+  );
 
-        <span className="w-px h-5 bg-gray-200 mx-1" />
+  // Source toggle · | · user filter pills · `+` row
+  const sourceRow = (
+    <div className={`flex flex-wrap items-center ${rowGap} ${justify}`}>
+      {sourceFilters.map(f => (
+        <PresetPill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
+      ))}
 
-        {savedFilters && savedFilters.map(sf => {
-          const isActive = !dashboardMode && (activeSavedFilterIds?.has(sf.id) ?? false);
-          return (
-            <UserFilterPill
-              key={sf.id}
-              id={sf.id}
-              name={sf.name}
-              isActive={isActive}
-              onClick={() => handleFilterClick(sf)}
-              onEdit={() => handleEdit(sf.id)}
-              onDelete={() => handleDelete(sf.id)}
-            />
-          );
-        })}
+      <span className={`w-px ${dividerHeight} bg-gray-200 mx-1`} />
 
-        <button
-          onClick={handleCreate}
-          aria-label={t('createFilter')}
-          title={t('createFilter')}
-          className="rounded-full w-7 h-7 flex items-center justify-center text-sm font-medium border border-dashed border-gray-300 text-gray-400 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-        >
-          +
-        </button>
+      {savedFilters && savedFilters.map(sf => {
+        const isActive = !dashboardMode && (activeSavedFilterIds?.has(sf.id) ?? false);
+        return (
+          <UserFilterPill
+            key={sf.id}
+            id={sf.id}
+            name={sf.name}
+            isActive={isActive}
+            compact={compact}
+            onClick={() => handleFilterClick(sf)}
+            onEdit={() => handleEdit(sf.id)}
+            onDelete={() => handleDelete(sf.id)}
+          />
+        );
+      })}
 
-        {hasAnyActive && (
-          <>
-            <span className="w-px h-5 bg-gray-200 mx-1" />
-            <button
-              onClick={() => {
-                onChange(new Set());
-                if (!dashboardMode && activeSavedFilterIds && onToggleSavedFilter) {
-                  for (const id of activeSavedFilterIds) onToggleSavedFilter(id);
-                }
-              }}
-              className="text-xs text-gray-400 hover:text-gray-600 px-1"
-            >
-              {t('clearAll')}
-            </button>
-          </>
-        )}
-      </div>
+      <button
+        onClick={handleCreate}
+        aria-label={t('createFilter')}
+        title={t('createFilter')}
+        className={`${plusSize} border-gray-300 text-gray-400 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors`}
+      >
+        +
+      </button>
 
-      {/* Row 3 — Funnel stages (Discover only) */}
-      {showStages && (
-        <div className={`flex flex-wrap items-center gap-1.5 ${justify}`}>
-          {stageFilters.map(f => (
-            <PresetPill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
-          ))}
-        </div>
+      {hasAnyActive && (
+        <>
+          <span className={`w-px ${dividerHeight} bg-gray-200 mx-1`} />
+          <button
+            onClick={() => {
+              onChange(new Set());
+              if (!dashboardMode && activeSavedFilterIds && onToggleSavedFilter) {
+                for (const id of activeSavedFilterIds) onToggleSavedFilter(id);
+              }
+            }}
+            className={`${compact ? 'text-[10px]' : 'text-xs'} text-gray-400 hover:text-gray-600 px-1`}
+          >
+            {t('clearAll')}
+          </button>
+        </>
       )}
+    </div>
+  );
+
+  // Row order:
+  //   - Discover (showStages): Bundesland → Stages → Source
+  //   - everywhere else:        Bundesland → Source
+  return (
+    <div className={rowSpacing}>
+      {bundeslandRow}
+      {showStages && stagesRow}
+      {sourceRow}
     </div>
   );
 }

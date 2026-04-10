@@ -23,9 +23,10 @@ interface Props {
   onClick: () => void;
   onEdit: () => void;
   onDelete: () => void | Promise<void>;
+  compact?: boolean;
 }
 
-export default function UserFilterPill({ id, name, isActive, onClick, onEdit, onDelete }: Props) {
+export default function UserFilterPill({ id, name, isActive, onClick, onEdit, onDelete, compact = false }: Props) {
   const t = useTranslations('presetFilters');
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -53,12 +54,19 @@ export default function UserFilterPill({ id, name, isActive, onClick, onEdit, on
     }
   }
 
+  const labelClass = compact
+    ? 'rounded-l-full pl-2 pr-1.5 py-0.5 text-[10px] font-medium border-y border-l max-w-[120px]'
+    : 'rounded-l-full pl-3 pr-2 py-1 text-xs font-medium border-y border-l max-w-[140px]';
+  const kebabClass = compact
+    ? 'rounded-r-full pl-0.5 pr-1.5 py-0.5 text-[10px] border-y border-r'
+    : 'rounded-r-full pl-1 pr-2 py-1 text-xs border-y border-r';
+
   return (
     <div ref={wrapperRef} className="relative inline-flex items-center">
       <button
         onClick={onClick}
         title={name}
-        className={`rounded-l-full pl-3 pr-2 py-1 text-xs font-medium border-y border-l transition-colors whitespace-nowrap max-w-[140px] truncate ${
+        className={`${labelClass} transition-colors whitespace-nowrap truncate ${
           isActive
             ? 'bg-amber-500 text-white border-amber-500'
             : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
@@ -69,7 +77,7 @@ export default function UserFilterPill({ id, name, isActive, onClick, onEdit, on
       <button
         onClick={() => setMenuOpen(o => !o)}
         aria-label={t('filterMenu', { name })}
-        className={`rounded-r-full pl-1 pr-2 py-1 text-xs border-y border-r transition-colors ${
+        className={`${kebabClass} transition-colors ${
           isActive
             ? 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600'
             : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50 hover:text-gray-600'
