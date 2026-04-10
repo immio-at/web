@@ -5,11 +5,11 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Property } from '@/lib/api';
 
-const FUNNEL_STAGES = ['investigating', 'interested', 'visit_booked', 'visited', 'offer_made', 'parked', 'won'];
+const FUNNEL_STAGES = ['investigating', 'interested', 'due_diligence_completed', 'visited', 'offer_made', 'parked', 'won'];
 
 const STAGE_I18N_KEY: Record<string, string> = {
   investigating: 'investigating', interested: 'interested',
-  visit_booked: 'visitBooked', visited: 'visited', offer_made: 'offerMade',
+  due_diligence_completed: 'dueDiligenceCompleted', visited: 'visited', offer_made: 'offerMade',
   parked: 'parked', won: 'won',
 };
 

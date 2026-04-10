@@ -18,7 +18,7 @@ const PropertyAnalysisModal = dynamic(
 // Map snake_case stage keys to camelCase translation keys
 const STAGE_I18N_KEY: Record<string, string> = {
   new: 'new', investigating: 'investigating', interested: 'interested',
-  visit_booked: 'visitBooked', visited: 'visited', offer_made: 'offerMade',
+  due_diligence_completed: 'dueDiligenceCompleted', visited: 'visited', offer_made: 'offerMade',
   parked: 'parked', won: 'won', not_relevant: 'notRelevant',
 };
 

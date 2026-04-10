@@ -22,7 +22,7 @@ export interface DerivedCriteria {
 }
 
 const FUNNEL_STATUSES = new Set([
-  'investigating', 'interested', 'visit_booked', 'visited',
+  'investigating', 'interested', 'due_diligence_completed', 'visited',
   'offer_made', 'parked', 'won',
 ]);
 

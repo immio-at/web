@@ -35,12 +35,12 @@ export interface CardActions {
 
 const STAGE_I18N_KEY: Record<string, string> = {
   new: 'new', investigating: 'investigating', interested: 'interested',
-  visit_booked: 'visitBooked', visited: 'visited', offer_made: 'offerMade',
+  due_diligence_completed: 'dueDiligenceCompleted', visited: 'visited', offer_made: 'offerMade',
   parked: 'parked', won: 'won',
 };
 
 const ASSIGNABLE_STAGES = [
-  'investigating', 'interested', 'visit_booked', 'visited', 'offer_made', 'parked', 'won',
+  'investigating', 'interested', 'due_diligence_completed', 'visited', 'offer_made', 'parked', 'won',
 ];
 
 // ─── Platform labels ─────────────────────────────────────────────────────────

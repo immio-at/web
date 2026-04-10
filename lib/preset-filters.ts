@@ -13,7 +13,7 @@ import { savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
 
 export type FunnelStageKey =
   | 'stage_new' | 'stage_investigating' | 'stage_interested'
-  | 'stage_visit_booked' | 'stage_visited' | 'stage_offer_made'
+  | 'stage_due_diligence_completed' | 'stage_visited' | 'stage_offer_made'
   | 'stage_parked' | 'stage_won' | 'stage_not_relevant';
 
 export type PresetFilterKey =
@@ -38,7 +38,7 @@ export const PRESET_FILTERS: PresetFilterDef[] = [
   { key: 'stage_new', labelKey: 'stageNew', group: 'stage' },
   { key: 'stage_investigating', labelKey: 'stageInvestigating', group: 'stage' },
   { key: 'stage_interested', labelKey: 'stageInterested', group: 'stage' },
-  { key: 'stage_visit_booked', labelKey: 'stageVisitBooked', group: 'stage' },
+  { key: 'stage_due_diligence_completed', labelKey: 'stageDueDiligenceCompleted', group: 'stage' },
   { key: 'stage_visited', labelKey: 'stageVisited', group: 'stage' },
   { key: 'stage_offer_made', labelKey: 'stageOfferMade', group: 'stage' },
   { key: 'stage_parked', labelKey: 'stageParked', group: 'stage' },
@@ -108,7 +108,7 @@ const STAGE_KEY_TO_STATUS: Record<string, string> = {
   stage_new: 'new',
   stage_investigating: 'investigating',
   stage_interested: 'interested',
-  stage_visit_booked: 'visit_booked',
+  stage_due_diligence_completed: 'due_diligence_completed',
   stage_visited: 'visited',
   stage_offer_made: 'offer_made',
   stage_parked: 'parked',
