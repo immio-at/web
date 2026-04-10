@@ -20,8 +20,10 @@ import {
   uploadDocument,
   getDocumentDownloadUrl,
   deleteDocument,
+  getPropertyDetails,
 } from '@/lib/api';
 import DossierTab from '@/components/property/DossierTab';
+import MrgWarningBanner from '@/components/property/MrgWarningBanner';
 import {
   calcOwnerResults,
   calcRentalResults,
@@ -239,6 +241,12 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
   // Property Dossier (documents + AI extraction + structured property data).
   const [viewMode, setViewMode] = useState<'analyses' | 'dossier'>('analyses');
 
+  // ADR-009 DO6: MRG risk flag, fetched once when the modal opens. Used
+  // to render the MrgWarningBanner above the rental analysis section.
+  // Stale-after-extract is acceptable in this slice — the user can close
+  // and reopen the modal to see the updated state.
+  const [mrgRisk, setMrgRisk] = useState<boolean | null>(null);
+
   // Documents
   const [documents, setDocuments] = useState<PropertyDocument[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -276,6 +284,11 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
       }
     }
     load();
+    // ADR-009 DO6: fetch the Dossier mrgRisk flag in parallel — independent
+    // of the main load so a 4xx (no Dossier yet) doesn't block the analyses.
+    getPropertyDetails(property.id)
+      .then(resp => setMrgRisk(resp.details?.mrgRisk ?? null))
+      .catch(() => setMrgRisk(null));
   }, [property.id, t, property]);
 
   // ── Field updater (updates active tab's draft) ────────────────────────────
@@ -786,6 +799,12 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
             {draft.usageType === 'rental' && (
               <div>
                 <SectionTitle>{t('rental.title')}</SectionTitle>
+                {/* ADR-009 DO6: MRG risk warning — only on rental analyses */}
+                {mrgRisk && (
+                  <div className="mb-4">
+                    <MrgWarningBanner />
+                  </div>
+                )}
                 <div className="space-y-4">
                   {/* Rent type toggle */}
                   <div className="flex items-end gap-4">
