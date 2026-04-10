@@ -1,12 +1,61 @@
 'use client';
 
+/**
+ * PresetFilters — pill bar shell per ADR-008.
+ *
+ * Layout:
+ *   Row 1 — Bundesland (9 Austrian states, multi-select)
+ *   Row 2 — Search Agents / No Search Agents (radio) · | · user filter pills
+ *           (with kebab) · `+`
+ *   Row 3 — Funnel stages (only when `showStages` — Discover only)
+ *
+ * Bundesland override (F5):
+ *   When any active saved filter contains a location criterion, the
+ *   Bundesland pills are cleared and rendered visually inactive. The
+ *   row remains visible so the user understands why pills are
+ *   non-interactive.
+ *
+ * Dashboard mode:
+ *   When `dashboardMode` is true, clicking a user filter pill calls
+ *   `onApplyToFields(filter)` instead of toggling `activeSavedFilterIds`.
+ *   This allows the Dashboard Discover tile to populate its search
+ *   fields from a saved filter without applying it as a hard filter.
+ *
+ * Stubs in this slice:
+ *   `+` and kebab Edit alert "coming next slice" until ADR-008 F3
+ *   (Filter Modal) lands. Kebab Delete is fully wired through
+ *   `onDeleteFilter` (parents pass `useSavedFilters().remove`).
+ */
+
+import { useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { SavedFilter } from '@/lib/api';
 import {
   PRESET_FILTERS,
   type PresetFilterKey,
   togglePreset,
+  savedFilterHasLocation,
 } from '@/lib/preset-filters';
+import UserFilterPill from '@/components/filters/UserFilterPill';
+
+const STATE_KEYS = new Set<PresetFilterKey>(['W', 'NÖ', 'OÖ', 'ST', 'K', 'S', 'T', 'V', 'B']);
+
+interface Props {
+  active: Set<PresetFilterKey>;
+  onChange: (next: Set<PresetFilterKey>) => void;
+  savedFilters?: SavedFilter[];
+  activeSavedFilterIds?: Set<string>;
+  onToggleSavedFilter?: (id: string) => void;
+  onDeleteFilter?: (id: string) => void | Promise<void>;
+  onCreateFilter?: () => void;
+  onEditFilter?: (id: string) => void;
+  /** Populate parent's field state instead of toggling. Dashboard tile only. */
+  dashboardMode?: boolean;
+  onApplyToFields?: (filter: SavedFilter) => void;
+  align?: 'left' | 'center';
+  /** Render Row 3 (funnel stages). Only Discover sets this true. */
+  showStages?: boolean;
+}
 
 export default function PresetFilters({
   active,
@@ -14,31 +63,70 @@ export default function PresetFilters({
   savedFilters,
   activeSavedFilterIds,
   onToggleSavedFilter,
+  onDeleteFilter,
+  onCreateFilter,
+  onEditFilter,
+  dashboardMode = false,
+  onApplyToFields,
   align = 'left',
-  hideStages = false,
-}: {
-  active: Set<PresetFilterKey>;
-  onChange: (next: Set<PresetFilterKey>) => void;
-  savedFilters?: SavedFilter[];
-  activeSavedFilterIds?: Set<string>;
-  onToggleSavedFilter?: (id: string) => void;
-  align?: 'left' | 'center';
-  hideStages?: boolean;
-}) {
+  showStages = false,
+}: Props) {
   const t = useTranslations('presetFilters');
-
-  function handleToggle(key: PresetFilterKey) {
-    onChange(togglePreset(active, key));
-  }
-
-  const hasAnySavedActive = activeSavedFilterIds && activeSavedFilterIds.size > 0;
-  const hasAnyActive = active.size > 0 || hasAnySavedActive;
 
   const stageFilters = PRESET_FILTERS.filter(f => f.group === 'stage');
   const stateFilters = PRESET_FILTERS.filter(f => f.group === 'state');
   const sourceFilters = PRESET_FILTERS.filter(f => f.group === 'source');
 
-  function PillButton({ filterKey, labelKey }: { filterKey: PresetFilterKey; labelKey: string }) {
+  // ── Bundesland override (ADR-008 F5) ──────────────────────────────────────
+  const locationOverride = useMemo(() => {
+    if (!savedFilters || !activeSavedFilterIds || activeSavedFilterIds.size === 0) return false;
+    return Array.from(activeSavedFilterIds).some(sid => {
+      const sf = savedFilters.find(f => f.id === sid);
+      return sf ? savedFilterHasLocation(sf) : false;
+    });
+  }, [savedFilters, activeSavedFilterIds]);
+
+  // When override fires, strip any active state keys.
+  useEffect(() => {
+    if (!locationOverride) return;
+    const hasState = Array.from(active).some(k => STATE_KEYS.has(k));
+    if (!hasState) return;
+    const next = new Set(active);
+    for (const k of STATE_KEYS) next.delete(k);
+    onChange(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locationOverride]);
+
+  function handleToggle(key: PresetFilterKey) {
+    onChange(togglePreset(active, key));
+  }
+
+  // ── Source pill — radio behaviour ─────────────────────────────────────────
+  // Source filters (searchAgents, excludeSearchAgents) are mutually exclusive.
+  // togglePreset() already enforces this on the model side.
+
+  function StatePill({ filterKey, labelKey }: { filterKey: PresetFilterKey; labelKey: string }) {
+    const isActive = !locationOverride && active.has(filterKey);
+    const disabled = locationOverride;
+    return (
+      <button
+        onClick={() => !disabled && handleToggle(filterKey)}
+        disabled={disabled}
+        title={disabled ? t('locationFromFilter') : undefined}
+        className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors whitespace-nowrap ${
+          disabled
+            ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
+            : isActive
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+        }`}
+      >
+        {t(labelKey)}
+      </button>
+    );
+  }
+
+  function PresetPill({ filterKey, labelKey }: { filterKey: PresetFilterKey; labelKey: string }) {
     const isActive = active.has(filterKey);
     return (
       <button
@@ -54,45 +142,84 @@ export default function PresetFilters({
     );
   }
 
+  // ── Filter pill click handler — depends on dashboardMode ─────────────────
+  function handleFilterClick(sf: SavedFilter) {
+    if (dashboardMode && onApplyToFields) {
+      onApplyToFields(sf);
+      return;
+    }
+    onToggleSavedFilter?.(sf.id);
+  }
+
+  function handleCreate() {
+    if (onCreateFilter) {
+      onCreateFilter();
+    } else {
+      alert(t('comingSoon'));
+    }
+  }
+
+  function handleEdit(id: string) {
+    if (onEditFilter) {
+      onEditFilter(id);
+    } else {
+      alert(t('comingSoon'));
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!onDeleteFilter) return;
+    await onDeleteFilter(id);
+  }
+
   const justify = align === 'center' ? 'justify-center' : 'justify-start';
+
+  // Active selection state for the optional clear-all link
+  const hasAnySavedActive = !dashboardMode
+    && activeSavedFilterIds
+    && activeSavedFilterIds.size > 0;
+  const hasAnyActive = active.size > 0 || hasAnySavedActive;
 
   return (
     <div className="space-y-1.5 py-2">
-      {/* Row 1: Austrian states + source presets + saved filters + clear all */}
+      {/* Row 1 — Bundesland */}
       <div className={`flex flex-wrap items-center gap-1.5 ${justify}`}>
         {stateFilters.map(f => (
-          <PillButton key={f.key} filterKey={f.key} labelKey={f.labelKey} />
+          <StatePill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
         ))}
+      </div>
 
-        {sourceFilters.length > 0 && (
-          <span className="w-px h-5 bg-gray-200 mx-1" />
-        )}
+      {/* Row 2 — Source toggle · | · user filter pills · `+` */}
+      <div className={`flex flex-wrap items-center gap-1.5 ${justify}`}>
         {sourceFilters.map(f => (
-          <PillButton key={f.key} filterKey={f.key} labelKey={f.labelKey} />
+          <PresetPill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
         ))}
 
-        {savedFilters && savedFilters.length > 0 && onToggleSavedFilter && (
-          <>
-            <span className="w-px h-5 bg-gray-200 mx-1" />
-            {savedFilters.map(sf => {
-              const isActive = activeSavedFilterIds?.has(sf.id) ?? false;
-              return (
-                <button
-                  key={sf.id}
-                  onClick={() => onToggleSavedFilter(sf.id)}
-                  className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors whitespace-nowrap max-w-[140px] truncate ${
-                    isActive
-                      ? 'bg-amber-500 text-white border-amber-500'
-                      : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
-                  }`}
-                  title={sf.name}
-                >
-                  {sf.name}
-                </button>
-              );
-            })}
-          </>
-        )}
+        <span className="w-px h-5 bg-gray-200 mx-1" />
+
+        {savedFilters && savedFilters.map(sf => {
+          const isActive = !dashboardMode && (activeSavedFilterIds?.has(sf.id) ?? false);
+          return (
+            <UserFilterPill
+              key={sf.id}
+              id={sf.id}
+              name={sf.name}
+              isActive={isActive}
+              onClick={() => handleFilterClick(sf)}
+              onEdit={() => handleEdit(sf.id)}
+              onDelete={() => handleDelete(sf.id)}
+            />
+          );
+        })}
+
+        <button
+          onClick={handleCreate}
+          aria-label={t('createFilter')}
+          title={t('createFilter')}
+          className="rounded-full w-7 h-7 flex items-center justify-center text-sm font-medium border border-dashed border-gray-300 text-gray-400 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+        >
+          +
+        </button>
 
         {hasAnyActive && (
           <>
@@ -100,7 +227,7 @@ export default function PresetFilters({
             <button
               onClick={() => {
                 onChange(new Set());
-                if (activeSavedFilterIds && onToggleSavedFilter) {
+                if (!dashboardMode && activeSavedFilterIds && onToggleSavedFilter) {
                   for (const id of activeSavedFilterIds) onToggleSavedFilter(id);
                 }
               }}
@@ -112,11 +239,11 @@ export default function PresetFilters({
         )}
       </div>
 
-      {/* Row 2: Funnel stages */}
-      {!hideStages && (
+      {/* Row 3 — Funnel stages (Discover only) */}
+      {showStages && (
         <div className={`flex flex-wrap items-center gap-1.5 ${justify}`}>
           {stageFilters.map(f => (
-            <PillButton key={f.key} filterKey={f.key} labelKey={f.labelKey} />
+            <PresetPill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
           ))}
         </div>
       )}

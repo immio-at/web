@@ -660,6 +660,8 @@ export default function EntdeckenPage() {
         savedFilters={savedFilters}
         activeSavedFilterIds={activeSavedFilterIds}
         onToggleSavedFilter={toggleSavedFilter}
+        onDeleteFilter={removeFilter}
+        showStages
       />
 
       {/* Save filter feedback */}

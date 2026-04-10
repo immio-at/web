@@ -158,6 +158,21 @@ export function passesPresetFilters<T extends Filterable>(
   return true;
 }
 
+// ─── Saved filter helpers ────────────────────────────────────────────────────
+
+/**
+ * Returns true if a saved filter contains any location criterion.
+ * Used by PresetFilters Row 1 (Bundesland) override logic per ADR-008:
+ * when an active saved filter has location, the Bundesland pills are
+ * cleared and rendered inactive — the saved filter's location takes
+ * precedence.
+ */
+export function savedFilterHasLocation(sf: SavedFilter): boolean {
+  return (sf.postcodes?.length ?? 0) > 0
+    || (sf.bezirke?.length ?? 0) > 0
+    || (sf.bundeslaender?.length ?? 0) > 0;
+}
+
 // ─── Saved filter matching ──────────────────────────────────────────────────
 
 interface PropertyLike {

@@ -5,9 +5,11 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Property, SavedFilter, getScrapedListings } from '@/lib/api';
 import { FilterValues, EMPTY_FILTERS, savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
-import { type PresetFilterKey, PRESET_FILTERS, togglePreset, passesPresetFilters } from '@/lib/preset-filters';
+import { type PresetFilterKey, passesPresetFilters } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
 import { useAuth } from '@/context/AuthContext';
+import { useSavedFilters } from '@/hooks/useSavedFilters';
+import PresetFilters from '@/components/PresetFilters';
 
 export default function DiscoverTile({
   savedFilters,
@@ -17,12 +19,11 @@ export default function DiscoverTile({
   properties: Property[];
 }) {
   const t = useTranslations('dashboard.discoverTile');
-  const tp = useTranslations('presetFilters');
 
   const { session, loading: authLoading } = useAuth();
+  const { remove: removeFilter } = useSavedFilters();
   const [filterValues, setFilterValues] = useState<FilterValues>(EMPTY_FILTERS);
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
-  const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(new Set());
 
   // Pre-fetch scraped counts: global + per state. All cached on mount.
   // Austrian postcodes map to exactly one state → summing is exact.
@@ -56,22 +57,23 @@ export default function DiscoverTile({
     return activeStates.reduce((sum, k) => sum + (scrapedByState[k] ?? 0), 0);
   }, [activePresets, scrapedGlobal, scrapedByState]);
 
-  function toggleSavedFilter(id: string) {
-    setActiveSavedFilterIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
   const set = (field: keyof FilterValues) => (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     setFilterValues(prev => ({ ...prev, [field]: e.target.value }));
   };
 
+  // ADR-008 dashboardMode: clicking a saved filter pill populates the
+  // tile's search fields rather than applying as a hard filter. Lets
+  // the user start from a saved filter and tweak before navigating.
+  const applyFilterToFields = useCallback((sf: SavedFilter) => {
+    setFilterValues(savedFilterToValues(sf));
+  }, []);
+
   // ── Live count: how many of user's properties match current filters ──
+  // In dashboardMode (ADR-008) saved filters are baked into filterValues
+  // when the user clicks a filter pill, so there's no separate saved-filter
+  // OR pass to do here.
   const matchCount = useMemo(() => {
     return properties.filter(p => {
       // Exclude terminal
@@ -80,23 +82,12 @@ export default function DiscoverTile({
       // Preset filters
       if (activePresets.size > 0 && !passesPresetFilters(p, activePresets)) return false;
 
-      // Saved filter criteria (OR across selected saved filters, AND with presets)
-      if (activeSavedFilterIds.size > 0) {
-        const matchesAnySaved = Array.from(activeSavedFilterIds).some(id => {
-          const sf = savedFilters.find(f => f.id === id);
-          if (!sf) return false;
-          const v = savedFilterToValues(sf);
-          return passesFilterValues(p, v);
-        });
-        if (!matchesAnySaved) return false;
-      }
-
-      // Form field filters
+      // Form field filters (which may have been populated from a saved filter)
       if (!passesFilterValues(p, filterValues)) return false;
 
       return true;
     }).length;
-  }, [properties, activePresets, activeSavedFilterIds, savedFilters, filterValues]);
+  }, [properties, activePresets, filterValues]);
 
   // Build query params for navigation
   function buildQueryString(): string {
@@ -115,14 +106,13 @@ export default function DiscoverTile({
     if (v.maxRooms) params.set('maxRooms', v.maxRooms);
     if (v.sortBy && v.sortBy !== 'listedDate') params.set('sortBy', v.sortBy);
     if (v.sortOrder && v.sortOrder !== 'desc') params.set('sortOrder', v.sortOrder);
-    // Pass active preset and saved filter selections
+    // Pass active preset selections
     if (activePresets.size > 0) params.set('presets', Array.from(activePresets).join(','));
-    if (activeSavedFilterIds.size > 0) params.set('savedFilterIds', Array.from(activeSavedFilterIds).join(','));
     const qs = params.toString();
     return qs ? `?${qs}` : '';
   }
 
-  const hasAnyFilter = activePresets.size > 0 || activeSavedFilterIds.size > 0 ||
+  const hasAnyFilter = activePresets.size > 0 ||
     !!filterValues.keyword || !!filterValues.location ||
     !!filterValues.minPrice || !!filterValues.maxPrice ||
     !!filterValues.minSize || !!filterValues.maxSize ||
@@ -131,69 +121,22 @@ export default function DiscoverTile({
   const inputClass = 'border border-gray-200 rounded px-2.5 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 w-full';
   const labelClass = 'text-xs text-gray-400 font-medium';
 
-  // Preset + saved filter pill groups
-  const stageFilters = PRESET_FILTERS.filter(f => f.group === 'stage');
-  const stateFilters = PRESET_FILTERS.filter(f => f.group === 'state');
-  const sourceFilters = PRESET_FILTERS.filter(f => f.group === 'source');
-
-  function Pill({ filterKey, labelKey }: { filterKey: PresetFilterKey; labelKey: string }) {
-    const isActive = activePresets.has(filterKey);
-    return (
-      <button
-        onClick={() => setActivePresets(togglePreset(activePresets, filterKey))}
-        className={`rounded-full px-2 py-0.5 text-[10px] font-medium border transition-colors whitespace-nowrap ${
-          isActive
-            ? 'bg-blue-600 text-white border-blue-600'
-            : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
-        }`}
-      >
-        {tp(labelKey)}
-      </button>
-    );
-  }
-
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
       <h3 className="text-base font-semibold text-gray-900 mb-1">{t('title')}</h3>
       <p className="text-sm text-gray-400 mb-3">{t('subtitle')}</p>
 
-      {/* Preset + Saved filter pills — 3 rows */}
-      <div className="space-y-1 mb-3">
-        {/* Row 1: Funnel stages */}
-        <div className="flex flex-wrap items-center gap-1">
-          {stageFilters.map(f => <Pill key={f.key} filterKey={f.key} labelKey={f.labelKey} />)}
-        </div>
-        {/* Row 2: Austrian states */}
-        <div className="flex flex-wrap items-center gap-1">
-          {stateFilters.map(f => <Pill key={f.key} filterKey={f.key} labelKey={f.labelKey} />)}
-        </div>
-        {/* Row 3: Source + saved filters */}
-        <div className="flex flex-wrap items-center gap-1">
-          {sourceFilters.map(f => <Pill key={f.key} filterKey={f.key} labelKey={f.labelKey} />)}
-          {savedFilters.length > 0 && (
-            <>
-              <span className="w-px h-4 bg-gray-200 mx-0.5" />
-              {savedFilters.map(sf => {
-                const isActive = activeSavedFilterIds.has(sf.id);
-                return (
-                  <button
-                    key={sf.id}
-                    onClick={() => toggleSavedFilter(sf.id)}
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium border transition-colors whitespace-nowrap max-w-[120px] truncate ${
-                      isActive
-                        ? 'bg-amber-500 text-white border-amber-500'
-                        : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
-                    }`}
-                    title={sf.name}
-                  >
-                    {sf.name}
-                  </button>
-                );
-              })}
-            </>
-          )}
-        </div>
-      </div>
+      {/* ADR-008 pill bar — Bundesland row + source/filter row.
+          dashboardMode: clicking a saved filter pill populates the
+          search fields below rather than applying as a hard filter. */}
+      <PresetFilters
+        active={activePresets}
+        onChange={setActivePresets}
+        savedFilters={savedFilters}
+        onDeleteFilter={removeFilter}
+        dashboardMode
+        onApplyToFields={applyFilterToFields}
+      />
 
       {/* Filter fields */}
       <div className="space-y-2 mb-3">

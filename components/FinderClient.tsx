@@ -94,7 +94,7 @@ export default function FinderClient({
   const t = useTranslations('finder');
   const { session, loading: authLoading } = useAuth();
   const { properties: allOwn, loading: propsLoading, update, optimisticUpdate } = useProperties();
-  const { filters: savedFilters } = useSavedFilters();
+  const { filters: savedFilters, remove: removeFilter } = useSavedFilters();
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(initialPresets ?? new Set());
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(initialSavedFilterIds ?? new Set());
 
@@ -361,15 +361,15 @@ export default function FinderClient({
     <div className="flex-1 flex flex-col items-center justify-start pt-4 px-4 pb-8 w-full">
 
       {/* Preset + saved filter pills — always visible.
-          Stage pills are hidden: Finder only surfaces new properties. */}
+          Stage row hidden: Finder only surfaces new properties. */}
       <PresetFilters
         active={activePresets}
         onChange={setActivePresets}
         savedFilters={savedFilters}
         activeSavedFilterIds={activeSavedFilterIds}
         onToggleSavedFilter={toggleSavedFilter}
+        onDeleteFilter={removeFilter}
         align="center"
-        hideStages
       />
 
       {allReviewed ? (

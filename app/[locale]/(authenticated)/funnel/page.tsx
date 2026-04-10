@@ -9,7 +9,7 @@ import { type PresetFilterKey } from '@/lib/preset-filters';
 
 export default function FunnelPage() {
   const t = useTranslations('funnel');
-  const { filters: savedFilters } = useSavedFilters();
+  const { filters: savedFilters, remove: removeFilter } = useSavedFilters();
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(new Set());
 
@@ -37,6 +37,7 @@ export default function FunnelPage() {
         savedFilters={savedFilters}
         activeSavedFilterIds={activeSavedFilterIds}
         onToggleSavedFilter={toggleSavedFilter}
+        onDeleteFilter={removeFilter}
       />
 
       <FunnelBoard activePresets={activePresets} activeSavedFilterIds={activeSavedFilterIds} savedFilters={savedFilters} />
