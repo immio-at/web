@@ -367,6 +367,7 @@ export default function FinderClient({
         savedFilters={savedFilters}
         activeSavedFilterIds={activeSavedFilterIds}
         onToggleSavedFilter={toggleSavedFilter}
+        align="center"
       />
 
       {allReviewed ? (

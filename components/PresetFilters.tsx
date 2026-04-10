@@ -14,12 +14,14 @@ export default function PresetFilters({
   savedFilters,
   activeSavedFilterIds,
   onToggleSavedFilter,
+  align = 'left',
 }: {
   active: Set<PresetFilterKey>;
   onChange: (next: Set<PresetFilterKey>) => void;
   savedFilters?: SavedFilter[];
   activeSavedFilterIds?: Set<string>;
   onToggleSavedFilter?: (id: string) => void;
+  align?: 'left' | 'center';
 }) {
   const t = useTranslations('presetFilters');
 
@@ -50,24 +52,19 @@ export default function PresetFilters({
     );
   }
 
+  const justify = align === 'center' ? 'justify-center' : 'justify-start';
+
   return (
     <div className="space-y-1.5 py-2">
-      {/* Row 1: Funnel stages */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        {stageFilters.map(f => (
-          <PillButton key={f.key} filterKey={f.key} labelKey={f.labelKey} />
-        ))}
-      </div>
-
-      {/* Row 2: Austrian states */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      {/* Row 1: Austrian states + source presets + saved filters + clear all */}
+      <div className={`flex flex-wrap items-center gap-1.5 ${justify}`}>
         {stateFilters.map(f => (
           <PillButton key={f.key} filterKey={f.key} labelKey={f.labelKey} />
         ))}
-      </div>
 
-      {/* Row 3: Source + saved filters */}
-      <div className="flex flex-wrap items-center gap-1.5">
+        {sourceFilters.length > 0 && (
+          <span className="w-px h-5 bg-gray-200 mx-1" />
+        )}
         {sourceFilters.map(f => (
           <PillButton key={f.key} filterKey={f.key} labelKey={f.labelKey} />
         ))}
@@ -111,6 +108,13 @@ export default function PresetFilters({
             </button>
           </>
         )}
+      </div>
+
+      {/* Row 2: Funnel stages */}
+      <div className={`flex flex-wrap items-center gap-1.5 ${justify}`}>
+        {stageFilters.map(f => (
+          <PillButton key={f.key} filterKey={f.key} labelKey={f.labelKey} />
+        ))}
       </div>
     </div>
   );
