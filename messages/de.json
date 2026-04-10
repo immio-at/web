@@ -237,8 +237,7 @@
       "forwardHint": "Suchagenten-Emails automatisch an diese Adresse weiterleiten:",
       "copy": "Kopieren",
       "copied": "Kopiert!",
-      "notConfigured": "Nicht eingerichtet",
-      "scrapedHint": "Durchsucht außerdem {count} weitere Immobilienportale, darunter {names}."
+      "notConfigured": "Nicht eingerichtet"
     },
     "carousels": {
       "newArrivals": "Neu eingetroffen",

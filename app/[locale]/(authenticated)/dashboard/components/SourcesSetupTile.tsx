@@ -14,13 +14,6 @@ const PLATFORM_LABELS: Record<string, string> = {
   immmo: 'immmo.at',
 };
 
-const SCRAPED_SOURCES = ['Raiffeisen Immobilien', 's REAL', 'ÖRAG', 'RE/MAX'];
-
-function pickRandom(arr: string[], count: number): string[] {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
-}
-
 export default function SourcesSetupTile({
   properties,
   immioEmail,
@@ -66,9 +59,6 @@ export default function SourcesSetupTile({
     return result;
   }, [properties]);
 
-  // Pick 3 random scraped sources for the tagline (stable per render)
-  const highlightedScraped = useMemo(() => pickRandom(SCRAPED_SOURCES, 3), []);
-
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
       <h3 className="text-base font-semibold text-gray-900 mb-3">{t('title')}</h3>
@@ -112,15 +102,6 @@ export default function SourcesSetupTile({
         ))}
       </div>
 
-      {/* Scraped sources tagline */}
-      <div className="mt-3 pt-3 border-t border-gray-100">
-        <p className="text-xs text-gray-400">
-          {t('scrapedHint', {
-            count: SCRAPED_SOURCES.length,
-            names: highlightedScraped.join(', '),
-          })}
-        </p>
-      </div>
     </div>
   );
 }

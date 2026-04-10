@@ -237,8 +237,7 @@
       "forwardHint": "Auto-forward search agent emails to this address:",
       "copy": "Copy",
       "copied": "Copied!",
-      "notConfigured": "Not configured",
-      "scrapedHint": "Also searching {count} other property portals including {names}."
+      "notConfigured": "Not configured"
     },
     "carousels": {
       "newArrivals": "New arrivals",
