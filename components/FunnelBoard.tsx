@@ -168,6 +168,7 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
   const { properties: all, loading, error, update, optimisticUpdate } = useProperties();
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
+  const [zoomedStage, setZoomedStage] = useState<string | null>(null);
   const draggedId = useRef<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
@@ -308,70 +309,206 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
 
       <p className="text-sm text-gray-500 mb-4">{t('propertyCount', { count: properties.length })}</p>
 
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {FUNNEL_STAGES_DISPLAY.map((stage) => {
-          const stageProps = properties.filter(p => p.status === stage.key);
-          const isOver = dragOverStage === stage.key;
+      {zoomedStage ? (
+        <ZoomedStageView
+          stage={FUNNEL_STAGES_DISPLAY.find(s => s.key === zoomedStage)!}
+          stageProps={properties.filter(p => p.status === zoomedStage)}
+          isDragOver={dragOverStage === zoomedStage}
+          onBack={() => setZoomedStage(null)}
+          onMove={requestMove}
+          onAnalyse={(p) => { trackInteraction(p.id, 'analysis'); setAnalyseProperty(p); }}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        />
+      ) : (
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {FUNNEL_STAGES_DISPLAY.map((stage) => {
+            const stageProps = properties.filter(p => p.status === stage.key);
+            const isOver = dragOverStage === stage.key;
 
-          const prices = stageProps
-            .map(p => p.price ? parseFloat(String(p.price)) : null)
-            .filter((p): p is number => p !== null);
-          const total = prices.reduce((sum, p) => sum + p, 0);
-          const avg = prices.length > 0 ? total / prices.length : 0;
-          const hasPrice = prices.length > 0;
+            const prices = stageProps
+              .map(p => p.price ? parseFloat(String(p.price)) : null)
+              .filter((p): p is number => p !== null);
+            const total = prices.reduce((sum, p) => sum + p, 0);
+            const avg = prices.length > 0 ? total / prices.length : 0;
+            const hasPrice = prices.length > 0;
 
-          const isLight    = stage.parked || stage.key === 'investigating' || stage.key === 'interested';
-          const labelStyle = isLight ? 'text-slate-600 font-semibold text-sm' : 'text-white font-semibold text-sm';
-          const summaryStyle = isLight ? 'text-slate-500' : 'text-white opacity-80';
+            const isLight    = stage.parked || stage.key === 'investigating' || stage.key === 'interested';
+            const labelStyle = isLight ? 'text-slate-600 font-semibold text-sm' : 'text-white font-semibold text-sm';
+            const summaryStyle = isLight ? 'text-slate-500' : 'text-white opacity-80';
+            const iconStyle = isLight ? 'text-slate-500' : 'text-white opacity-80';
 
-          return (
-            <div
-              key={stage.key}
-              className="flex-shrink-0 w-60"
-              onDragOver={(e) => handleDragOver(e, stage.key)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, stage.key)}
-            >
-              <div className={`${stage.header} rounded-t-lg px-3 pt-2 pb-2`}>
-                <span className={labelStyle}>{t(`stages.${STAGE_I18N_KEY[stage.key] ?? stage.key}`)}</span>
-                <div className={`flex gap-2 text-xs mt-1 ${summaryStyle}`}>
-                  <span className="font-medium">#{stageProps.length}</span>
-                  <span className="opacity-40">·</span>
-                  <span>Ø {hasPrice ? formatPrice(avg) : '—'}</span>
-                  <span className="opacity-40">·</span>
-                  <span>Σ {hasPrice ? formatPrice(total) : '—'}</span>
+            return (
+              <div
+                key={stage.key}
+                className="flex-shrink-0 w-60"
+                onDragOver={(e) => handleDragOver(e, stage.key)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, stage.key)}
+              >
+                {/* Clickable column header — opens stage zoom (ADR-008 F2) */}
+                <button
+                  onClick={() => setZoomedStage(stage.key)}
+                  title={t('focusStage')}
+                  className={`${stage.header} rounded-t-lg px-3 pt-2 pb-2 w-full text-left group cursor-pointer hover:brightness-95 transition-all`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={labelStyle}>{t(`stages.${STAGE_I18N_KEY[stage.key] ?? stage.key}`)}</span>
+                    <span className={`text-sm opacity-0 group-hover:opacity-70 transition-opacity ${iconStyle}`}>⤢</span>
+                  </div>
+                  <div className={`flex gap-2 text-xs mt-1 ${summaryStyle}`}>
+                    <span className="font-medium">#{stageProps.length}</span>
+                    <span className="opacity-40">·</span>
+                    <span>Ø {hasPrice ? formatPrice(avg) : '—'}</span>
+                    <span className="opacity-40">·</span>
+                    <span>Σ {hasPrice ? formatPrice(total) : '—'}</span>
+                  </div>
+                </button>
+
+                <div
+                  className={`border border-t-0 rounded-b-lg min-h-32 p-2 space-y-2 transition-colors duration-150 ${
+                    isOver
+                      ? 'bg-blue-50 border-blue-300 border-2'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  {stageProps.map((prop) => (
+                    <FunnelCard
+                      key={prop.id}
+                      property={prop}
+                      stages={FUNNEL_STAGES_DISPLAY}
+                      onMove={requestMove}
+                      onAnalyse={(p) => { trackInteraction(p.id, 'analysis'); setAnalyseProperty(p); }}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                    />
+                  ))}
+                  {stageProps.length === 0 && (
+                    <p className={`text-xs text-center py-4 transition-colors ${
+                      isOver ? 'text-blue-400' : 'text-gray-400'
+                    }`}>
+                      {isOver ? t('card.dropHere') : t('card.noProperties')}
+                    </p>
+                  )}
                 </div>
               </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
-              <div
-                className={`border border-t-0 rounded-b-lg min-h-32 p-2 space-y-2 transition-colors duration-150 ${
-                  isOver
-                    ? 'bg-blue-50 border-blue-300 border-2'
-                    : 'bg-gray-50 border-gray-200'
-                }`}
-              >
-                {stageProps.map((prop) => (
-                  <FunnelCard
-                    key={prop.id}
-                    property={prop}
-                    stages={FUNNEL_STAGES_DISPLAY}
-                    onMove={requestMove}
-                    onAnalyse={(p) => { trackInteraction(p.id, 'analysis'); setAnalyseProperty(p); }}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                  />
-                ))}
-                {stageProps.length === 0 && (
-                  <p className={`text-xs text-center py-4 transition-colors ${
-                    isOver ? 'text-blue-400' : 'text-gray-400'
-                  }`}>
-                    {isOver ? t('card.dropHere') : t('card.noProperties')}
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
+// ─── Zoomed single-stage view (ADR-008 F2) ────────────────────────────────────
+
+function ZoomedStageView({
+  stage,
+  stageProps,
+  isDragOver,
+  onBack,
+  onMove,
+  onAnalyse,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+}: {
+  stage: typeof FUNNEL_STAGES_DISPLAY[number];
+  stageProps: Property[];
+  isDragOver: boolean;
+  onBack: () => void;
+  onMove: (id: string, title: string, status: string) => void;
+  onAnalyse: (p: Property) => void;
+  onDragStart: (id: string) => void;
+  onDragEnd: () => void;
+  onDragOver: (e: React.DragEvent, stageKey: string) => void;
+  onDragLeave: () => void;
+  onDrop: (e: React.DragEvent, stageKey: string) => void;
+}) {
+  const t = useTranslations('funnel');
+
+  // Escape closes the zoom (consistent with the rest of the app)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onBack();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onBack]);
+
+  const prices = stageProps
+    .map(p => p.price ? parseFloat(String(p.price)) : null)
+    .filter((p): p is number => p !== null);
+  const total = prices.reduce((sum, p) => sum + p, 0);
+  const avg = prices.length > 0 ? total / prices.length : 0;
+  const hasPrice = prices.length > 0;
+
+  const isLight    = stage.parked || stage.key === 'investigating' || stage.key === 'interested';
+  const labelStyle = isLight ? 'text-slate-700 font-semibold text-base' : 'text-white font-semibold text-base';
+  const summaryStyle = isLight ? 'text-slate-500' : 'text-white opacity-80';
+  const backStyle = isLight
+    ? 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
+    : 'text-white opacity-80 hover:opacity-100 hover:bg-white/10';
+
+  return (
+    <div
+      onDragOver={(e) => onDragOver(e, stage.key)}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => onDrop(e, stage.key)}
+    >
+      <div className={`${stage.header} rounded-t-lg px-4 py-3 flex items-center gap-3`}>
+        <button
+          onClick={onBack}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${backStyle}`}
+          title={t('backToFunnel')}
+        >
+          <span>←</span>
+          <span>{t('backToFunnel')}</span>
+        </button>
+        <div className="flex-1" />
+        <span className={labelStyle}>{t(`stages.${STAGE_I18N_KEY[stage.key] ?? stage.key}`)}</span>
+        <div className={`flex gap-2 text-xs ${summaryStyle}`}>
+          <span className="font-medium">#{stageProps.length}</span>
+          <span className="opacity-40">·</span>
+          <span>Ø {hasPrice ? formatPrice(avg) : '—'}</span>
+          <span className="opacity-40">·</span>
+          <span>Σ {hasPrice ? formatPrice(total) : '—'}</span>
+        </div>
+      </div>
+
+      <div
+        className={`border border-t-0 rounded-b-lg min-h-64 p-4 transition-colors duration-150 ${
+          isDragOver
+            ? 'bg-blue-50 border-blue-300 border-2'
+            : 'bg-gray-50 border-gray-200'
+        }`}
+      >
+        {stageProps.length === 0 ? (
+          <p className={`text-sm text-center py-12 ${
+            isDragOver ? 'text-blue-400' : 'text-gray-400'
+          }`}>
+            {isDragOver ? t('card.dropHere') : t('card.noProperties')}
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {stageProps.map((prop) => (
+              <FunnelCard
+                key={prop.id}
+                property={prop}
+                stages={FUNNEL_STAGES_DISPLAY}
+                onMove={onMove}
+                onAnalyse={onAnalyse}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
