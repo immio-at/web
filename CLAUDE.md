@@ -200,8 +200,10 @@ These are pure TypeScript functions with no side effects — keep them that way.
 ## Property & Funnel State
 
 ### Funnel Stages — canonical list
-`new` → `investigating` → `interested` → `visit_booked` → `visited` → `offer_made`
+`new` → `investigating` → `interested` → `due_diligence_completed` → `visited` → `offer_made`
 → `won` | `parked` | `not_relevant` | `delisted`
+
+`due_diligence_completed` was renamed from `visit_booked` 2026-04-10 (Session 31). The DB key is `due_diligence_completed` (snake_case), the i18n key is `dueDiligenceCompleted` (camelCase), the preset key is `stage_due_diligence_completed`. Stage labels: English funnel header "Due Diligence Completed", German "Due Diligence abgeschlossen", both pill labels "Due Diligence". Stage keys appear in many places (FUNNEL_STAGES in `lib/constants.ts`, STAGE_KEY_TO_STATUS in `lib/preset-filters.ts`, FUNNEL_STATUSES in `lib/recommendations.ts`, ASSIGNABLE_STAGES in `PropertyCard.tsx`, several STAGE_I18N_KEY copies in FunnelBoard / PropertyCard / analytics page / FunnelSummaryTile) — any future stage rename must touch ALL of these.
 
 Terminal stages: `won`, `parked`, `not_relevant`, `delisted`
 - `delisted` — hidden from all views (user dismissed an expired listing)
@@ -267,9 +269,10 @@ Set in Vercel dashboard — never commit to git.
 
 ## Preset Filters
 - `lib/preset-filters.ts` — types, definitions, `passesPresetFilters()`, `passesSavedFilters()`, `togglePreset()`
-- `components/PresetFilters.tsx` — shared pill toggle component. Accepts optional `savedFilters` + `activeSavedFilterIds` + `onToggleSavedFilter` for amber saved filter pills alongside presets
+- `components/PresetFilters.tsx` — shared pill toggle component. Accepts optional `savedFilters` + `activeSavedFilterIds` + `onToggleSavedFilter` for amber saved filter pills alongside presets. Props: `align?: 'left' | 'center'` (default left, Finder uses center) and `hideStages?: boolean` (default false, Finder uses true since Finder only shows new properties).
+- **Layout** (Session 31): 2 rows. Row 1 = states + source + saved filters + clear-all (separated by vertical dividers). Row 2 = funnel stages (suppressed when `hideStages`).
 - Source presets: "Search Agents" / "Exclude Search Agents" (mutually exclusive, check `emailReceivedAt`)
-- Stage presets: 9 funnel stages (New, Investigating, Interested, Visit Booked, Visited, Offer Made, Parked, Won, Not Relevant). OR within group. Scraped listings without status pass through.
+- Stage presets: 9 funnel stages (New, Investigating, Interested, Due Diligence, Visited, Offer Made, Parked, Won, Not Relevant). OR within group. Scraped listings without status pass through.
 - State presets: 9 Austrian states (OR within group, AND with other groups). Sent server-side on Discover and Finder (resolved to postcodes via `getPostcodesByBundesland`)
 - Dashboard Discover tile pre-caches per-state scraped counts on mount (10 parallel calls) for instant toggle
 - i18n: `presetFilters` namespace in de.json + en.json
