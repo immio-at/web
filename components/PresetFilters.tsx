@@ -15,6 +15,7 @@ export default function PresetFilters({
   activeSavedFilterIds,
   onToggleSavedFilter,
   align = 'left',
+  hideStages = false,
 }: {
   active: Set<PresetFilterKey>;
   onChange: (next: Set<PresetFilterKey>) => void;
@@ -22,6 +23,7 @@ export default function PresetFilters({
   activeSavedFilterIds?: Set<string>;
   onToggleSavedFilter?: (id: string) => void;
   align?: 'left' | 'center';
+  hideStages?: boolean;
 }) {
   const t = useTranslations('presetFilters');
 
@@ -111,11 +113,13 @@ export default function PresetFilters({
       </div>
 
       {/* Row 2: Funnel stages */}
-      <div className={`flex flex-wrap items-center gap-1.5 ${justify}`}>
-        {stageFilters.map(f => (
-          <PillButton key={f.key} filterKey={f.key} labelKey={f.labelKey} />
-        ))}
-      </div>
+      {!hideStages && (
+        <div className={`flex flex-wrap items-center gap-1.5 ${justify}`}>
+          {stageFilters.map(f => (
+            <PillButton key={f.key} filterKey={f.key} labelKey={f.labelKey} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

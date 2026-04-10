@@ -360,7 +360,8 @@ export default function FinderClient({
   return (
     <div className="flex-1 flex flex-col items-center justify-start pt-4 px-4 pb-8 w-full">
 
-      {/* Preset + saved filter pills — always visible */}
+      {/* Preset + saved filter pills — always visible.
+          Stage pills are hidden: Finder only surfaces new properties. */}
       <PresetFilters
         active={activePresets}
         onChange={setActivePresets}
@@ -368,6 +369,7 @@ export default function FinderClient({
         activeSavedFilterIds={activeSavedFilterIds}
         onToggleSavedFilter={toggleSavedFilter}
         align="center"
+        hideStages
       />
 
       {allReviewed ? (
