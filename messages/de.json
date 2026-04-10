@@ -396,6 +396,12 @@
       "updating": "Wird aktualisiert…",
       "submit": "Passwort aktualisieren"
     },
+    "filters": {
+      "title": "Gespeicherte Filter",
+      "description": "Suchfilter erstellen, bearbeiten und entfernen, die du plattformübergreifend wiederverwendest.",
+      "manageLink": "Gespeicherte Filter verwalten",
+      "count": "gespeichert"
+    },
     "subscription": {
       "title": "Abonnement",
       "description": "Abonnementverwaltung kommt bald — Upgrade, Downgrade und Abrechnung werden hier verfügbar sein."
@@ -408,6 +414,23 @@
       "title": "DSGVO & Datenschutz",
       "description": "Datenexport, Recht auf Löschung und Datenschutzeinstellungen kommen bald."
     }
+  },
+  "settingsFilters": {
+    "title": "Gespeicherte Filter",
+    "subtitle": "Wiederverwendbare Suchkriterien — angewendet in Discover, Finder und Funnel.",
+    "backToSettings": "Zurück zu Einstellungen",
+    "usage": "Verwendet",
+    "newFilter": "Neuer Filter",
+    "limitReachedTitle": "Filter-Limit erreicht",
+    "limitReachedHint": "Du hast alle Filter-Plätze deines {tier}-Tarifs verwendet. Lösche einen Filter, um Platz freizugeben, oder upgrade für mehr.",
+    "emptyState": "Noch keine gespeicherten Filter. Erstelle einen, um ihn plattformübergreifend wiederzuverwenden.",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "deleting": "Wird gelöscht…",
+    "confirmDelete": "Filter \"{name}\" löschen?",
+    "postcodes": "PLZ",
+    "rooms": "Zimmer",
+    "noCriteria": "Keine Kriterien"
   },
   "analytics": {
     "label": "Analytics",

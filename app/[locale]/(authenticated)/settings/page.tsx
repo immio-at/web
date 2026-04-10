@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { useSavedFilters } from '@/hooks/useSavedFilters';
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -28,6 +30,7 @@ function PlaceholderSection({ title, description }: { title: string; description
 export default function SettingsPage() {
   const t = useTranslations('settings');
   const { immioEmail, userEmail } = useAuth();
+  const { filters: savedFilters } = useSavedFilters();
   const [copied, setCopied] = useState(false);
 
   // Password change state
@@ -136,6 +139,18 @@ export default function SettingsPage() {
             {pwLoading ? t('password.updating') : t('password.submit')}
           </button>
         </div>
+      </Section>
+
+      {/* ── Saved Filters link ──────────────────────────────────────────────── */}
+      <Section title={t('filters.title')}>
+        <p className="text-sm text-gray-500 mb-3">{t('filters.description')}</p>
+        <Link
+          href="/settings/filters"
+          className="inline-flex items-center justify-between gap-3 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <span className="font-medium">{t('filters.manageLink')}</span>
+          <span className="text-xs text-gray-400">{savedFilters.length} {t('filters.count')} →</span>
+        </Link>
       </Section>
 
       {/* ── Placeholders ────────────────────────────────────────────────────── */}

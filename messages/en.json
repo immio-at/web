@@ -396,6 +396,12 @@
       "updating": "Updating...",
       "submit": "Update Password"
     },
+    "filters": {
+      "title": "Saved Filters",
+      "description": "Create, edit, and remove the search filters you reuse across the platform.",
+      "manageLink": "Manage saved filters",
+      "count": "saved"
+    },
     "subscription": {
       "title": "Subscription",
       "description": "Subscription management coming soon — upgrade, downgrade, and billing will be available here."
@@ -408,6 +414,23 @@
       "title": "GDPR & Privacy",
       "description": "Data export, right to erasure, and privacy controls coming soon."
     }
+  },
+  "settingsFilters": {
+    "title": "Saved Filters",
+    "subtitle": "Reusable search criteria — applied across Discover, Finder, and Funnel.",
+    "backToSettings": "Back to settings",
+    "usage": "Used",
+    "newFilter": "New filter",
+    "limitReachedTitle": "Filter limit reached",
+    "limitReachedHint": "You've used all the saved filter slots on the {tier} tier. Delete a filter to free a slot, or upgrade for more.",
+    "emptyState": "No saved filters yet. Create one to reuse it across the platform.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "confirmDelete": "Delete filter \"{name}\"?",
+    "postcodes": "postcodes",
+    "rooms": "rooms",
+    "noCriteria": "No criteria"
   },
   "analytics": {
     "label": "Analytics",
