@@ -55,22 +55,26 @@ function formatFileSize(bytes: number): string {
 }
 
 function formatNumber(n: number | null): string {
-  if (n === null || n === undefined) return '—';
+  if (n === null || n === undefined || isNaN(n)) return '—';
   return n.toLocaleString('de-AT');
 }
 
 function formatPrice(n: number | null): string {
-  if (n === null || n === undefined) return '—';
+  if (n === null || n === undefined || isNaN(n)) return '—';
   return '€ ' + Math.round(n).toLocaleString('de-AT');
 }
 
 function formatDate(s: string | null): string {
   if (!s) return '—';
-  try {
-    return new Date(s).toLocaleDateString('de-AT');
-  } catch {
-    return s;
-  }
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('de-AT');
+}
+
+// Years should never be locale-formatted (no thousand separator).
+function formatYear(n: number | null): string {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return String(Math.round(n));
 }
 
 export default function DossierTab({ property, onPropertyApplied }: Props) {
@@ -198,19 +202,27 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
     field,
     label,
     value,
-    formatter = formatNumber,
+    kind,
   }: {
     field: PropertyDetailsApplyableField;
     label: string;
     value: number | string | null;
-    formatter?: (v: number | null) => string;
+    kind: 'price' | 'date' | 'number';
   }) {
     const hasValue = value !== null && value !== undefined && value !== '';
     const isApplying = applyingField === field;
     const justApplied = appliedField === field;
-    const displayValue = typeof value === 'string'
-      ? formatDate(value)
-      : formatter(value as number | null);
+
+    let displayValue: string;
+    if (!hasValue) {
+      displayValue = '—';
+    } else if (kind === 'date') {
+      displayValue = formatDate(value as string);
+    } else if (kind === 'price') {
+      displayValue = formatPrice(typeof value === 'number' ? value : parseFloat(String(value)));
+    } else {
+      displayValue = formatNumber(typeof value === 'number' ? value : parseFloat(String(value)));
+    }
 
     return (
       <div className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-b-0">
@@ -396,12 +408,12 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
                 {t('fields.calcRelevant')}
               </p>
               <div>
-                <CalcFieldRow field="exposePrice"          label={t('fields.exposePrice')}          value={details.exposePrice}          formatter={formatPrice} />
-                <CalcFieldRow field="purchaseDate"         label={t('fields.purchaseDate')}         value={details.purchaseDate} />
-                <CalcFieldRow field="bkUmlagefaehig"       label={t('fields.bkUmlagefaehig')}       value={details.bkUmlagefaehig}       formatter={formatPrice} />
-                <CalcFieldRow field="bkNichtUmlagefaehig"  label={t('fields.bkNichtUmlagefaehig')}  value={details.bkNichtUmlagefaehig}  formatter={formatPrice} />
-                <CalcFieldRow field="sizeSqmVerified"      label={t('fields.sizeSqmVerified')}      value={details.sizeSqmVerified} />
-                <CalcFieldRow field="roomsVerified"        label={t('fields.roomsVerified')}        value={details.roomsVerified} />
+                <CalcFieldRow field="exposePrice"          label={t('fields.exposePrice')}          value={details.exposePrice}          kind="price" />
+                <CalcFieldRow field="purchaseDate"         label={t('fields.purchaseDate')}         value={details.purchaseDate}         kind="date" />
+                <CalcFieldRow field="bkUmlagefaehig"       label={t('fields.bkUmlagefaehig')}       value={details.bkUmlagefaehig}       kind="price" />
+                <CalcFieldRow field="bkNichtUmlagefaehig"  label={t('fields.bkNichtUmlagefaehig')}  value={details.bkNichtUmlagefaehig}  kind="price" />
+                <CalcFieldRow field="sizeSqmVerified"      label={t('fields.sizeSqmVerified')}      value={details.sizeSqmVerified}      kind="number" />
+                <CalcFieldRow field="roomsVerified"        label={t('fields.roomsVerified')}        value={details.roomsVerified}        kind="number" />
               </div>
             </div>
 
@@ -418,7 +430,7 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
                 {/* Property */}
                 <RefField label={t('fields.widmung')}       value={details.widmung} />
                 <RefField label={t('fields.etage')}         value={details.etage} />
-                <RefField label={t('fields.baujahr')}       value={details.baujahr} />
+                <RefField label={t('fields.baujahr')}       value={formatYear(details.baujahr)} />
                 <RefField label={t('fields.haustyp')}       value={details.haustyp} />
                 <RefField label={t('fields.zustand')}       value={details.zustand} />
                 <RefField label={t('fields.beziehbarAb')}   value={details.beziehbarAb ? formatDate(details.beziehbarAb) : null} />

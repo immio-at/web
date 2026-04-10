@@ -587,13 +587,42 @@ export type UpdatePropertyDetailsDto = Partial<Omit<PropertyDetails,
   'id' | 'propertyId' | 'createdAt' | 'updatedAt' | 'extractedAt' | 'extractionSource'
 >>;
 
+// Prisma Decimal columns serialize as strings in JSON to preserve
+// precision. The TypeScript interface says `number | null`, but the
+// raw response holds strings for these fields. Coerce them once at
+// the API boundary so every consumer gets real numbers.
+const DECIMAL_FIELDS: (keyof PropertyDetails)[] = [
+  'exposePrice',
+  'bkUmlagefaehig',
+  'bkNichtUmlagefaehig',
+  'sizeSqmVerified',
+  'roomsVerified',
+  'hwbValue',
+];
+
+function normalizePropertyDetails(d: PropertyDetails | null): PropertyDetails | null {
+  if (!d) return null;
+  const out: Record<string, unknown> = { ...d };
+  for (const f of DECIMAL_FIELDS) {
+    const v = out[f];
+    if (v === null || v === undefined) {
+      out[f] = null;
+    } else if (typeof v === 'string') {
+      const parsed = parseFloat(v);
+      out[f] = isNaN(parsed) ? null : parsed;
+    }
+  }
+  return out as unknown as PropertyDetails;
+}
+
 export async function getPropertyDetails(propertyId: string): Promise<{ details: PropertyDetails | null }> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/${propertyId}/details`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
-  return handleResponse(response);
+  const data = await handleResponse(response);
+  return { details: normalizePropertyDetails(data?.details ?? null) };
 }
 
 export async function updatePropertyDetails(
@@ -609,7 +638,8 @@ export async function updatePropertyDetails(
     },
     body: JSON.stringify(dto),
   });
-  return handleResponse(response);
+  const data = await handleResponse(response);
+  return normalizePropertyDetails(data) as unknown as PropertyDetails;
 }
 
 export async function extractPropertyDetails(propertyId: string): Promise<PropertyDetails> {
@@ -618,7 +648,8 @@ export async function extractPropertyDetails(propertyId: string): Promise<Proper
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
   });
-  return handleResponse(response);
+  const data = await handleResponse(response);
+  return normalizePropertyDetails(data) as unknown as PropertyDetails;
 }
 
 export async function applyPropertyDetailField(
