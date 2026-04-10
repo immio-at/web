@@ -65,6 +65,11 @@ export interface Property {
   // listingExpiredAt: ISO timestamp of first expiry detection, or null
   listingStatus: string;
   listingExpiredAt: string | null;
+  // ADR-009 DO1: defaults written by the Dossier → Apply flow. May be
+  // null until the user has applied a Dossier value.
+  purchaseDate: string | null;
+  bkUmlagefaehig: number | null;
+  bkNichtUmlagefaehig: number | null;
 }
 
 // ─── Property Analysis ────────────────────────────────────────────────────────
@@ -655,7 +660,7 @@ export async function extractPropertyDetails(propertyId: string): Promise<Proper
 export async function applyPropertyDetailField(
   propertyId: string,
   field: PropertyDetailsApplyableField,
-): Promise<unknown> {
+): Promise<Property> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/${propertyId}/details/apply-field`, {
     method: 'POST',

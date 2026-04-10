@@ -993,6 +993,7 @@
   "dossier": {
     "applied": "Übernommen ✓",
     "applyTooltip": "Diesen Wert in die Immobilie übernehmen",
+    "default": "Standard",
     "yes": "Ja",
     "no": "Nein",
     "documents": {

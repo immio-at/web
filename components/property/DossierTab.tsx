@@ -29,6 +29,7 @@ import {
   deleteDocument,
 } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { useProperties } from '@/hooks/useProperties';
 import MrgWarningBanner from './MrgWarningBanner';
 
 interface Props {
@@ -77,9 +78,34 @@ function formatYear(n: number | null): string {
   return String(Math.round(n));
 }
 
+// Maps a Dossier field to the property column it writes. Mirrors
+// FIELD_TO_PROPERTY_COLUMN in property-details.service.ts on the backend.
+// Used to optimistically update the useProperties cache so the analyses
+// tab and any other consumers see the new value without waiting for a
+// network round-trip.
+const APPLY_TARGET: Record<PropertyDetailsApplyableField, keyof Property> = {
+  exposePrice: 'price',
+  purchaseDate: 'purchaseDate',
+  bkUmlagefaehig: 'bkUmlagefaehig',
+  bkNichtUmlagefaehig: 'bkNichtUmlagefaehig',
+  sizeSqmVerified: 'sizeSqm',
+  roomsVerified: 'rooms',
+};
+
+// ADR-009 default: today + 2 months. Used both for the inline placeholder
+// shown next to the purchase-date Apply button and as the value the
+// optimistic UI assumes the backend will write when no Dossier value
+// exists yet.
+function defaultPurchaseDate(): Date {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 2);
+  return d;
+}
+
 export default function DossierTab({ property, onPropertyApplied }: Props) {
   const t = useTranslations('dossier');
   const { tier } = useAuth();
+  const { optimisticUpdate } = useProperties();
   const isPro = tier === 'pro';
 
   const [details, setDetails] = useState<PropertyDetails | null>(null);
@@ -146,19 +172,42 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
     }
   }
 
-  async function handleApply(field: PropertyDetailsApplyableField) {
+  // Optimistic apply — show "Applied ✓" immediately, fire the API in
+  // the background, also patch the useProperties cache so the analyses
+  // tab and any other consumer of the same property see fresh values
+  // without waiting for the backend round-trip.
+  function handleApply(field: PropertyDetailsApplyableField) {
     if (applyingField) return;
-    setApplyingField(field);
-    try {
-      await applyPropertyDetailField(property.id, field);
-      setAppliedField(field);
-      setTimeout(() => setAppliedField(null), 2500);
-      onPropertyApplied?.();
-    } catch (e) {
-      console.error('Apply failed', e);
-    } finally {
-      setApplyingField(null);
+
+    // Compute the value the backend will write — for purchaseDate when
+    // null we mirror the backend's today+2months default; for everything
+    // else it's just the Dossier value.
+    let value: unknown = details ? (details as unknown as Record<string, unknown>)[field] : null;
+    if ((value === null || value === undefined) && field === 'purchaseDate') {
+      value = defaultPurchaseDate().toISOString();
     }
+    if (value === null || value === undefined) return; // nothing to apply
+
+    // Optimistic visual feedback
+    setAppliedField(field);
+    setTimeout(() => setAppliedField(null), 2500);
+
+    // Optimistic cache update — patch the parent property record so
+    // analyses re-derive from fresh values on the next render.
+    const propertyColumn = APPLY_TARGET[field];
+    optimisticUpdate(property.id, { [propertyColumn]: value } as Partial<Property>);
+
+    onPropertyApplied?.();
+
+    // Fire the backend write in the background. Roll back the optimistic
+    // confirmation if it fails.
+    setApplyingField(field);
+    applyPropertyDetailField(property.id, field)
+      .catch((e) => {
+        console.error('Apply failed', e);
+        setAppliedField(null);
+      })
+      .finally(() => setApplyingField(null));
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -213,25 +262,34 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
     const isApplying = applyingField === field;
     const justApplied = appliedField === field;
 
+    // purchaseDate is special — Apply is always available because the
+    // backend falls back to today + 2 months when no value exists.
+    const canApply = hasValue || field === 'purchaseDate';
+
     let displayValue: string;
-    if (!hasValue) {
-      displayValue = '—';
-    } else if (kind === 'date') {
+    if (hasValue && kind === 'date') {
       displayValue = formatDate(value as string);
-    } else if (kind === 'price') {
+    } else if (hasValue && kind === 'price') {
       displayValue = formatPrice(typeof value === 'number' ? value : parseFloat(String(value)));
-    } else {
+    } else if (hasValue) {
       displayValue = formatNumber(typeof value === 'number' ? value : parseFloat(String(value)));
+    } else if (field === 'purchaseDate') {
+      // Show the default the Apply button would write
+      displayValue = `${formatDate(defaultPurchaseDate().toISOString())} (${t('default')})`;
+    } else {
+      displayValue = '—';
     }
 
     return (
       <div className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-b-0">
         <span className="text-xs text-gray-500">{label}</span>
         <div className="flex items-center gap-2">
-          <span className={`text-sm font-medium ${hasValue ? 'text-gray-900' : 'text-gray-300'}`}>
+          <span className={`text-sm font-medium ${
+            hasValue ? 'text-gray-900' : field === 'purchaseDate' ? 'text-gray-400 italic' : 'text-gray-300'
+          }`}>
             {displayValue}
           </span>
-          {hasValue && (
+          {canApply && (
             justApplied ? (
               <span className="text-xs text-emerald-600 font-medium">{t('applied')}</span>
             ) : (

@@ -993,6 +993,7 @@
   "dossier": {
     "applied": "Applied ✓",
     "applyTooltip": "Apply this value to the property record",
+    "default": "default",
     "yes": "Yes",
     "no": "No",
     "documents": {
