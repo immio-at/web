@@ -21,6 +21,7 @@ import {
   getDocumentDownloadUrl,
   deleteDocument,
 } from '@/lib/api';
+import DossierTab from '@/components/property/DossierTab';
 import {
   calcOwnerResults,
   calcRentalResults,
@@ -234,6 +235,9 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  // ADR-009 DO4: top-level toggle between the analyses workspace and the
+  // Property Dossier (documents + AI extraction + structured property data).
+  const [viewMode, setViewMode] = useState<'analyses' | 'dossier'>('analyses');
 
   // Documents
   const [documents, setDocuments] = useState<PropertyDocument[]>([]);
@@ -468,8 +472,33 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
           <button onClick={onClose} className="text-[#6b7a99] hover:text-[#0F1F3D] transition-colors text-2xl leading-none">✕</button>
         </div>
 
-        {/* ── Tab Bar ── */}
-        {!loading && tabs.length > 0 && (
+        {/* ── Mode toggle: Analyses ↔ Dossier (ADR-009 DO4) ── */}
+        <div className="px-6 pt-3 flex items-center gap-1.5">
+          <button
+            onClick={() => setViewMode('analyses')}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+              viewMode === 'analyses'
+                ? 'bg-[#0F1F3D] text-white border-[#0F1F3D]'
+                : 'bg-white text-[#6b7a99] border-[#e2e6ed] hover:bg-[#f8f9fb]'
+            }`}
+          >
+            {t('viewMode.analyses')}
+          </button>
+          <button
+            onClick={() => setViewMode('dossier')}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors flex items-center gap-1 ${
+              viewMode === 'dossier'
+                ? 'bg-[#0F1F3D] text-white border-[#0F1F3D]'
+                : 'bg-white text-[#6b7a99] border-[#e2e6ed] hover:bg-[#f8f9fb]'
+            }`}
+          >
+            <span>📎</span>
+            <span>{t('viewMode.dossier')}</span>
+          </button>
+        </div>
+
+        {/* ── Tab Bar (analyses only) ── */}
+        {viewMode === 'analyses' && !loading && tabs.length > 0 && (
           <div className="flex items-center gap-1 px-6 pt-3 pb-0 overflow-x-auto border-b border-[#e2e6ed]">
             {tabs.map((tab, i) => (
               <div
@@ -520,6 +549,10 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
 
         {loading ? (
           <div className="p-12 text-center text-[#6b7a99]">{t('loading')}</div>
+        ) : viewMode === 'dossier' ? (
+          <div className="p-6">
+            <DossierTab property={property} />
+          </div>
         ) : (
           <div className="p-6 space-y-8">
 
@@ -1076,77 +1109,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
               </div>
             )}
 
-            {/* ── Documents ── */}
-            <div className="pt-6 border-t border-[#e2e6ed]">
-              <h3 className="text-sm font-semibold text-[#0F1F3D] uppercase tracking-wide mb-3">{t('documents.title')}</h3>
-
-              {/* Upload row */}
-              <div className="flex flex-wrap gap-2 items-end mb-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-[#6b7a99] font-medium">{t('documents.typeLabel')}</label>
-                  <select
-                    value={docLabel}
-                    onChange={e => setDocLabel(e.target.value)}
-                    className="border border-[#e2e6ed] rounded-lg px-3 py-2 text-sm text-[#0F1F3D] bg-white focus:outline-none focus:ring-2 focus:ring-[#F5A623]"
-                  >
-                    {docTypes.map(l => (
-                      <option key={l} value={l}>{l}</option>
-                    ))}
-                  </select>
-                </div>
-                <label className={`px-4 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors ${
-                  uploading || documents.length >= 10
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-[#F5A623] text-white hover:bg-[#d4891a]'
-                }`}>
-                  {uploading ? t('documents.uploading') : t('documents.upload')}
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    onChange={handleDocUpload}
-                    disabled={uploading || documents.length >= 10}
-                    className="hidden"
-                  />
-                </label>
-                {documents.length >= 10 && (
-                  <span className="text-xs text-[#6b7a99]">{t('documents.maxReached')}</span>
-                )}
-              </div>
-
-              {docError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2 mb-3">{docError}</div>
-              )}
-
-              {/* Document list */}
-              {documents.length > 0 ? (
-                <div className="space-y-1.5">
-                  {documents.map(doc => (
-                    <div key={doc.id} className="flex items-center justify-between bg-[#f8f9fb] rounded-lg px-3 py-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-xs font-medium text-[#F5A623] bg-[#FEF3E2] px-2 py-0.5 rounded flex-shrink-0">{doc.label}</span>
-                        <button
-                          onClick={() => handleDocDownload(doc)}
-                          className="text-sm text-[#0F1F3D] hover:text-[#F5A623] truncate transition-colors"
-                          title={doc.fileName}
-                        >
-                          {doc.fileName}
-                        </button>
-                        <span className="text-xs text-[#6b7a99] flex-shrink-0">{formatFileSize(doc.fileSize)}</span>
-                      </div>
-                      <button
-                        onClick={() => handleDocDelete(doc)}
-                        className="text-[#6b7a99] hover:text-red-500 text-xs ml-2 flex-shrink-0"
-                        title={t('documents.deleteTitle')}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-[#6b7a99]">{t('documents.empty')}</p>
-              )}
-            </div>
+            {/* Documents moved to the Dossier tab (ADR-009 DO4) */}
 
             {/* ── Error ── */}
             {error && (

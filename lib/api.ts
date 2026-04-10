@@ -525,6 +525,118 @@ export async function deleteDocument(propertyId: string, documentId: string): Pr
   return handleResponse(response);
 }
 
+// ─── Property Details (Dossier — ADR-009) ───────────────────────────────────
+
+export type PropertyDetailsApplyableField =
+  | 'exposePrice'
+  | 'purchaseDate'
+  | 'bkUmlagefaehig'
+  | 'bkNichtUmlagefaehig'
+  | 'sizeSqmVerified'
+  | 'roomsVerified';
+
+export interface PropertyDetails {
+  id: string;
+  propertyId: string;
+  extractedAt: string | null;
+  extractionSource: string | null;
+
+  // Calculator-relevant
+  exposePrice: number | null;
+  purchaseDate: string | null;
+  bkUmlagefaehig: number | null;
+  bkNichtUmlagefaehig: number | null;
+  sizeSqmVerified: number | null;
+  roomsVerified: number | null;
+
+  // Address
+  addressStreet: string | null;
+  addressZip: string | null;
+  addressCity: string | null;
+
+  // Property
+  etage: number | null;
+  aufzug: boolean | null;
+  keller: boolean | null;
+  aussenflaeche: string | null;
+  parkplatz: string | null;
+  baujahr: number | null;
+  zustand: string | null;
+  haustyp: string | null;
+  beziehbarAb: string | null;
+  heizung: string | null;
+  boden: string | null;
+  fenster: string | null;
+  bathrooms: number | null;
+  separateWC: boolean | null;
+  widmung: string | null;
+  grundflaeche: number | null;
+
+  // Energy
+  hwbClass: string | null;
+  hwbValue: number | null;
+
+  // Risk signal
+  mrgRisk: boolean | null;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type UpdatePropertyDetailsDto = Partial<Omit<PropertyDetails,
+  'id' | 'propertyId' | 'createdAt' | 'updatedAt' | 'extractedAt' | 'extractionSource'
+>>;
+
+export async function getPropertyDetails(propertyId: string): Promise<{ details: PropertyDetails | null }> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${propertyId}/details`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  return handleResponse(response);
+}
+
+export async function updatePropertyDetails(
+  propertyId: string,
+  dto: UpdatePropertyDetailsDto,
+): Promise<PropertyDetails> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${propertyId}/details`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(dto),
+  });
+  return handleResponse(response);
+}
+
+export async function extractPropertyDetails(propertyId: string): Promise<PropertyDetails> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${propertyId}/details/extract`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  return handleResponse(response);
+}
+
+export async function applyPropertyDetailField(
+  propertyId: string,
+  field: PropertyDetailsApplyableField,
+): Promise<unknown> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${propertyId}/details/apply-field`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ field }),
+  });
+  return handleResponse(response);
+}
+
 // ─── Saved Filters ──────────────────────────────────────────────────────────
 
 export interface SavedFilter {

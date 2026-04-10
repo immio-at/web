@@ -599,6 +599,10 @@
       "cancel": "Cancel",
       "delete": "Delete"
     },
+    "viewMode": {
+      "analyses": "Analyses",
+      "dossier": "Dossier"
+    },
     "openListing": "Open ↗",
     "rooms": "rooms",
     "usage": {
@@ -985,5 +989,73 @@
     "V": "Vorarlberg",
     "B": "Burgenland",
     "clearAll": "Clear all"
+  },
+  "dossier": {
+    "applied": "Applied ✓",
+    "applyTooltip": "Apply this value to the property record",
+    "yes": "Yes",
+    "no": "No",
+    "documents": {
+      "title": "Documents",
+      "upload": "Upload PDF",
+      "uploading": "Uploading…",
+      "delete": "Delete",
+      "empty": "No documents yet. Upload an Exposé to enable AI extraction.",
+      "errorUpload": "Upload failed",
+      "maxReached": "Max 10 documents",
+      "confirmDelete": "Delete document \"{name}\"?"
+    },
+    "extraction": {
+      "title": "AI Extraction",
+      "hint": "Extract structured property data from your uploaded Exposé using Claude.",
+      "extract": "Extract from Exposé",
+      "reExtract": "Re-extract",
+      "extracting": "Extracting…",
+      "lastExtracted": "Last extracted: {when}",
+      "proLockedHint": "AI extraction is a Pro tier feature.",
+      "proLockedSub": "Upgrade to Pro to extract structured data from Exposé PDFs automatically.",
+      "noExpose": "Upload an Exposé PDF first.",
+      "cooldown": "Please wait a few minutes before re-extracting this property.",
+      "dailyLimit": "Daily extraction limit reached. Try again tomorrow.",
+      "proRequired": "AI extraction is only available on the Pro tier.",
+      "failed": "Extraction failed."
+    },
+    "fields": {
+      "title": "Property Data",
+      "empty": "No data yet. Extract from an Exposé or enter values manually.",
+      "calcRelevant": "Calculator-Relevant",
+      "reference": "Reference",
+      "exposePrice": "Exposé Price",
+      "purchaseDate": "Purchase Date",
+      "bkUmlagefaehig": "BK (recoverable)",
+      "bkNichtUmlagefaehig": "BK (non-recoverable)",
+      "sizeSqmVerified": "Size (m²)",
+      "roomsVerified": "Rooms",
+      "addressStreet": "Street",
+      "addressZip": "Postcode",
+      "addressCity": "City",
+      "etage": "Floor",
+      "aufzug": "Lift",
+      "keller": "Cellar",
+      "aussenflaeche": "Outdoor space",
+      "parkplatz": "Parking",
+      "baujahr": "Built",
+      "zustand": "Condition",
+      "haustyp": "Building type",
+      "beziehbarAb": "Available from",
+      "heizung": "Heating",
+      "boden": "Flooring",
+      "fenster": "Windows",
+      "bathrooms": "Bathrooms",
+      "separateWC": "Separate WC",
+      "widmung": "Use class",
+      "grundflaeche": "Plot area (m²)",
+      "hwbClass": "HWB class",
+      "hwbValue": "HWB value (kWh/m²a)"
+    },
+    "mrgWarning": {
+      "title": "Possible MRG property",
+      "body": "Exposé signals suggest a property under the Mietrechtsgesetz (Altbau / built before 1945). MRG classification affects rent regulation and tenant protection. Legal consultation recommended."
+    }
   }
 }

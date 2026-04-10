@@ -599,6 +599,10 @@
       "cancel": "Abbrechen",
       "delete": "Löschen"
     },
+    "viewMode": {
+      "analyses": "Analysen",
+      "dossier": "Dossier"
+    },
     "openListing": "Öffnen ↗",
     "rooms": "Zimmer",
     "usage": {
@@ -985,5 +989,73 @@
     "V": "Vbg",
     "B": "Bgld",
     "clearAll": "Alle löschen"
+  },
+  "dossier": {
+    "applied": "Übernommen ✓",
+    "applyTooltip": "Diesen Wert in die Immobilie übernehmen",
+    "yes": "Ja",
+    "no": "Nein",
+    "documents": {
+      "title": "Dokumente",
+      "upload": "PDF hochladen",
+      "uploading": "Wird hochgeladen…",
+      "delete": "Löschen",
+      "empty": "Noch keine Dokumente. Lade ein Exposé hoch, um die KI-Extraktion zu nutzen.",
+      "errorUpload": "Upload fehlgeschlagen",
+      "maxReached": "Max. 10 Dokumente",
+      "confirmDelete": "Dokument \"{name}\" löschen?"
+    },
+    "extraction": {
+      "title": "KI-Extraktion",
+      "hint": "Strukturierte Immobiliendaten aus dem hochgeladenen Exposé mit Claude extrahieren.",
+      "extract": "Aus Exposé extrahieren",
+      "reExtract": "Erneut extrahieren",
+      "extracting": "Wird extrahiert…",
+      "lastExtracted": "Zuletzt extrahiert: {when}",
+      "proLockedHint": "KI-Extraktion ist eine Pro-Funktion.",
+      "proLockedSub": "Upgrade auf Pro, um strukturierte Daten automatisch aus Exposé-PDFs zu extrahieren.",
+      "noExpose": "Bitte zuerst ein Exposé-PDF hochladen.",
+      "cooldown": "Bitte warte ein paar Minuten, bevor du diese Immobilie erneut extrahierst.",
+      "dailyLimit": "Tägliches Extraktionslimit erreicht. Bitte morgen erneut versuchen.",
+      "proRequired": "KI-Extraktion ist nur im Pro-Tarif verfügbar.",
+      "failed": "Extraktion fehlgeschlagen."
+    },
+    "fields": {
+      "title": "Immobiliendaten",
+      "empty": "Noch keine Daten. Extrahiere aus einem Exposé oder gib Werte manuell ein.",
+      "calcRelevant": "Kalkulator-relevant",
+      "reference": "Referenz",
+      "exposePrice": "Exposé-Preis",
+      "purchaseDate": "Kaufdatum",
+      "bkUmlagefaehig": "BK (umlagefähig)",
+      "bkNichtUmlagefaehig": "BK (nicht umlagefähig)",
+      "sizeSqmVerified": "Nutzfläche (m²)",
+      "roomsVerified": "Zimmer",
+      "addressStreet": "Straße",
+      "addressZip": "PLZ",
+      "addressCity": "Ort",
+      "etage": "Etage",
+      "aufzug": "Aufzug",
+      "keller": "Keller",
+      "aussenflaeche": "Außenfläche",
+      "parkplatz": "Parkplatz",
+      "baujahr": "Baujahr",
+      "zustand": "Zustand",
+      "haustyp": "Haustyp",
+      "beziehbarAb": "Beziehbar ab",
+      "heizung": "Heizung",
+      "boden": "Boden",
+      "fenster": "Fenster",
+      "bathrooms": "Badezimmer",
+      "separateWC": "Separates WC",
+      "widmung": "Widmung",
+      "grundflaeche": "Grundfläche (m²)",
+      "hwbClass": "HWB-Klasse",
+      "hwbValue": "HWB-Wert (kWh/m²a)"
+    },
+    "mrgWarning": {
+      "title": "Mögliches MRG-Objekt",
+      "body": "Exposé-Signale deuten auf ein Objekt unter Mietrechtsgesetz hin (Altbau / Baujahr vor 1945). MRG-Klassifizierung beeinflusst Mietpreisregulierung und Kündigungsschutz. Rechtliche Beratung wird empfohlen."
+    }
   }
 }
