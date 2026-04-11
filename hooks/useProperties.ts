@@ -150,6 +150,21 @@ export function useProperties() {
     }
   }, []);
 
+  // ── Optimistic insert (ADR-010 I6) ────────────────────────────────────────
+  // Prepend a brand-new property to the cache and notify all listeners,
+  // so a card created via the Add Property modal appears in the Funnel /
+  // Dashboard / Discover lists instantly without waiting for a refetch.
+  // Caller is responsible for the API call — this function only touches
+  // the local cache.
+  const optimisticInsert = useCallback((property: Property) => {
+    if (cache) {
+      // De-dupe in case the same id was already inserted (e.g. between
+      // optimistic insert and a follow-up refresh)
+      cache = [property, ...cache.filter(p => p.id !== property.id)];
+      notifyListeners(cache);
+    }
+  }, []);
+
   return {
     properties,
     loading,
@@ -157,6 +172,7 @@ export function useProperties() {
     refresh: () => fetchFromServer(true),
     update,
     optimisticUpdate,
+    optimisticInsert,
   };
 }
 

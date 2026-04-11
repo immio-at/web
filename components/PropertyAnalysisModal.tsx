@@ -54,6 +54,10 @@ import {
 interface Props {
   property: Property;
   onClose: () => void;
+  /** Initial viewMode — defaults to 'analyses'. ADR-010 I6: the
+   *  unified Add Property modal opens new properties in 'dossier' mode
+   *  so the user immediately sees the data they just provided. */
+  initialViewMode?: 'analyses' | 'dossier';
 }
 
 // ─── Input helpers ────────────────────────────────────────────────────────────
@@ -230,7 +234,7 @@ function tabLabel(tab: Tab): string {
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
-export default function PropertyAnalysisModal({ property, onClose }: Props) {
+export default function PropertyAnalysisModal({ property, onClose, initialViewMode = 'analyses' }: Props) {
   const t = useTranslations('analysis');
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTab, setActiveTab] = useState(0);
@@ -240,7 +244,7 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   // ADR-009 DO4: top-level toggle between the analyses workspace and the
   // Property Dossier (documents + AI extraction + structured property data).
-  const [viewMode, setViewMode] = useState<'analyses' | 'dossier'>('analyses');
+  const [viewMode, setViewMode] = useState<'analyses' | 'dossier'>(initialViewMode);
 
   // ADR-009 DO6: MRG risk flag, fetched once when the modal opens. Used
   // to render the MrgWarningBanner above the rental analysis section.

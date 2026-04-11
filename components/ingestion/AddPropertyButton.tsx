@@ -51,6 +51,7 @@ export default function AddPropertyButton() {
         <PropertyAnalysisModal
           property={createdProperty}
           onClose={() => setCreatedProperty(null)}
+          initialViewMode="dossier"
         />
       )}
     </>
