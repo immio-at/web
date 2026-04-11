@@ -1,16 +1,14 @@
 'use client';
 
 /**
- * DossierTab — Property Dossier (ADR-009 DO4 + DO5).
+ * DossierTab — Property Dossier (ADR-009 DO4 + DO5 + DO7).
  *
  * Three sections:
  *   1. Documents      — list + upload + download + delete
  *   2. AI Extraction  — Pro-only, button + last-extracted timestamp
  *   3. Structured     — calc-relevant fields with → Apply, plus
- *                       reference fields. MRG warning banner if flagged.
- *
- * Manual inline editing (DO7) and the Exposé-create entry path (DO8)
- * are not in this slice.
+ *                       reference fields. Every field is inline-
+ *                       editable (DO7). MRG banner if flagged.
  */
 
 import { useEffect, useState } from 'react';
@@ -20,7 +18,9 @@ import {
   PropertyDetails,
   PropertyDocument,
   PropertyDetailsApplyableField,
+  UpdatePropertyDetailsDto,
   getPropertyDetails,
+  updatePropertyDetails,
   extractPropertyDetails,
   applyPropertyDetailField,
   getDocuments,
@@ -31,6 +31,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useProperties } from '@/hooks/useProperties';
 import MrgWarningBanner from './MrgWarningBanner';
+import EditableField, { type FieldKind } from './EditableField';
 
 interface Props {
   property: Property;
@@ -102,6 +103,48 @@ function defaultPurchaseDate(): Date {
   const d = new Date();
   d.setMonth(d.getMonth() + 2);
   return d;
+}
+
+// ── Field config for inline editing (DO7) ────────────────────────────────────
+// Maps every editable Dossier field to its input kind. Enum options mirror
+// the backend ENUMS in extraction.service.ts — keep both in sync if values
+// change. Labels are the raw enum values for now (i18n later).
+type FieldName = keyof PropertyDetails;
+
+const FIELD_CONFIG: Partial<Record<FieldName, { kind: FieldKind; options?: string[] }>> = {
+  exposePrice: { kind: 'number' },
+  purchaseDate: { kind: 'date' },
+  bkUmlagefaehig: { kind: 'number' },
+  bkNichtUmlagefaehig: { kind: 'number' },
+  sizeSqmVerified: { kind: 'number' },
+  roomsVerified: { kind: 'number' },
+  addressStreet: { kind: 'text' },
+  addressZip: { kind: 'text' },
+  addressCity: { kind: 'text' },
+  etage: { kind: 'integer' },
+  aufzug: { kind: 'boolean' },
+  keller: { kind: 'boolean' },
+  aussenflaeche: { kind: 'enum', options: ['none', 'balkon', 'terrasse', 'loggia'] },
+  parkplatz: { kind: 'enum', options: ['none', 'tiefgarage', 'carport', 'freiplatz'] },
+  baujahr: { kind: 'integer' },
+  zustand: { kind: 'enum', options: ['erstbezug', 'neuwertig', 'gepflegt', 'renovierungsbeduerftig', 'sanierungsbeduerftig'] },
+  haustyp: { kind: 'enum', options: ['altbau', 'gruenderzeit', 'neubau', 'dachausbau'] },
+  beziehbarAb: { kind: 'date' },
+  heizung: { kind: 'enum', options: ['fernwaerme', 'gas', 'waermepumpe', 'pellets', 'nachtspeicher', 'sonstiges'] },
+  boden: { kind: 'enum', options: ['parkett', 'fliesen', 'laminat', 'teppich', 'sonstiges'] },
+  fenster: { kind: 'enum', options: ['holz', 'holz_alu', 'kunststoff', 'sonstiges'] },
+  bathrooms: { kind: 'integer' },
+  separateWC: { kind: 'boolean' },
+  widmung: { kind: 'enum', options: ['wohnung', 'einfamilienhaus', 'mehrfamilienhaus', 'dachgeschoss', 'buero', 'geschaeftslokal', 'anlagenobjekt', 'grundstueck', 'sonstiges'] },
+  grundflaeche: { kind: 'integer' },
+  hwbClass: { kind: 'enum', options: ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G'] },
+  hwbValue: { kind: 'number' },
+};
+
+function fieldOptions(field: FieldName): { value: string; label: string }[] {
+  const cfg = FIELD_CONFIG[field];
+  if (!cfg?.options) return [];
+  return cfg.options.map(v => ({ value: v, label: v }));
 }
 
 export default function DossierTab({ property, onPropertyApplied }: Props) {
@@ -215,6 +258,35 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
       .finally(() => setApplyingField(null));
   }
 
+  // ── Manual inline edit (DO7) ─────────────────────────────────────────────
+  // Optimistic: update local state first, fire PATCH in background, roll
+  // back if the call fails. The Dossier row is the source of truth — the
+  // user has to click → Apply separately to push a value to the property.
+  async function handleFieldEdit(field: FieldName, next: unknown) {
+    if (!details) {
+      // No Dossier row yet — create one with just this field
+      try {
+        const dto: UpdatePropertyDetailsDto = { [field]: next } as UpdatePropertyDetailsDto;
+        const created = await updatePropertyDetails(property.id, dto);
+        setDetails(created);
+      } catch (e) {
+        console.error('Field edit failed', e);
+      }
+      return;
+    }
+
+    const before = details;
+    setDetails({ ...details, [field]: next as never });
+    try {
+      const dto: UpdatePropertyDetailsDto = { [field]: next } as UpdatePropertyDetailsDto;
+      const updated = await updatePropertyDetails(property.id, dto);
+      setDetails(updated);
+    } catch (e) {
+      console.error('Field edit failed', e);
+      setDetails(before);
+    }
+  }
+
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -252,6 +324,26 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
 
   // ── Render helpers ─────────────────────────────────────────────────────
 
+  // Format helper for the Calc rows — chooses display string by `kind`.
+  function formatCalcValue(value: number | string | null, kind: 'price' | 'date' | 'number'): string {
+    const hasValue = value !== null && value !== undefined && value !== '';
+    if (!hasValue) return '—';
+    if (kind === 'date') return formatDate(value as string);
+    const n = typeof value === 'number' ? value : parseFloat(String(value));
+    return kind === 'price' ? formatPrice(n) : formatNumber(n);
+  }
+
+  // Format helper for reference rows — switches on the JS type since the
+  // PropertyDetails interface is heterogeneous.
+  function formatRefValue(field: FieldName, value: unknown): string {
+    if (value === null || value === undefined || value === '') return '—';
+    if (typeof value === 'boolean') return value ? t('yes') : t('no');
+    if (field === 'baujahr') return formatYear(value as number);
+    if (field === 'beziehbarAb') return formatDate(value as string);
+    if (typeof value === 'number') return formatNumber(value);
+    return String(value);
+  }
+
   function CalcFieldRow({
     field,
     label,
@@ -271,28 +363,33 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
     // backend falls back to today + 2 months when no value exists.
     const canApply = hasValue || field === 'purchaseDate';
 
-    let displayValue: string;
-    if (hasValue && kind === 'date') {
-      displayValue = formatDate(value as string);
-    } else if (hasValue && kind === 'price') {
-      displayValue = formatPrice(typeof value === 'number' ? value : parseFloat(String(value)));
-    } else if (hasValue) {
-      displayValue = formatNumber(typeof value === 'number' ? value : parseFloat(String(value)));
+    // Display string. For purchaseDate when null we still show the default
+    // (today + 2 months) so the user can preview what Apply would write.
+    let display: string;
+    if (hasValue) {
+      display = formatCalcValue(value, kind);
     } else if (field === 'purchaseDate') {
-      // Show the default the Apply button would write
-      displayValue = `${formatDate(defaultPurchaseDate().toISOString())} (${t('default')})`;
+      display = `${formatDate(defaultPurchaseDate().toISOString())} (${t('default')})`;
     } else {
-      displayValue = '—';
+      display = '—';
     }
+
+    // Map the calc kind to an EditableField kind. Number/date are direct;
+    // 'price' becomes 'number' for editing (the formatter still renders €).
+    const editKind: FieldKind = kind === 'date' ? 'date' : 'number';
 
     return (
       <div className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-b-0">
         <span className="text-xs text-gray-500">{label}</span>
         <div className="flex items-center gap-2">
-          <span className={`text-sm font-medium ${
-            hasValue ? 'text-gray-900' : field === 'purchaseDate' ? 'text-gray-400 italic' : 'text-gray-300'
-          }`}>
-            {displayValue}
+          <span className="text-sm font-medium">
+            <EditableField
+              kind={editKind}
+              value={value}
+              display={display}
+              onSave={(next) => handleFieldEdit(field, next)}
+              emptyAsPlaceholder={!hasValue}
+            />
           </span>
           {canApply && (
             justApplied ? (
@@ -313,16 +410,28 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
     );
   }
 
-  function RefField({ label, value }: { label: string; value: unknown }) {
-    if (value === null || value === undefined || value === '') return null;
-    let display: string;
-    if (typeof value === 'boolean') display = value ? t('yes') : t('no');
-    else if (typeof value === 'number') display = formatNumber(value);
-    else display = String(value);
+  // Reference field — every field is editable. Empty values render as
+  // "—" but are clickable. We always render the row (no null-hiding) so
+  // the user knows which fields exist and can fill them in.
+  function RefField({ field, label }: { field: FieldName; label: string }) {
+    const cfg = FIELD_CONFIG[field];
+    if (!cfg || !details) return null;
+    const value = (details as unknown as Record<string, unknown>)[field];
+    const display = formatRefValue(field, value);
+    const isEmpty = value === null || value === undefined || value === '';
     return (
       <div className="flex justify-between items-baseline py-1 border-b border-gray-100 last:border-b-0">
         <span className="text-xs text-gray-500">{label}</span>
-        <span className="text-sm text-gray-900">{display}</span>
+        <span className="text-sm">
+          <EditableField
+            kind={cfg.kind}
+            value={value}
+            display={display}
+            onSave={(next) => handleFieldEdit(field, next)}
+            options={fieldOptions(field)}
+            emptyAsPlaceholder={isEmpty}
+          />
+        </span>
       </div>
     );
   }
@@ -487,32 +596,32 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
               </p>
               <div>
                 {/* Location */}
-                <RefField label={t('fields.addressStreet')} value={details.addressStreet} />
-                <RefField label={t('fields.addressZip')}    value={details.addressZip} />
-                <RefField label={t('fields.addressCity')}   value={details.addressCity} />
+                <RefField field="addressStreet" label={t('fields.addressStreet')} />
+                <RefField field="addressZip"    label={t('fields.addressZip')} />
+                <RefField field="addressCity"   label={t('fields.addressCity')} />
                 {/* Property */}
-                <RefField label={t('fields.widmung')}       value={details.widmung} />
-                <RefField label={t('fields.etage')}         value={details.etage} />
-                <RefField label={t('fields.baujahr')}       value={formatYear(details.baujahr)} />
-                <RefField label={t('fields.haustyp')}       value={details.haustyp} />
-                <RefField label={t('fields.zustand')}       value={details.zustand} />
-                <RefField label={t('fields.beziehbarAb')}   value={details.beziehbarAb ? formatDate(details.beziehbarAb) : null} />
+                <RefField field="widmung"       label={t('fields.widmung')} />
+                <RefField field="etage"         label={t('fields.etage')} />
+                <RefField field="baujahr"       label={t('fields.baujahr')} />
+                <RefField field="haustyp"       label={t('fields.haustyp')} />
+                <RefField field="zustand"       label={t('fields.zustand')} />
+                <RefField field="beziehbarAb"   label={t('fields.beziehbarAb')} />
                 {/* Size */}
-                <RefField label={t('fields.grundflaeche')}  value={details.grundflaeche} />
-                <RefField label={t('fields.bathrooms')}     value={details.bathrooms} />
-                <RefField label={t('fields.separateWC')}    value={details.separateWC} />
+                <RefField field="grundflaeche"  label={t('fields.grundflaeche')} />
+                <RefField field="bathrooms"     label={t('fields.bathrooms')} />
+                <RefField field="separateWC"    label={t('fields.separateWC')} />
                 {/* Features */}
-                <RefField label={t('fields.aufzug')}        value={details.aufzug} />
-                <RefField label={t('fields.keller')}        value={details.keller} />
-                <RefField label={t('fields.aussenflaeche')} value={details.aussenflaeche} />
-                <RefField label={t('fields.parkplatz')}     value={details.parkplatz} />
+                <RefField field="aufzug"        label={t('fields.aufzug')} />
+                <RefField field="keller"        label={t('fields.keller')} />
+                <RefField field="aussenflaeche" label={t('fields.aussenflaeche')} />
+                <RefField field="parkplatz"     label={t('fields.parkplatz')} />
                 {/* Technical */}
-                <RefField label={t('fields.heizung')}       value={details.heizung} />
-                <RefField label={t('fields.boden')}         value={details.boden} />
-                <RefField label={t('fields.fenster')}       value={details.fenster} />
+                <RefField field="heizung"       label={t('fields.heizung')} />
+                <RefField field="boden"         label={t('fields.boden')} />
+                <RefField field="fenster"       label={t('fields.fenster')} />
                 {/* Energy */}
-                <RefField label={t('fields.hwbClass')}      value={details.hwbClass} />
-                <RefField label={t('fields.hwbValue')}      value={details.hwbValue} />
+                <RefField field="hwbClass"      label={t('fields.hwbClass')} />
+                <RefField field="hwbValue"      label={t('fields.hwbValue')} />
               </div>
             </div>
           </div>
