@@ -1070,5 +1070,54 @@
       "errorDailyLimit": "Daily extraction limit reached. Try again tomorrow.",
       "errorGeneric": "Could not process the Exposé."
     }
+  },
+  "addProperty": {
+    "button": "Add Property",
+    "title": "Add a Property",
+    "close": "Close",
+    "submit": "Add",
+    "submitting": "Adding…",
+    "cancel": "Cancel",
+    "tabs": {
+      "url": "Webpage",
+      "expose": "Exposé",
+      "manual": "Manual"
+    },
+    "stageSelector": {
+      "label": "Save to funnel stage"
+    },
+    "urlTab": {
+      "label": "Listing URL"
+    },
+    "exposeTab": {
+      "dropZone": "Drop an Exposé PDF here, or click to select",
+      "hint": "PDF only · max 10 MB",
+      "proLockedTitle": "Exposé upload is a Pro feature",
+      "proLockedBody": "Upload an Exposé and IMMIO creates the property automatically with AI extraction.",
+      "upgradePrompt": "Upgrade to Pro →"
+    },
+    "manualTab": {
+      "title": "Title",
+      "titlePlaceholder": "e.g. Altbau apartment Vienna 7, 65m²",
+      "price": "Price (€)",
+      "sizeSqm": "Size (m²)",
+      "rooms": "Rooms",
+      "location": "Location / district",
+      "locationPlaceholder": "e.g. 1070 Wien, Neubau",
+      "zipCode": "Postcode",
+      "notes": "Notes"
+    },
+    "errors": {
+      "urlRequired": "Please enter a URL.",
+      "fileRequired": "Please select a PDF file.",
+      "unsupportedUrl": "This site isn't recognised yet. You can add the property by uploading an Exposé or entering it manually.",
+      "duplicate": "This property is already in your funnel.",
+      "invalidUrl": "Please enter a valid URL.",
+      "tooLarge": "File too large (max 10 MB).",
+      "pdfOnly": "Only PDF files are accepted.",
+      "proRequired": "Exposé upload is only available on the Pro tier.",
+      "dailyLimit": "Daily extraction limit reached. Try again tomorrow.",
+      "generic": "Something went wrong. Please try again."
+    }
   }
 }

@@ -1070,5 +1070,54 @@
       "errorDailyLimit": "Tägliches Extraktionslimit erreicht. Bitte morgen erneut versuchen.",
       "errorGeneric": "Exposé konnte nicht verarbeitet werden."
     }
+  },
+  "addProperty": {
+    "button": "Immobilie hinzufügen",
+    "title": "Immobilie hinzufügen",
+    "close": "Schließen",
+    "submit": "Hinzufügen",
+    "submitting": "Wird hinzugefügt…",
+    "cancel": "Abbrechen",
+    "tabs": {
+      "url": "Webseite",
+      "expose": "Exposé",
+      "manual": "Manuell"
+    },
+    "stageSelector": {
+      "label": "In Funnel-Stufe speichern"
+    },
+    "urlTab": {
+      "label": "Inserats-URL"
+    },
+    "exposeTab": {
+      "dropZone": "Exposé-PDF hier ablegen oder auswählen",
+      "hint": "Nur PDF · max. 10 MB",
+      "proLockedTitle": "Exposé-Upload ist ein Pro-Feature",
+      "proLockedBody": "Lade ein Exposé hoch und IMMIO erstellt die Immobilie automatisch mit KI-Extraktion.",
+      "upgradePrompt": "Auf Pro upgraden →"
+    },
+    "manualTab": {
+      "title": "Titel",
+      "titlePlaceholder": "z.B. Altbauwohnung Wien 7, 65m²",
+      "price": "Preis (€)",
+      "sizeSqm": "Größe (m²)",
+      "rooms": "Zimmer",
+      "location": "Ort / Bezirk",
+      "locationPlaceholder": "z.B. 1070 Wien, Neubau",
+      "zipCode": "PLZ",
+      "notes": "Notizen"
+    },
+    "errors": {
+      "urlRequired": "Bitte eine URL eingeben.",
+      "fileRequired": "Bitte eine PDF-Datei auswählen.",
+      "unsupportedUrl": "Diese Seite wird noch nicht unterstützt. Du kannst die Immobilie stattdessen per Exposé-Upload oder manuell hinzufügen.",
+      "duplicate": "Diese Immobilie befindet sich bereits in deinem Funnel.",
+      "invalidUrl": "Bitte eine gültige URL eingeben.",
+      "tooLarge": "Datei zu groß (max. 10 MB).",
+      "pdfOnly": "Nur PDF-Dateien werden akzeptiert.",
+      "proRequired": "Exposé-Upload ist nur im Pro-Tarif verfügbar.",
+      "dailyLimit": "Tägliches Extraktionslimit erreicht. Bitte morgen erneut versuchen.",
+      "generic": "Ein Fehler ist aufgetreten. Bitte versuche es erneut."
+    }
   }
 }

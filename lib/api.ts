@@ -659,10 +659,12 @@ export async function extractPropertyDetails(propertyId: string): Promise<Proper
 
 export async function createPropertyFromExpose(
   file: File,
+  status?: string,
 ): Promise<{ property: Property; details: PropertyDetails }> {
   const token = await getAuthToken();
   const formData = new FormData();
   formData.append('file', file);
+  if (status) formData.append('status', status);
   const response = await fetch(`${API_URL}/properties/from-expose`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
@@ -673,6 +675,45 @@ export async function createPropertyFromExpose(
     property: data.property,
     details: normalizePropertyDetails(data.details) as unknown as PropertyDetails,
   };
+}
+
+// ── ADR-010 unified Add Property modal ───────────────────────────────────────
+
+export interface CreateManualPropertyDto {
+  title?: string | null;
+  price?: number | null;
+  sizeSqm?: number | null;
+  rooms?: number | null;
+  location?: string | null;
+  zipCode?: string | null;
+  notes?: string | null;
+  status?: string;
+}
+
+export async function createManualProperty(dto: CreateManualPropertyDto): Promise<Property> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(dto),
+  });
+  return handleResponse(response);
+}
+
+export async function createPropertyFromUrl(url: string, status?: string): Promise<Property> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/from-url`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ url, status }),
+  });
+  return handleResponse(response);
 }
 
 export async function applyPropertyDetailField(

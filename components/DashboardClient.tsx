@@ -12,7 +12,7 @@ import AnalyticsSnapshotTile from '@/app/[locale]/(authenticated)/dashboard/comp
 import PropertyCarousel from '@/app/[locale]/(authenticated)/dashboard/components/PropertyCarousel';
 import RecommendedCarousel from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
 import { type CardProperty, type CardActions } from '@/components/PropertyCard';
-import AddFromExposeButton from '@/components/property/AddFromExposeButton';
+import AddPropertyButton from '@/components/ingestion/AddPropertyButton';
 import { useTranslations } from 'next-intl';
 
 const PropertyAnalysisModal = dynamic(
@@ -71,9 +71,9 @@ export default function DashboardClient({
 
   return (
     <div>
-      {/* ADR-009 DO8 entry point — Pro-only Exposé upload */}
+      {/* ADR-010 unified Add Property entry point */}
       <div className="flex justify-end mb-4">
-        <AddFromExposeButton />
+        <AddPropertyButton />
       </div>
 
       {/* Summary Tiles — 2×2 grid, equal row heights */}
