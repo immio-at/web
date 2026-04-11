@@ -87,6 +87,7 @@ Do not create a `/login` route. Session expiry redirects to `/?signin=true`.
   `GET /auth/me` and caches the result. Fixes returning users after browser cache clear.
 - **Never** read auth state from `supabase.auth.getSession()` directly in components —
   always read from `AuthContext`
+- **Cross-user cache clearing (CRITICAL)** — sign-out + sign-in on the same tab was leaking the previous user's data via module-level caches. AuthContext now calls `clearAllUserCaches()` from BOTH `signOut()` AND a `useEffect` that watches `session?.user?.id` (defense in depth — covers session expiry + re-login, OAuth callback for a different user, etc.). The helper calls `clearPropertiesCache()`, `clearSavedFiltersCache()`, and `clearAnalyticsCache()`. **Any new module-level cache that holds user-scoped data MUST export a clear function and add it to `clearAllUserCaches()`** — otherwise it leaks.
 
 **useProperties hook — session guard**
 - Location: `hooks/useProperties.ts`
@@ -267,15 +268,26 @@ Set in Vercel dashboard — never commit to git.
 6. **Anna's landing page copy** (P3) — hero headline and problem section are placeholder
 7. **Onboarding wizard** (P3) — deferred until all functionality complete
 
-## Preset Filters
-- `lib/preset-filters.ts` — types, definitions, `passesPresetFilters()`, `passesSavedFilters()`, `togglePreset()`
-- `components/PresetFilters.tsx` — shared pill toggle component. Accepts optional `savedFilters` + `activeSavedFilterIds` + `onToggleSavedFilter` for amber saved filter pills alongside presets. Props: `align?: 'left' | 'center'` (default left, Finder uses center) and `hideStages?: boolean` (default false, Finder uses true since Finder only shows new properties).
-- **Layout** (Session 31): 2 rows. Row 1 = states + source + saved filters + clear-all (separated by vertical dividers). Row 2 = funnel stages (suppressed when `hideStages`).
+## Filter Management UI (ADR-008)
+- `lib/preset-filters.ts` — types, definitions, `passesPresetFilters()`, `passesSavedFilters()`, `passesFilterValues()`, `savedFilterHasLocation()`, `togglePreset()`
+- `components/PresetFilters.tsx` — pill bar shell. Owns its own FilterModal state internally so each parent doesn't have to plumb open/close/mode. Props:
+  - `active`, `onChange` — preset key set
+  - `savedFilters`, `activeSavedFilterIds`, `onToggleSavedFilter` — user filter pills + multi-select state
+  - `onDeleteFilter` — passed from parent (typically `useSavedFilters().remove`)
+  - `align?: 'left' | 'center'` — default left, Finder centres
+  - `showStages?: boolean` — default false. Discover sets true to render the third stages row
+  - `compact?: boolean` — smaller pills + tighter spacing for the Dashboard tile
+  - `dashboardMode?: boolean`, `onApplyToFields?: (filter) => void` — dashboardMode disables hard-filter activation; clicking a saved filter pill instead populates the parent's field state via the callback
+- **Layout** (Session 32): 2 rows by default — Row 1 = Bundesland (9 states, multi-select), Row 2 = Search Agents · No Search Agents (radio) · `|` divider · user filter pills with kebab Edit/Delete · `+` pill · clear-all link. Discover gets a third stages row inserted between Row 1 and Row 2.
+- **Bundesland override (F5)** — when any active saved filter has `postcodes / bezirke / bundeslaender` non-empty, the Bundesland pills are cleared and rendered greyed/disabled with a "Standort vom gespeicherten Filter gesetzt" tooltip. Implemented via a `useEffect` that watches the active saved-filter set and strips state keys from `active`.
+- `components/filters/UserFilterPill.tsx` — single user-defined filter pill with kebab dropdown. Edit (opens FilterModal pre-filled), Delete (confirm dialog → `onDeleteFilter`).
+- `components/filters/FilterModal.tsx` + `FilterModalForm.tsx` — full-form create/edit modal. Live property count combines own properties (instant from cache) + scraped listings (debounced 400ms `getScrapedListings`). Two save buttons: Update + Apply (edit only, PATCHes in place) and Save as New + Apply (POST). Closes on Escape and outside click.
 - Source presets: "Search Agents" / "Exclude Search Agents" (mutually exclusive, check `emailReceivedAt`)
 - Stage presets: 9 funnel stages (New, Investigating, Interested, Due Diligence, Visited, Offer Made, Parked, Won, Not Relevant). OR within group. Scraped listings without status pass through.
 - State presets: 9 Austrian states (OR within group, AND with other groups). Sent server-side on Discover and Finder (resolved to postcodes via `getPostcodesByBundesland`)
 - Dashboard Discover tile pre-caches per-state scraped counts on mount (10 parallel calls) for instant toggle
-- i18n: `presetFilters` namespace in de.json + en.json
+- **`/settings/filters` (F6)** — bulk management page. Lists every filter oldest-first with Edit / Delete / "New filter" actions. Tier limit indicator (X / Y used) with upgrade prompt at the cap. `TIER_LIMITS` constant on the page mirrors the backend SavedFiltersService rules — keep in sync.
+- i18n: `presetFilters.*` and `settingsFilters.*` namespaces in de.json + en.json
 
 ## Unified PropertyCard
 - `components/PropertyCard.tsx` — shared card for Dashboard carousels (compact) and Discover grid (full)
@@ -306,12 +318,30 @@ Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
 - `components/PropertyAnalysisModal.tsx` — full-screen modal, multi-tab architecture
 - `lib/calculators.ts` — all pure calculation functions (purchase, loan, AfA, rental tax, flip tax)
 - Multi-analysis tabs: Chrome-style [+]/[✕], auto-naming ("Rental 1", "Flip 2"), dirty indicator
+- **Top-level mode toggle (ADR-009 DO4)** — `[Analysen] [📎 Dossier]` pill row above the analysis tab bar. In Dossier mode the analysis tab bar hides and `<DossierTab />` renders instead.
 - Tax section: Privat/GmbH toggle, AfA (accelerated post-2020), Grenzsteuersatz, KÖSt 23%, KESt 27.5%
 - Rental results: pre-tax metrics + after-tax (private: marginal tax; GmbH: retained vs distributed)
 - Flip results: private (ImmoESt 30% + Hauptwohnsitzbefreiung); GmbH (KÖSt + KESt side-by-side)
 - Liebhaberei warning (25-year cumulative cashflow check)
+- **MRG warning banner (ADR-009 DO6)** — `MrgWarningBanner.tsx` rendered in the rental analysis section header when the Dossier flagged `mrgRisk: true`. Fetched once on modal mount via `getPropertyDetails`. Stale-after-extract is acceptable in this slice — close + reopen the modal to refresh.
 - Cost structure: BK umlagefähig (tenant-paid) + BK nicht umlagefähig (owner costs incl. HV reserve) per usage type. Flip includes all BK in holding costs.
 - Backend: 6 tax fields on PropertyAnalysis model (legalStructure, purchaseDate, gebaeudeAnteilPct, grenzsteuersatzPct, gmbhAccountingCostsAnnual, distributeProfit)
+- **Analysis-draft sync after Dossier → Apply** — when DossierTab fires `onPropertyApplied(field, value)`, the modal's `handleDossierApplied` patches every open analysis tab's draft (`exposePrice → listPrice`, `purchaseDate`, `bkUmlagefaehig`, `bkNichtUmlagefaehig`) and auto-saves saved tabs in the background. Unsaved new tabs (id === null) stay dirty so the user explicitly commits.
+
+## Property Dossier (ADR-009)
+- `components/property/DossierTab.tsx` — three-section Dossier view: Documents, AI Extraction, Structured Property Data. Mounts inside `PropertyAnalysisModal` when viewMode === 'dossier'.
+- `components/property/EditableField.tsx` — generic inline-edit cell. Six input kinds: number, integer, text, date, boolean, enum. Click to edit, Enter or blur commits, Escape cancels (uses a `cancelledRef` so Escape wins the blur race). Purely presentational — parent provides `onSave`.
+- `components/property/MrgWarningBanner.tsx` — amber banner reused by DossierTab Section 3 and the rental analysis tab header. Wording is deliberately hedged ("Mögliches MRG-Objekt", "Signale deuten auf", "Rechtliche Beratung wird empfohlen") — never a legal classification.
+- `components/property/AddFromExposeButton.tsx` — Pro-only Exposé upload entry point. Mounted on the Funnel page header and the Dashboard top-right. Click → file picker → `createPropertyFromExpose` → `useProperties.refresh()` → modal opens on the new property. Non-Pro users see a `PRO` badge and an inline upgrade hint instead of the picker.
+- **API client** (`lib/api.ts`):
+  - `PropertyDetails` interface mirrors the backend Prisma model
+  - `normalizePropertyDetails()` coerces all Decimal fields (`exposePrice`, `bk*`, `sizeSqmVerified`, `roomsVerified`, `hwbValue`) from string → number at the API boundary. Prisma serializes Decimals as strings to preserve precision; without this every numeric Dossier field would arrive as a string and break formatters.
+  - `getPropertyDetails`, `updatePropertyDetails`, `extractPropertyDetails`, `applyPropertyDetailField`, `createPropertyFromExpose`
+- **`→ Apply` flow (DO5)** — optimistic. The display flips to "Übernommen ✓" instantly, the `useProperties` cache is patched via `optimisticUpdate`, the parent modal's analysis drafts are synced via `onPropertyApplied`, the backend write fires in the background. Rollback only on error.
+- **Manual edit flow (DO7)** — `handleFieldEdit(field, value)` patches local `details` state first, fires `updatePropertyDetails` PATCH in the background, rolls back on error. If no Dossier row exists yet, the first edit creates one (no Exposé required).
+- **Field config** — `FIELD_CONFIG` map at the top of `DossierTab.tsx` lists every field with its `EditableField` kind + enum options. **Enum options must mirror the backend `ENUMS` constant in `extraction.service.ts`** — keep both in sync.
+- **PurchaseDate special-case** — Apply is always available (even when null). When null, the row shows the default date (today + 2 months) in italic grey with `(Standard)`. Click → and the backend's same default is written. The frontend computes the same value optimistically for the cache patch so there's no flicker.
+- i18n: `dossier.*` namespace in de.json + en.json — section headers, every field label, error states, the MRG warning copy, and the Pro upgrade hints.
 
 ## Performance Architecture
 - `useProperties`: 2-minute TTL module-level cache, `prefetchProperties()` called during auth init
