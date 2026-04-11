@@ -657,6 +657,24 @@ export async function extractPropertyDetails(propertyId: string): Promise<Proper
   return normalizePropertyDetails(data) as unknown as PropertyDetails;
 }
 
+export async function createPropertyFromExpose(
+  file: File,
+): Promise<{ property: Property; details: PropertyDetails }> {
+  const token = await getAuthToken();
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${API_URL}/properties/from-expose`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData,
+  });
+  const data = await handleResponse(response);
+  return {
+    property: data.property,
+    details: normalizePropertyDetails(data.details) as unknown as PropertyDetails,
+  };
+}
+
 export async function applyPropertyDetailField(
   propertyId: string,
   field: PropertyDetailsApplyableField,

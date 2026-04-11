@@ -1057,6 +1057,18 @@
     "mrgWarning": {
       "title": "Possible MRG property",
       "body": "Exposé signals suggest a property under the Mietrechtsgesetz (Altbau / built before 1945). MRG classification affects rent regulation and tenant protection. Legal consultation recommended."
+    },
+    "fromExpose": {
+      "button": "Add from Exposé",
+      "uploading": "Uploading & extracting…",
+      "tooltip": "Create a new property by uploading an Exposé PDF",
+      "proLockedTooltip": "Pro tier feature",
+      "proLockedHint": "Adding properties from an Exposé is a Pro feature. Upgrade to use AI extraction for off-market and broker-introduced properties.",
+      "errorProRequired": "This is a Pro tier feature.",
+      "errorPdfOnly": "Only PDF files are accepted.",
+      "errorTooLarge": "File too large (max 10 MB).",
+      "errorDailyLimit": "Daily extraction limit reached. Try again tomorrow.",
+      "errorGeneric": "Could not process the Exposé."
     }
   }
 }

@@ -1057,6 +1057,18 @@
     "mrgWarning": {
       "title": "Mögliches MRG-Objekt",
       "body": "Exposé-Signale deuten auf ein Objekt unter Mietrechtsgesetz hin (Altbau / Baujahr vor 1945). MRG-Klassifizierung beeinflusst Mietpreisregulierung und Kündigungsschutz. Rechtliche Beratung wird empfohlen."
+    },
+    "fromExpose": {
+      "button": "Aus Exposé hinzufügen",
+      "uploading": "Wird hochgeladen & extrahiert…",
+      "tooltip": "Neue Immobilie durch Hochladen eines Exposé-PDFs erstellen",
+      "proLockedTooltip": "Pro-Funktion",
+      "proLockedHint": "Immobilien aus Exposé hinzufügen ist eine Pro-Funktion. Upgrade, um KI-Extraktion für Off-Market- und Makler-Empfehlungen zu nutzen.",
+      "errorProRequired": "Das ist eine Pro-Funktion.",
+      "errorPdfOnly": "Nur PDF-Dateien werden akzeptiert.",
+      "errorTooLarge": "Datei zu groß (max. 10 MB).",
+      "errorDailyLimit": "Tägliches Extraktionslimit erreicht. Bitte morgen erneut versuchen.",
+      "errorGeneric": "Exposé konnte nicht verarbeitet werden."
     }
   }
 }

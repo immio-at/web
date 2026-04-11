@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import FunnelBoard from '@/components/FunnelBoard';
 import PresetFilters from '@/components/PresetFilters';
+import AddFromExposeButton from '@/components/property/AddFromExposeButton';
 import { type PresetFilterKey } from '@/lib/preset-filters';
 
 export default function FunnelPage() {
@@ -29,6 +30,7 @@ export default function FunnelPage() {
           <h2 className="text-2xl font-bold text-gray-900">{t('title')}</h2>
           <p className="text-gray-600 mt-1">{t('subtitle')}</p>
         </div>
+        <AddFromExposeButton />
       </div>
 
       <PresetFilters

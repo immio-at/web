@@ -49,6 +49,8 @@ const PLATFORM_LABELS: Record<string, string> = {
   willhaben: 'Willhaben', immoscout24: 'ImmoScout24', immowelt: 'Immowelt',
   bazar: 'Bazar.at', immmo: 'immmo.at', raiffeisen: 'Raiffeisen',
   sreal: 's REAL', oerag: 'ÖRAG', remax: 'RE/MAX',
+  // ADR-009 DO8: properties created via the from-Exposé upload path
+  'exposé_upload': 'Exposé',
 };
 
 function formatPrice(price: number | null) {
