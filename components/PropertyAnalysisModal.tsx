@@ -292,11 +292,17 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
       .catch(() => setMrgRisk(null));
   }, [property.id, t, property]);
 
-  // ── Sync open analysis drafts when the user clicks → Apply in Dossier ──
+  // ── Sync + auto-save open analysis drafts when → Apply is clicked ──────
   // Analyses keep per-row copies of price / BK / purchaseDate that don't
-  // otherwise refresh until the modal is reloaded. This makes apply feel
-  // immediate in both the property record AND every open analysis tab.
-  // We mark the affected tabs dirty so the user knows to save.
+  // otherwise refresh until the modal is reloaded. We:
+  //   1. Patch every open tab's draft with the new value
+  //   2. For tabs that already exist on the backend (id != null),
+  //      auto-save in the background — the user shouldn't have to click
+  //      Save just to confirm a one-click Dossier apply.
+  //   3. For unsaved new tabs (id == null), mark dirty so the user can
+  //      decide whether to commit. Auto-creating from a Dossier apply
+  //      would be too aggressive.
+  //   4. If a background save fails, mark that tab dirty + surface error.
   const handleDossierApplied = useCallback(
     (field: PropertyDetailsApplyableField, value: unknown) => {
       const draftField: keyof Draft | null =
@@ -306,13 +312,30 @@ export default function PropertyAnalysisModal({ property, onClose }: Props) {
         field === 'bkNichtUmlagefaehig' ? 'bkNichtUmlagefaehig' :
         null;
       if (!draftField) return; // sizeSqmVerified / roomsVerified are read from property prop
-      setTabs(prev => prev.map(tab => ({
+
+      const patched = tabs.map(tab => ({
         ...tab,
         draft: { ...tab.draft, [draftField]: value as never },
-        dirty: true,
-      })));
+        // Saved tabs are auto-saved below — show as clean. Unsaved
+        // tabs stay dirty so the user knows there's pending state.
+        dirty: tab.id === null,
+      }));
+      setTabs(patched);
+
+      // Fire background saves for every tab that already exists.
+      patched.forEach((tab, i) => {
+        if (!tab.id) return;
+        const draftToSave = { ...tab.draft };
+        if (!draftToSave.name) draftToSave.name = autoName(draftToSave, patched, i);
+        const dto: UpdateAnalysisDto = { ...draftToSave };
+        updateAnalysis(property.id, tab.id, dto).catch((e) => {
+          console.error('Auto-save failed for tab', tab.id, e);
+          setTabs(p => p.map(t => t.id === tab.id ? { ...t, dirty: true } : t));
+          setError(t('errorSaving'));
+        });
+      });
     },
-    [],
+    [tabs, property.id, t],
   );
 
   // ── Field updater (updates active tab's draft) ────────────────────────────
