@@ -261,12 +261,18 @@ Set in Vercel dashboard — never commit to git.
 
 ## TODO — Active Work Queue (Priority Order)
 *Source of truth: `docs/IMMIO-Project-State.md`*
-1. **Email forwarding setup assistant** (P1) — in-app guide for Gmail/Outlook forwarding config. Must recommend auto-forward filter for Bazar
-2. **Kontakt page** (P1) — simple contact form. Deferred — needs company email setup
-4. **Apple Sign In + LinkedIn OAuth** (P2) — prerequisites for native mobile app
-5. **Native mobile app** (P2) — React Native / Expo, iOS + Android
-6. **Anna's landing page copy** (P3) — hero headline and problem section are placeholder
-7. **Onboarding wizard** (P3) — deferred until all functionality complete
+1. **Track 2 — Property Ingestion UI (ADR-010)** ← NEXT — unified Add Property modal with three tabs (Webseite / Exposé / Manuell), shared funnel-stage selector, opens from a single AddPropertyButton on Funnel header + Dashboard. Replaces the existing standalone AddFromExposeButton. 13 items I1–I13 — see project state doc for the full breakdown.
+2. **Track 4 P3 — Impressum address (TD2)** — replace placeholder with GmbH address. **Launch blocker.**
+3. **Track 4 P1 — Email forwarding setup assistant** — in-app guide for Gmail / Apple Mail / Outlook. Auto-forward filter for Bazar.
+4. **Track 4 P2 — Kontakt page** — simple contact form. Deferred — needs company email setup.
+5. **Track 5 — Apple + LinkedIn Sign-In** — prerequisites for native mobile app.
+6. **Track 6 PL2 — Native mobile app** — React Native / Expo, iOS + Android.
+7. **Track 8 — Onboarding wizard, map view** — deferred until tester feedback.
+
+Recently completed (Session 32):
+- ADR-008 Filter Management UI (F1–F6)
+- ADR-009 Property Dossier (DO1–DO8)
+- Cross-user cache leakage security fix
 
 ## Filter Management UI (ADR-008)
 - `lib/preset-filters.ts` — types, definitions, `passesPresetFilters()`, `passesSavedFilters()`, `passesFilterValues()`, `savedFilterHasLocation()`, `togglePreset()`
@@ -332,7 +338,7 @@ Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
 - `components/property/DossierTab.tsx` — three-section Dossier view: Documents, AI Extraction, Structured Property Data. Mounts inside `PropertyAnalysisModal` when viewMode === 'dossier'.
 - `components/property/EditableField.tsx` — generic inline-edit cell. Six input kinds: number, integer, text, date, boolean, enum. Click to edit, Enter or blur commits, Escape cancels (uses a `cancelledRef` so Escape wins the blur race). Purely presentational — parent provides `onSave`.
 - `components/property/MrgWarningBanner.tsx` — amber banner reused by DossierTab Section 3 and the rental analysis tab header. Wording is deliberately hedged ("Mögliches MRG-Objekt", "Signale deuten auf", "Rechtliche Beratung wird empfohlen") — never a legal classification.
-- `components/property/AddFromExposeButton.tsx` — Pro-only Exposé upload entry point. Mounted on the Funnel page header and the Dashboard top-right. Click → file picker → `createPropertyFromExpose` → `useProperties.refresh()` → modal opens on the new property. Non-Pro users see a `PRO` badge and an inline upgrade hint instead of the picker.
+- `components/property/AddFromExposeButton.tsx` — Pro-only Exposé upload entry point. Mounted on the Funnel page header and the Dashboard top-right. Click → file picker → `createPropertyFromExpose` → `useProperties.refresh()` → modal opens on the new property. Non-Pro users see a `PRO` badge and an inline upgrade hint instead of the picker. **Note:** ADR-010 Track 2 will replace this standalone button with a unified `AddPropertyButton` that opens an `AddPropertyModal` containing three tabs (Webseite / Exposé / Manuell). The Exposé tab in that modal will reuse this component's underlying `createPropertyFromExpose` API call.
 - **API client** (`lib/api.ts`):
   - `PropertyDetails` interface mirrors the backend Prisma model
   - `normalizePropertyDetails()` coerces all Decimal fields (`exposePrice`, `bk*`, `sizeSqmVerified`, `roomsVerified`, `hwbValue`) from string → number at the API boundary. Prisma serializes Decimals as strings to preserve precision; without this every numeric Dossier field would arrive as a string and break formatters.
