@@ -92,7 +92,8 @@ Do not create a `/login` route. Session expiry redirects to `/?signin=true`.
 **useProperties hook — session guard**
 - Location: `hooks/useProperties.ts`
 - Waits for `authLoading === false && session !== null` before fetching
-- Provides: `properties`, `loading`, `update()`, `optimisticUpdate()`
+- Provides: `properties`, `loading`, `update()`, `optimisticUpdate()`, `optimisticInsert()`
+- `optimisticInsert(property)` — prepends a new property to the module-level cache instantly, notifies all listeners. Used by AddPropertyModal for zero-delay display on Funnel/Dashboard. De-dupes against the follow-up background refresh.
 - 30-second TTL cache
 - `update()` mirrors backend rule: clears `listingStatus` to `active` optimistically
 
@@ -146,6 +147,7 @@ components/
 ├── DashboardClient.tsx         ← Dashboard logic: tiles/table views, carousels, filters
 ├── FilterBar.tsx               ← Shared filter component (Search, Dashboard, Finder)
 ├── PropertyAnalysisModal.tsx   ← Full-screen ROI calculator + document uploads
+├── ingestion/                  ← ADR-010: AddPropertyButton, AddPropertyModal, UrlTab, ExposeTab, ManualTab, StageSelectorInput, SupportedPortalLogos
 ├── (inline in search/page.tsx) ← ListingCard — scraped listing card with save button
 └── analysis/
     ├── PropertyInfoStrip.tsx
@@ -261,7 +263,7 @@ Set in Vercel dashboard — never commit to git.
 
 ## TODO — Active Work Queue (Priority Order)
 *Source of truth: `docs/IMMIO-Project-State.md`*
-1. **Track 2 — Property Ingestion UI (ADR-010)** ← NEXT — unified Add Property modal with three tabs (Webseite / Exposé / Manuell), shared funnel-stage selector, opens from a single AddPropertyButton on Funnel header + Dashboard. Replaces the existing standalone AddFromExposeButton. 13 items I1–I13 — see project state doc for the full breakdown.
+1. **Track 2 — Property Ingestion UI (ADR-010) — URL parser extensions** ← NEXT — core modal shipped (I1–I7, I13). Remaining: add portal logos to `SupportedPortalLogos` as backend parsers ship (I8–I12: ImmoScout24, immmo.at, sreal.at, Raiffeisen, RE/MAX). No modal changes needed — just add logos.
 2. **Track 4 P3 — Impressum address (TD2)** — replace placeholder with GmbH address. **Launch blocker.**
 3. **Track 4 P1 — Email forwarding setup assistant** — in-app guide for Gmail / Apple Mail / Outlook. Auto-forward filter for Bazar.
 4. **Track 4 P2 — Kontakt page** — simple contact form. Deferred — needs company email setup.
@@ -269,7 +271,10 @@ Set in Vercel dashboard — never commit to git.
 6. **Track 6 PL2 — Native mobile app** — React Native / Expo, iOS + Android.
 7. **Track 8 — Onboarding wizard, map view** — deferred until tester feedback.
 
-Recently completed (Session 32):
+Recently completed (Session 33):
+- ADR-010 Property Ingestion UI core modal (I1–I7, I13) — AddPropertyButton + AddPropertyModal replaces AddFromExposeButton. Three tabs, optimisticInsert, Dossier-first post-submit.
+
+Previously completed (Session 32):
 - ADR-008 Filter Management UI (F1–F6)
 - ADR-009 Property Dossier (DO1–DO8)
 - Cross-user cache leakage security fix
@@ -303,7 +308,7 @@ Recently completed (Session 32):
 - i18n: `propertyCard` namespace in de.json + en.json
 
 ## Entdecken Page (`/search`)
-Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
+Browse scraped listings from all active sources (Raiffeisen, s REAL, ÖRAG, RE/MAX, Kurier, Der Standard).
 - Unified FilterBar: keyword + PLZ/Bundesland, price + €/m², size + rooms (saved filter dropdown removed)
 - Preset + saved filter pills below FilterBar — state presets server-side, time/source client-side
 - Unified PropertyCard with stage dropdown, analyse, report, dismiss
@@ -324,7 +329,7 @@ Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
 - `components/PropertyAnalysisModal.tsx` — full-screen modal, multi-tab architecture
 - `lib/calculators.ts` — all pure calculation functions (purchase, loan, AfA, rental tax, flip tax)
 - Multi-analysis tabs: Chrome-style [+]/[✕], auto-naming ("Rental 1", "Flip 2"), dirty indicator
-- **Top-level mode toggle (ADR-009 DO4)** — `[Analysen] [📎 Dossier]` pill row above the analysis tab bar. In Dossier mode the analysis tab bar hides and `<DossierTab />` renders instead.
+- **Top-level mode toggle (ADR-009 DO4)** — `[Analysen] [📎 Dossier]` pill row above the analysis tab bar. In Dossier mode the analysis tab bar hides and `<DossierTab />` renders instead. Accepts `initialViewMode` prop (`'analyses'` | `'dossier'`, default `'analyses'`) — AddPropertyButton passes `'dossier'` so post-create opens Dossier tab (ADR-010 I6).
 - Tax section: Privat/GmbH toggle, AfA (accelerated post-2020), Grenzsteuersatz, KÖSt 23%, KESt 27.5%
 - Rental results: pre-tax metrics + after-tax (private: marginal tax; GmbH: retained vs distributed)
 - Flip results: private (ImmoESt 30% + Hauptwohnsitzbefreiung); GmbH (KÖSt + KESt side-by-side)
@@ -338,11 +343,22 @@ Browse scraped listings from all 4 sources (Raiffeisen, s REAL, ÖRAG, RE/MAX).
 - `components/property/DossierTab.tsx` — three-section Dossier view: Documents, AI Extraction, Structured Property Data. Mounts inside `PropertyAnalysisModal` when viewMode === 'dossier'.
 - `components/property/EditableField.tsx` — generic inline-edit cell. Six input kinds: number, integer, text, date, boolean, enum. Click to edit, Enter or blur commits, Escape cancels (uses a `cancelledRef` so Escape wins the blur race). Purely presentational — parent provides `onSave`.
 - `components/property/MrgWarningBanner.tsx` — amber banner reused by DossierTab Section 3 and the rental analysis tab header. Wording is deliberately hedged ("Mögliches MRG-Objekt", "Signale deuten auf", "Rechtliche Beratung wird empfohlen") — never a legal classification.
-- `components/property/AddFromExposeButton.tsx` — Pro-only Exposé upload entry point. Mounted on the Funnel page header and the Dashboard top-right. Click → file picker → `createPropertyFromExpose` → `useProperties.refresh()` → modal opens on the new property. Non-Pro users see a `PRO` badge and an inline upgrade hint instead of the picker. **Note:** ADR-010 Track 2 will replace this standalone button with a unified `AddPropertyButton` that opens an `AddPropertyModal` containing three tabs (Webseite / Exposé / Manuell). The Exposé tab in that modal will reuse this component's underlying `createPropertyFromExpose` API call.
+## Add Property Modal (ADR-010 — shipped Session 33)
+- `components/ingestion/AddPropertyButton.tsx` — "＋ Immobilie hinzufügen" button used on Funnel header + Dashboard top-right. Opens AddPropertyModal. On successful creation opens PropertyAnalysisModal on the new property (Dossier view via `initialViewMode='dossier'`).
+- `components/ingestion/AddPropertyModal.tsx` — modal shell with tab bar (Webseite / Exposé / Manuell), shared funnel-stage selector (`StageSelectorInput`), submit button. Owns active tab + stage + submit state. Maps structured backend errors (UNSUPPORTED_URL, PRO_REQUIRED, DAILY_LIMIT, duplicate) to i18n strings. Closes on Escape and outside click.
+- `components/ingestion/UrlTab.tsx` — URL input, `SupportedPortalLogos` row (shows only live parsers), inline error display for UNSUPPORTED_URL ("try Exposé upload or manual entry").
+- `components/ingestion/ExposeTab.tsx` — Pro-gated PDF drop zone. Free/Light tiers see locked state with upgrade prompt. Passes selected stage to `createPropertyFromExpose`.
+- `components/ingestion/ManualTab.tsx` — 7-field form (title, price, sizeSqm, rooms, location, zipCode, notes). No required fields. Calls `createManualProperty`.
+- `components/ingestion/StageSelectorInput.tsx` — funnel-stage dropdown listing all non-terminal stages. Default: `investigating`.
+- `components/ingestion/SupportedPortalLogos.tsx` — visual row of currently supported portal logos. Today: Willhaben only. Extended as parsers ship (I8–I12).
+- **Replaces** the former `AddFromExposeButton.tsx` (deleted in I7).
+- i18n: `addProperty.*` namespace in de.json + en.json — button label, tab labels, field labels + placeholders, drop zone copy, Pro lock messages, 10 error messages.
 - **API client** (`lib/api.ts`):
   - `PropertyDetails` interface mirrors the backend Prisma model
   - `normalizePropertyDetails()` coerces all Decimal fields (`exposePrice`, `bk*`, `sizeSqmVerified`, `roomsVerified`, `hwbValue`) from string → number at the API boundary. Prisma serializes Decimals as strings to preserve precision; without this every numeric Dossier field would arrive as a string and break formatters.
   - `getPropertyDetails`, `updatePropertyDetails`, `extractPropertyDetails`, `applyPropertyDetailField`, `createPropertyFromExpose`
+  - `createManualProperty(dto)` — POST /properties (ADR-010 I5)
+  - `createPropertyFromUrl(url, status)` — POST /properties/from-url (ADR-010 I3)
 - **`→ Apply` flow (DO5)** — optimistic. The display flips to "Übernommen ✓" instantly, the `useProperties` cache is patched via `optimisticUpdate`, the parent modal's analysis drafts are synced via `onPropertyApplied`, the backend write fires in the background. Rollback only on error.
 - **Manual edit flow (DO7)** — `handleFieldEdit(field, value)` patches local `details` state first, fires `updatePropertyDetails` PATCH in the background, rolls back on error. If no Dossier row exists yet, the first edit creates one (no Exposé required).
 - **Field config** — `FIELD_CONFIG` map at the top of `DossierTab.tsx` lists every field with its `EditableField` kind + enum options. **Enum options must mirror the backend `ENUMS` constant in `extraction.service.ts`** — keep both in sync.
