@@ -369,6 +369,7 @@ Browse scraped listings from all active sources (Raiffeisen, s REAL, ÖRAG, RE/M
 - `useProperties`: 2-minute TTL module-level cache, `prefetchProperties()` called during auth init
 - `useSavedFilters`: 5-minute TTL module-level cache, `prefetchSavedFilters()` called during auth init
 - Analytics summary: 5-minute module-level cache in AnalyticsSnapshotTile
+- **SSE cache invalidation (TD1):** `useSSEInvalidation` hook (mounted via `SSEProvider` in authenticated layout) connects to `GET /cache-invalidation/subscribe?token=...`. Server emits `properties`, `saved-filters`, or `analytics` events after mutations → client calls `clearXxxCache()`. Reconnects with exponential backoff (3s → 30s). TTLs remain as fallback when SSE is disconnected. **Any new module-level cache must export a clear function, register it in `clearAllUserCaches()`, AND add a case to `useSSEInvalidation`'s message handler.**
 - PropertyAnalysisModal + recharts: dynamic import (`next/dynamic`, ssr: false)
 - Skeleton loading states on Dashboard, Funnel
 - `connection_limit=5` on Supabase pgbouncer (Railway env var)
@@ -376,7 +377,7 @@ Browse scraped listings from all active sources (Raiffeisen, s REAL, ÖRAG, RE/M
 
 ## Tech Debt
 *Source of truth: `docs/IMMIO-Project-State.md`*
-- **TD1** Cache invalidation via server push — 30s TTL polling in place, revisit after MVP testing
+- ~~**TD1**~~ ~~Cache invalidation via server push~~ — **Resolved.** SSE via `useSSEInvalidation` hook + `SSEProvider` in authenticated layout. TTLs remain as fallback.
 - **TD2** Impressum address — replace placeholder before public launch (needs GmbH registration)
 - **TD10** Saved filter `sources` enum maintenance — new scraped sources need corresponding values added to TEXT[] enum
 - **TD13** `platformListedAt` columns empty — schema added but no parser/scraper extracts listing dates yet
