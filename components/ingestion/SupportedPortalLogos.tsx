@@ -12,6 +12,7 @@ const LIVE_PORTALS = [
   { key: 'willhaben', label: 'Willhaben' },
   { key: 'immoscout24', label: 'ImmoScout24' },
   { key: 'sreal', label: 's REAL' },
+  { key: 'raiffeisen', label: 'Raiffeisen' },
 ];
 
 export default function SupportedPortalLogos() {
