@@ -13,6 +13,10 @@ import { useRef } from 'react';
 // ─── Module-level cache ──────────────────────────────────────────────────────
 let recommendedCache: CardProperty[] | null = null;
 
+export function clearRecommendedCache(): void {
+  recommendedCache = null;
+}
+
 function propertyToCard(p: Property): CardProperty {
   return {
     id: p.id,

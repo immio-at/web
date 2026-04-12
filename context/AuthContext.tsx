@@ -7,6 +7,7 @@ import { setTokenGetter } from '@/lib/api';
 import { prefetchProperties, clearPropertiesCache } from '@/hooks/useProperties';
 import { prefetchSavedFilters, clearSavedFiltersCache } from '@/hooks/useSavedFilters';
 import { clearAnalyticsCache } from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
+import { clearRecommendedCache } from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
 
 /**
  * Wipe every module-level cache that holds user-scoped data. Called on
@@ -19,6 +20,7 @@ function clearAllUserCaches(): void {
   clearPropertiesCache();
   clearSavedFiltersCache();
   clearAnalyticsCache();
+  clearRecommendedCache();
 }
 
 // ─── App-specific fields Supabase doesn't know about ─────────────────────────

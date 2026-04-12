@@ -1,4 +1,5 @@
 import NavBar from '@/components/NavBar';
+import SSEProvider from '@/components/SSEProvider';
 
 // This layout wraps all authenticated routes inside app/(authenticated)/.
 // The route group folder name "(authenticated)" is invisible to the URL router —
@@ -14,6 +15,7 @@ export default function AppLayout({
 }) {
   return (
     <div className="min-h-screen bg-gray-50">
+      <SSEProvider />
       <NavBar />
       <main>{children}</main>
     </div>
