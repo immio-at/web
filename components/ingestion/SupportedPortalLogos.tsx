@@ -10,6 +10,7 @@
 
 const LIVE_PORTALS = [
   { key: 'willhaben', label: 'Willhaben' },
+  { key: 'immoscout24', label: 'ImmoScout24' },
 ];
 
 export default function SupportedPortalLogos() {
