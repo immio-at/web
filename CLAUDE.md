@@ -263,7 +263,7 @@ Set in Vercel dashboard — never commit to git.
 
 ## TODO — Active Work Queue (Priority Order)
 *Source of truth: `docs/IMMIO-Project-State.md`*
-1. **Track 2 — Property Ingestion UI (ADR-010) — URL parser extensions** ← NEXT — core modal shipped (I1–I7, I13). Remaining: add portal logos to `SupportedPortalLogos` as backend parsers ship (I8–I12: ImmoScout24, immmo.at, sreal.at, Raiffeisen, RE/MAX). No modal changes needed — just add logos.
+1. **Track 4 P3 — Impressum address (TD2)** — replace placeholder with GmbH address. **Launch blocker.**
 2. **Track 4 P3 — Impressum address (TD2)** — replace placeholder with GmbH address. **Launch blocker.**
 3. **Track 4 P1 — Email forwarding setup assistant** — in-app guide for Gmail / Apple Mail / Outlook. Auto-forward filter for Bazar.
 4. **Track 4 P2 — Kontakt page** — simple contact form. Deferred — needs company email setup.
@@ -271,10 +271,13 @@ Set in Vercel dashboard — never commit to git.
 6. **Track 6 PL2 — Native mobile app** — React Native / Expo, iOS + Android.
 7. **Track 8 — Onboarding wizard, map view** — deferred until tester feedback.
 
-Recently completed (Session 33):
-- ADR-010 Property Ingestion UI core modal (I1–I7, I13) — AddPropertyButton + AddPropertyModal replaces AddFromExposeButton. Three tabs, optimisticInsert, Dossier-first post-submit.
+Recently completed (Session 34):
+- ADR-010 URL parsers — ImmoScout24, s REAL, Raiffeisen added to SupportedPortalLogos (4 portals live)
+- TD1 resolved — SSE cache invalidation: useSSEInvalidation hook + SSEProvider in authenticated layout
+- RecommendedCarousel cross-user leak fixed (clearRecommendedCache exported + registered)
 
-Previously completed (Session 32):
+Previously completed (Sessions 32–33):
+- ADR-010 Property Ingestion UI core modal (I1–I7, I13)
 - ADR-008 Filter Management UI (F1–F6)
 - ADR-009 Property Dossier (DO1–DO8)
 - Cross-user cache leakage security fix
