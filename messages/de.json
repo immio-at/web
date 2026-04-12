@@ -829,6 +829,23 @@
       },
       "lastUpdated": "Zuletzt aktualisiert: März 2026"
     },
+    "kontakt": {
+      "title": "Kontakt",
+      "subtitle": "Wir freuen uns auf Ihre Nachricht",
+      "labelName": "Name",
+      "labelEmail": "Email",
+      "labelPhone": "Telefon (optional)",
+      "labelMessage": "Nachricht",
+      "send": "Nachricht senden",
+      "sending": "Wird gesendet…",
+      "success": "Vielen Dank! Wir melden uns so bald wie möglich bei Ihnen.",
+      "altEmail": "Oder schreiben Sie uns direkt an",
+      "errors": {
+        "missingFields": "Bitte füllen Sie alle Pflichtfelder aus.",
+        "invalidEmail": "Bitte geben Sie eine gültige Email-Adresse an.",
+        "sendFailed": "Das Senden ist fehlgeschlagen. Bitte versuchen Sie es später erneut."
+      }
+    },
     "datenschutz": {
       "title": "Datenschutzerklärung",
       "subtitle": "Gemäß Art. 13 und 14 DSGVO (EU 2016/679)",

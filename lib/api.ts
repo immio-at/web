@@ -805,3 +805,30 @@ export async function deleteSavedFilter(id: string): Promise<void> {
   if (response.status === 204) return;
   return handleResponse(response);
 }
+
+// ─── Contact ──────────────────────────────────────────────────────────────────
+
+export interface ContactMessageInput {
+  name: string;
+  email: string;
+  message: string;
+  phone?: string;
+  honeypot?: string;
+}
+
+export async function sendContactMessage(data: ContactMessageInput): Promise<void> {
+  const response = await fetch(`${API_URL}/contact`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (response.ok) return;
+  let code = 'UNKNOWN';
+  try {
+    const body = await response.json();
+    code = body?.error ?? body?.message?.error ?? code;
+  } catch { /* non-JSON */ }
+  const err: Error & { code?: string } = new Error(`Contact send failed: ${code}`);
+  err.code = code;
+  throw err;
+}

@@ -370,7 +370,7 @@ function LandingPageInner() {
           <ul className="flex gap-6">
             <li><Link href="/datenschutz" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">{t('footer.privacy')}</Link></li>
             <li><Link href="/impressum" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">{t('footer.imprint')}</Link></li>
-            <li><a href="mailto:hello@immio.at" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">{t('footer.contact')}</a></li>
+            <li><Link href="/kontakt" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">{t('footer.contact')}</Link></li>
           </ul>
           <p className="font-mono text-[11px] text-gray-400">{t('footer.copy')}</p>
         </div>

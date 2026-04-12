@@ -829,6 +829,23 @@
       },
       "lastUpdated": "Last updated: March 2026"
     },
+    "kontakt": {
+      "title": "Contact",
+      "subtitle": "We look forward to hearing from you",
+      "labelName": "Name",
+      "labelEmail": "Email",
+      "labelPhone": "Phone (optional)",
+      "labelMessage": "Message",
+      "send": "Send message",
+      "sending": "Sending…",
+      "success": "Thank you! We will get back to you as soon as possible.",
+      "altEmail": "Or email us directly at",
+      "errors": {
+        "missingFields": "Please fill in all required fields.",
+        "invalidEmail": "Please provide a valid email address.",
+        "sendFailed": "Sending failed. Please try again later."
+      }
+    },
     "datenschutz": {
       "title": "Privacy Policy",
       "subtitle": "Pursuant to Art. 13 and 14 GDPR (EU 2016/679)",
