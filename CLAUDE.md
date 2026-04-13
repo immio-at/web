@@ -264,14 +264,18 @@ Set in Vercel dashboard — never commit to git.
 ## TODO — Active Work Queue (Priority Order)
 *Source of truth: `docs/IMMIO-Project-State.md`*
 1. **Track 4 P3 — Impressum address (TD2)** — replace placeholder with GmbH address. **Launch blocker.**
-2. **Track 4 P3 — Impressum address (TD2)** — replace placeholder with GmbH address. **Launch blocker.**
-3. **Track 4 P1 — Email forwarding setup assistant** — in-app guide for Gmail / Apple Mail / Outlook. Auto-forward filter for Bazar.
-4. **Track 4 P2 — Kontakt page** — simple contact form. Deferred — needs company email setup.
-5. **Track 5 — Apple + LinkedIn Sign-In** — prerequisites for native mobile app.
-6. **Track 6 PL2 — Native mobile app** — React Native / Expo, iOS + Android.
-7. **Track 8 — Onboarding wizard, map view** — deferred until tester feedback.
+2. **Track 4 P1 — Email forwarding setup assistant** — in-app guide for Gmail / Apple Mail / Outlook. Auto-forward filter for Bazar.
+3. **Track 4 P4 — Dark mode** — OS `prefers-color-scheme` default + Light/Dark/Auto override in Settings.
+4. **Track 5 — Apple + LinkedIn Sign-In** — prerequisites for native mobile app.
+5. **Track 6 PL2 — Native mobile app** — React Native / Expo, iOS + Android.
+6. **Track 8 — Onboarding wizard, map view** — deferred until tester feedback.
 
-Recently completed (Session 34):
+Recently completed (Session 35):
+- Track 4 P2 — `/kontakt` page mirroring impressum layout. Honeypot form, DE + EN i18n, footer link swapped from mailto.
+- Request Access flow — back button + Google OAuth on both RegisterModal and `/register` page. OAuth users auto-approved server-side.
+- OAuth admin bug fix — AuthContext session-restore fallback now triggers on missing `isAdmin`/`approved` and persists both via `GET /auth/me`.
+
+Previously completed (Session 34):
 - ADR-010 URL parsers — ImmoScout24, s REAL, Raiffeisen added to SupportedPortalLogos (4 portals live)
 - TD1 resolved — SSE cache invalidation: useSSEInvalidation hook + SSEProvider in authenticated layout
 - RecommendedCarousel cross-user leak fixed (clearRecommendedCache exported + registered)
