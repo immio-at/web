@@ -92,6 +92,14 @@ export default function RegisterModal({
         className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 relative"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Back button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 left-4 text-xs text-gray-400 hover:text-primary transition-colors"
+        >
+          {t('back')}
+        </button>
+
         {/* Close button */}
         <button
           onClick={onClose}

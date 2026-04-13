@@ -178,6 +178,7 @@
       "haveAccount": "Bereits ein Konto?",
       "signIn": "Anmelden",
       "closeAriaLabel": "Schließen",
+      "back": "← Zurück",
       "errorEmptyFields": "Bitte Email und Passwort eingeben.",
       "errorRegisterFailed": "Registrierung fehlgeschlagen",
       "errorConnection": "Verbindung zum Server fehlgeschlagen.",

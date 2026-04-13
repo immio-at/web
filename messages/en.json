@@ -178,6 +178,7 @@
       "haveAccount": "Already have an account?",
       "signIn": "Sign in",
       "closeAriaLabel": "Close",
+      "back": "← Back",
       "errorEmptyFields": "Please enter your email and password.",
       "errorRegisterFailed": "Registration failed",
       "errorConnection": "Could not connect to server.",
