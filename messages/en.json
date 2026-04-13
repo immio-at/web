@@ -185,6 +185,9 @@
       "errorRegisterFailed": "Registration failed",
       "errorConnection": "Could not connect to server.",
       "errorGoogle": "Google sign-in failed.",
+      "errorWeakPassword": "Password must be at least 6 characters long.",
+      "errorEmailExists": "An account with this email address already exists.",
+      "errorInvalidEmail": "Please enter a valid email address.",
       "emailPlaceholder": "your@email.at",
       "passwordPlaceholder": "••••••••"
     },

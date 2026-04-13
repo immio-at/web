@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
+import { mapRegisterError } from '@/lib/registerErrors';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const SITE_URL = typeof window !== 'undefined' ? window.location.origin : 'https://immio.at';
@@ -42,7 +43,7 @@ function RegisterForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || t('errorRegisterFailed'));
+        setError(mapRegisterError(data, t));
         return;
       }
 

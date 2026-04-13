@@ -185,6 +185,9 @@
       "errorRegisterFailed": "Registrierung fehlgeschlagen",
       "errorConnection": "Verbindung zum Server fehlgeschlagen.",
       "errorGoogle": "Google-Anmeldung fehlgeschlagen.",
+      "errorWeakPassword": "Das Passwort muss mindestens 6 Zeichen lang sein.",
+      "errorEmailExists": "Ein Konto mit dieser Email-Adresse existiert bereits.",
+      "errorInvalidEmail": "Bitte gib eine gültige Email-Adresse an.",
       "emailPlaceholder": "deine@email.at",
       "passwordPlaceholder": "••••••••"
     },

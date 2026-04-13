@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase';
+import { mapRegisterError } from '@/lib/registerErrors';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const SITE_URL = typeof window !== 'undefined' ? window.location.origin : 'https://immio.at';
@@ -65,7 +66,7 @@ export default function RegisterModal({
         body: JSON.stringify({ email, password, inviteCode: inviteCode || undefined }),
       });
       const data = await response.json();
-      if (!response.ok) { setError(data.message || t('errorRegisterFailed')); return; }
+      if (!response.ok) { setError(mapRegisterError(data, t)); return; }
 
       // Invite code = auto-approved → open sign-in modal
       // No invite code = pending approval → redirect to /pending
