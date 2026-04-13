@@ -74,7 +74,15 @@ function RegisterForm() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-sm relative">
+
+        {/* Back */}
+        <Link
+          href="/"
+          className="absolute top-4 left-4 text-xs text-gray-400 hover:text-primary transition-colors"
+        >
+          {t('back')}
+        </Link>
 
         {/* Logo */}
         <Link href="/" className="text-2xl text-gray-900 flex-shrink-0 block mb-6">
