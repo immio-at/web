@@ -91,12 +91,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       setLoading(false);
 
-      // If immioEmail is missing from localStorage but we have a session,
-      // fetch it from the backend. This handles cases where localStorage
-      // was cleared or the login flow didn't populate it.
+      // If any app-specific field is missing from localStorage but we have a
+      // session, fetch them from the backend. This handles cases where
+      // localStorage was cleared or the login flow didn't populate everything
+      // (e.g. OAuth callback predating a field being persisted).
       const cachedImmioEmail = localStorage.getItem('immioEmail');
       const cachedTier = localStorage.getItem('tier');
-      if (session?.access_token && (!cachedImmioEmail || !cachedTier)) {
+      const cachedIsAdmin = localStorage.getItem('isAdmin');
+      const cachedApproved = localStorage.getItem('approved');
+      if (
+        session?.access_token &&
+        (!cachedImmioEmail || !cachedTier || cachedIsAdmin === null || cachedApproved === null)
+      ) {
         try {
           const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-production-e03a.up.railway.app';
           const res = await fetch(`${API_URL}/auth/me`, {
@@ -111,6 +117,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (data.email) {
               setUserEmail(data.email);
               localStorage.setItem('userEmail', data.email);
+            }
+            if (typeof data.isAdmin === 'boolean') {
+              setIsAdmin(data.isAdmin);
+              localStorage.setItem('isAdmin', String(data.isAdmin));
+            }
+            if (typeof data.approved === 'boolean') {
+              setApproved(data.approved);
+              localStorage.setItem('approved', String(data.approved));
             }
             if (data.tier) {
               setTier(data.tier);
