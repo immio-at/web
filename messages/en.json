@@ -179,9 +179,12 @@
       "signIn": "Sign in",
       "closeAriaLabel": "Close",
       "back": "← Back",
+      "orContinueWith": "or",
+      "googleSignUp": "Continue with Google",
       "errorEmptyFields": "Please enter your email and password.",
       "errorRegisterFailed": "Registration failed",
       "errorConnection": "Could not connect to server.",
+      "errorGoogle": "Google sign-in failed.",
       "emailPlaceholder": "your@email.at",
       "passwordPlaceholder": "••••••••"
     },

@@ -179,9 +179,12 @@
       "signIn": "Anmelden",
       "closeAriaLabel": "Schließen",
       "back": "← Zurück",
+      "orContinueWith": "oder",
+      "googleSignUp": "Mit Google anmelden",
       "errorEmptyFields": "Bitte Email und Passwort eingeben.",
       "errorRegisterFailed": "Registrierung fehlgeschlagen",
       "errorConnection": "Verbindung zum Server fehlgeschlagen.",
+      "errorGoogle": "Google-Anmeldung fehlgeschlagen.",
       "emailPlaceholder": "deine@email.at",
       "passwordPlaceholder": "••••••••"
     },
