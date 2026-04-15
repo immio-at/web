@@ -25,7 +25,7 @@ interface Props {
  * immediately — pages auto-refresh results without a Search click.
  */
 export default function SortControl({ sortBy, sortOrder, onChange, className = '' }: Props) {
-  const t = useTranslations('filterBar');
+  const t = useTranslations('filter');
   const order: 'asc' | 'desc' = sortOrder === 'asc' ? 'asc' : 'desc';
 
   return (
