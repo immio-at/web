@@ -225,7 +225,6 @@ export default function FinderClient({
         try {
           const { property } = await saveScrapedListing(card.scrapedListingId);
           optimisticInsert(property);
-          invalidateCache();
         } catch {
           // 409 = already saved, ignore
         }
@@ -313,7 +312,6 @@ export default function FinderClient({
       try {
         const { property } = await saveScrapedListing(item.scrapedListingId);
         optimisticInsert(property);
-        invalidateCache();
       } catch { /* 409 */ }
     },
     onAnalyse: (item: CardProperty) => {

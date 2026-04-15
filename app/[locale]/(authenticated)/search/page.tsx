@@ -594,7 +594,6 @@ export default function EntdeckenPage() {
       try {
         const { property } = await saveScrapedListing(item.scrapedListingId);
         optimisticInsert(property);
-        invalidateCache();
         setScrapedListings(prev => prev.map(l =>
           l.id === `scraped-${item.scrapedListingId}` ? { ...l, savedByUser: true } : l
         ));

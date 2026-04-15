@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Property, SavedFilter, reportUnavailable, delistProperty, saveScrapedListing } from '@/lib/api';
-import { useProperties, invalidateCache as invalidatePropertiesCache } from '@/hooks/useProperties';
+import { useProperties } from '@/hooks/useProperties';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import DiscoverTile from '@/app/[locale]/(authenticated)/dashboard/components/DiscoverTile';
 import FunnelSummaryTile from '@/app/[locale]/(authenticated)/dashboard/components/FunnelSummaryTile';
@@ -46,7 +46,6 @@ export default function DashboardClient({
       try {
         const { property } = await saveScrapedListing(item.scrapedListingId);
         optimisticInsert(property);
-        invalidatePropertiesCache();
       } catch { /* 409 = already saved */ }
     },
     onAnalyse: (item: CardProperty) => {
