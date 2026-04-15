@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -74,8 +74,13 @@ export default function PropertyCard({
   const t = useTranslations('propertyCard');
   const tStages = useTranslations('funnel.stages');
 
-  // Scraped heart optimistic fill (persists across re-renders within the session)
+  // Scraped heart optimistic fill. Reset when the rendered item changes so
+  // Finder / Discover callers that reuse the component across swipes don't
+  // inherit the previous card's filled state.
   const [scrapedSaved, setScrapedSaved] = useState<boolean>(!!item.savedByUser);
+  useEffect(() => {
+    setScrapedSaved(!!item.savedByUser);
+  }, [item.id, item.savedByUser]);
 
   const priceText = formatPrice(item.price);
   const ppsmText = !compact ? formatPricePerSqm(item.price, item.sizeSqm) : null;
