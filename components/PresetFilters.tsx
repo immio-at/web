@@ -296,20 +296,17 @@ export default function PresetFilters({
       </button>
 
       {hasAnyActive && (
-        <>
-          <span className={`w-px ${dividerHeight} bg-gray-200 mx-1`} />
-          <button
-            onClick={() => {
-              onChange(new Set());
-              if (!dashboardMode && activeSavedFilterIds && onToggleSavedFilter) {
-                for (const id of activeSavedFilterIds) onToggleSavedFilter(id);
-              }
-            }}
-            className={`${compact ? 'text-[10px]' : 'text-xs'} text-gray-400 hover:text-gray-600 px-1`}
-          >
-            {t('clearAll')}
-          </button>
-        </>
+        <button
+          onClick={() => {
+            onChange(new Set());
+            if (!dashboardMode && activeSavedFilterIds && onToggleSavedFilter) {
+              for (const id of activeSavedFilterIds) onToggleSavedFilter(id);
+            }
+          }}
+          className={`${compact ? 'text-[10px]' : 'text-xs'} text-gray-400 hover:text-gray-600 underline-offset-2 hover:underline ml-auto px-1 whitespace-nowrap`}
+        >
+          {t('clearAll')}
+        </button>
       )}
     </div>
   );
