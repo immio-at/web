@@ -185,6 +185,29 @@ export function invalidateCache() {
   cacheTimestamp = 0;
 }
 
+/**
+ * SSE 'properties' handler — refetch in place and notify listeners with the
+ * fresh server state.
+ *
+ * We deliberately DO NOT call notifyListeners([]) here (unlike
+ * clearPropertiesCache, which is for sign-out). Doing so wipes every mounted
+ * consumer's UI to empty until the refetch completes — on a slow connection
+ * that flashes as "properties disappeared" right after an optimistic insert.
+ *
+ * On fetch failure the cache stays null so the next mount retries.
+ */
+export async function refreshPropertiesFromServer(): Promise<void> {
+  cacheTimestamp = 0;
+  try {
+    const data = await getProperties();
+    cache = data;
+    cacheTimestamp = Date.now();
+    notifyListeners(data);
+  } catch {
+    cache = null;
+  }
+}
+
 // Prefetch properties into module cache — call during auth init
 // so the cache is warm before any page component mounts.
 export async function prefetchProperties() {

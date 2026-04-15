@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { clearPropertiesCache } from './useProperties';
+import { refreshPropertiesFromServer } from './useProperties';
 import { clearSavedFiltersCache } from './useSavedFilters';
 import { clearAnalyticsCache } from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
 import { clearRecommendedCache } from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
@@ -59,7 +59,7 @@ export function useSSEInvalidation(): void {
           const { type } = JSON.parse(event.data);
           switch (type) {
             case 'properties':
-              clearPropertiesCache();
+              refreshPropertiesFromServer();
               clearRecommendedCache();
               break;
             case 'saved-filters':
