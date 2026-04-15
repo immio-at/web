@@ -36,6 +36,7 @@ import {
   togglePreset,
   savedFilterHasLocation,
 } from '@/lib/preset-filters';
+import { type BundeslandAbbreviation } from '@/lib/austria-plz-bundesland';
 import UserFilterPill from '@/components/filters/UserFilterPill';
 import FilterModal from '@/components/filters/FilterModal';
 
@@ -91,6 +92,26 @@ export default function PresetFilters({
     });
   }, [savedFilters, activeSavedFilterIds]);
 
+  // ── Implied preset keys from active saved filters (ADR-013 FU1) ──────────
+  // When a saved filter is active, the preset pills it implies (e.g. its
+  // Bundesland selections) also render as active so the user sees the full
+  // picture of what's being filtered. Non-interactive — changes go through
+  // the filter itself.
+  const impliedPresets = useMemo<Set<PresetFilterKey>>(() => {
+    const implied = new Set<PresetFilterKey>();
+    if (dashboardMode || !savedFilters || !activeSavedFilterIds || activeSavedFilterIds.size === 0) {
+      return implied;
+    }
+    for (const sid of activeSavedFilterIds) {
+      const sf = savedFilters.find(f => f.id === sid);
+      if (!sf) continue;
+      for (const bl of sf.bundeslaender ?? []) {
+        implied.add(bl as BundeslandAbbreviation);
+      }
+    }
+    return implied;
+  }, [savedFilters, activeSavedFilterIds, dashboardMode]);
+
   // When override fires, strip any active state keys.
   useEffect(() => {
     if (!locationOverride) return;
@@ -122,7 +143,8 @@ export default function PresetFilters({
   const rowSpacing = compact ? 'space-y-1 py-1' : 'space-y-1.5 py-2';
 
   function StatePill({ filterKey, labelKey }: { filterKey: PresetFilterKey; labelKey: string }) {
-    const isActive = !locationOverride && active.has(filterKey);
+    const implied = impliedPresets.has(filterKey);
+    const isActive = implied || (!locationOverride && active.has(filterKey));
     const disabled = locationOverride;
     return (
       <button
@@ -130,10 +152,10 @@ export default function PresetFilters({
         disabled={disabled}
         title={disabled ? t('locationFromFilter') : undefined}
         className={`${pillSize} transition-colors whitespace-nowrap ${
-          disabled
-            ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
-            : isActive
-              ? 'bg-blue-600 text-white border-blue-600'
+          isActive
+            ? `bg-blue-600 text-white border-blue-600${disabled ? ' cursor-not-allowed' : ''}`
+            : disabled
+              ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
               : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
         }`}
       >
