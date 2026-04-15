@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { refreshPropertiesFromServer } from './useProperties';
-import { clearSavedFiltersCache } from './useSavedFilters';
+import { refreshSavedFiltersFromServer } from './useSavedFilters';
 import { clearAnalyticsCache } from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
 import { clearRecommendedCache } from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
 
@@ -63,7 +63,7 @@ export function useSSEInvalidation(): void {
               clearRecommendedCache();
               break;
             case 'saved-filters':
-              clearSavedFiltersCache();
+              refreshSavedFiltersFromServer();
               break;
             case 'analytics':
               clearAnalyticsCache();

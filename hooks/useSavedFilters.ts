@@ -32,6 +32,23 @@ export function clearSavedFiltersCache(): void {
   notifyFilterListeners([]);
 }
 
+/**
+ * SSE 'saved-filters' handler — refetch in place and notify listeners with
+ * the fresh server state. Avoids the empty-flash that clearSavedFiltersCache
+ * produces; see refreshPropertiesFromServer for the full rationale.
+ */
+export async function refreshSavedFiltersFromServer(): Promise<void> {
+  filterCacheTimestamp = 0;
+  try {
+    const data = await getSavedFilters();
+    filterCache = data;
+    filterCacheTimestamp = Date.now();
+    notifyFilterListeners(data);
+  } catch {
+    filterCache = null;
+  }
+}
+
 export function useSavedFilters() {
   const { session, loading: authLoading } = useAuth();
   const [filters, setFilters] = useState<SavedFilter[]>(filterCache ?? []);
