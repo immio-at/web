@@ -174,8 +174,9 @@ export default function PropertyCard({
           {heartFilled ? '♥' : '♡'}
         </button>
 
-        {/* Right-side action stack: 🔍 / ⚠ / ✕ — vertically centred, always visible */}
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1.5">
+        {/* Right-side action stack: 🔍 / ⚠ / ✕ — vertically centred.
+            Hover-visible on desktop, always visible on mobile. */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
           {actions.onAnalyse && (
             <button
               type="button"
