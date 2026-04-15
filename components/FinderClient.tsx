@@ -9,6 +9,7 @@ import { Property, getScrapedListings, saveScrapedListing, ScrapedListing, repor
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
 import PresetFilters from '@/components/PresetFilters';
+import SortControl from '@/components/SortControl';
 import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
@@ -102,6 +103,10 @@ export default function FinderClient({
   const [scrapedCards, setScrapedCards] = useState<FinderCard[]>([]);
   const [scrapedLoading, setScrapedLoading] = useState(true);
 
+  // Sort controls — auto-refresh on change via fetchScraped deps
+  const [sortBy, setSortBy] = useState<string>('listedDate');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
   function toggleSavedFilter(id: string) {
     setActiveSavedFilterIds(prev => {
       const next = new Set(prev);
@@ -118,12 +123,17 @@ export default function FinderClient({
     return activeStates.flatMap(abbr => getPostcodesByBundesland(abbr) ?? []);
   }, [activePresets]);
 
-  // Fetch scraped listings — re-fetches when state presets change
+  // Fetch scraped listings — re-fetches when state presets or sort change
   const fetchScraped = useCallback(async () => {
     if (authLoading || !session) return;
     try {
       setScrapedLoading(true);
-      const params: Record<string, unknown> = { page: 1, hideNullPrice: true };
+      const params: Record<string, unknown> = {
+        page: 1,
+        hideNullPrice: true,
+        sortBy,
+        sortOrder,
+      };
       if (presetPostcodes.length > 0) {
         params.postcodes = presetPostcodes;
       }
@@ -135,7 +145,7 @@ export default function FinderClient({
     } finally {
       setScrapedLoading(false);
     }
-  }, [authLoading, session, presetPostcodes]);
+  }, [authLoading, session, presetPostcodes, sortBy, sortOrder]);
 
   useEffect(() => { fetchScraped(); }, [fetchScraped]);
 
@@ -370,6 +380,14 @@ export default function FinderClient({
         onDeleteFilter={removeFilter}
         align="center"
       />
+
+      <div className="mt-2 mb-3">
+        <SortControl
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onChange={(by, order) => { setSortBy(by); setSortOrder(order); }}
+        />
+      </div>
 
       {allReviewed ? (
         <div className="flex-1 flex items-center justify-center w-full">

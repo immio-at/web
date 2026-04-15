@@ -18,6 +18,7 @@ import FilterBar, {
   resolvePostcodes,
 } from '@/components/FilterBar';
 import PresetFilters from '@/components/PresetFilters';
+import SortControl from '@/components/SortControl';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
 import dynamic from 'next/dynamic';
@@ -140,7 +141,6 @@ function filterValuesFromParams(params: URLSearchParams): FilterValues {
     maxRooms: params.get('maxRooms') ?? '',
     sortBy: params.get('sortBy') ?? 'listedDate',
     sortOrder: params.get('sortOrder') ?? 'desc',
-    showHidden: false,
   };
 }
 
@@ -399,7 +399,7 @@ export default function EntdeckenPage() {
       maxSize: f.maxSize ? parseFloat(f.maxSize) : undefined,
       minRooms: f.minRooms ? parseFloat(f.minRooms) : undefined,
       maxRooms: f.maxRooms ? parseFloat(f.maxRooms) : undefined,
-      hideNullPrice: !f.showHidden,
+      hideNullPrice: true,
       sortBy: f.sortBy || undefined,
       sortOrder: f.sortOrder || undefined,
     };
@@ -679,19 +679,29 @@ export default function EntdeckenPage() {
         </div>
       )}
 
-      {/* Results count + view toggle */}
+      {/* Prominent sort + view toggle + results count */}
       {!loading && (
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-gray-500">
-            {listings.length === 0
-              ? t('noListingsFound')
-              : t('listingsFound', { count: totalResults.toLocaleString('de-AT') })}
-            {page === 1 && mergedUserCount > 0 && (
-              <span className="text-teal-600 ml-1">
-                ({t('includingOwn', { count: mergedUserCount })})
-              </span>
-            )}
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <SortControl
+              sortBy={applied.sortBy}
+              sortOrder={applied.sortOrder}
+              onChange={(sortBy, sortOrder) => {
+                setFilterValues(v => ({ ...v, sortBy, sortOrder }));
+                setApplied(a => ({ ...a, sortBy, sortOrder }));
+              }}
+            />
+            <p className="text-sm text-gray-500">
+              {listings.length === 0
+                ? t('noListingsFound')
+                : t('listingsFound', { count: totalResults.toLocaleString('de-AT') })}
+              {page === 1 && mergedUserCount > 0 && (
+                <span className="text-teal-600 ml-1">
+                  ({t('includingOwn', { count: mergedUserCount })})
+                </span>
+              )}
+            </p>
+          </div>
           <div className="flex gap-1">
             {(['grid', 'table'] as ViewMode[]).map(v => (
               <button

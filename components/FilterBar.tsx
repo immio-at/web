@@ -20,7 +20,6 @@ export interface FilterValues {
   maxRooms: string;
   sortBy: string;
   sortOrder: string;
-  showHidden: boolean; // show properties without price
 }
 
 export const EMPTY_FILTERS: FilterValues = {
@@ -36,7 +35,6 @@ export const EMPTY_FILTERS: FilterValues = {
   maxRooms: '',
   sortBy: 'listedDate',
   sortOrder: 'desc',
-  showHidden: false,
 };
 
 /**
@@ -79,7 +77,6 @@ export function savedFilterToValues(sf: SavedFilter): FilterValues {
     maxRooms: sf.roomsMax != null ? String(sf.roomsMax) : '',
     sortBy: sf.sortBy ?? 'listedDate',
     sortOrder: sf.sortOrder ?? 'desc',
-    showHidden: false,
   };
 }
 
@@ -111,14 +108,6 @@ export function isFilterActive(v: FilterValues): boolean {
 }
 
 // ─── Sort options ────────────────────────────────────────────────────────────
-
-const SORT_OPTION_KEYS = [
-  { value: 'listedDate', labelKey: 'sort.listedDate' as const },
-  { value: 'price', labelKey: 'sort.price' as const },
-  { value: 'pricePerSqm', labelKey: 'sort.pricePerSqm' as const },
-  { value: 'size', labelKey: 'sort.size' as const },
-  { value: 'rooms', labelKey: 'sort.rooms' as const },
-];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -248,23 +237,8 @@ export default function FilterBar({
             </div>
           </div>
 
-          {/* Actions row: Sort + Buttons + Show hidden toggle */}
+          {/* Actions row: Saved-filter selector + buttons */}
           <div className="flex flex-wrap gap-3 items-center mt-4 pt-3 border-t border-gray-100">
-            {/* Sort */}
-            <div className="flex items-center gap-1">
-              <select value={values.sortBy} onChange={set('sortBy')} className={`${inputClass}`}>
-                {SORT_OPTION_KEYS.map(o => <option key={o.value} value={o.value}>{t(o.labelKey)}</option>)}
-              </select>
-              <button
-                type="button"
-                onClick={() => onChange({ ...values, sortOrder: values.sortOrder === 'asc' ? 'desc' : 'asc' })}
-                className="px-2 py-2 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-gray-50"
-                title={values.sortOrder === 'asc' ? t('sortAscending') : t('sortDescending')}
-              >
-                {values.sortOrder === 'asc' ? '↑' : '↓'}
-              </button>
-            </div>
-
             {/* Saved filter selector */}
             {savedFilters && savedFilters.length > 0 && (
               <div className="relative" ref={dropdownRef}>
@@ -311,17 +285,6 @@ export default function FilterBar({
                 )}
               </div>
             )}
-
-            {/* Show hidden toggle */}
-            <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={values.showHidden}
-                onChange={e => onChange({ ...values, showHidden: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              {t('showHidden')}
-            </label>
 
             {/* Spacer */}
             <div className="flex-1" />
