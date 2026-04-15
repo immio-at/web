@@ -109,11 +109,8 @@ export default function PropertyCard({
     }
   }
 
-  // Button styling shared by the right-side action stack.
-  // Hover visibility on desktop (opacity-0 by default, opacity-100 on group-hover);
-  // always visible on mobile (sm:opacity-0 means desktop hides, mobile shows).
+  // Button styling shared by the right-side action stack. Always visible.
   const actionBtn = `${compact ? 'p-1 text-[10px]' : 'p-1.5 text-xs'} bg-white/90 backdrop-blur-sm rounded-full border border-gray-200 shadow-sm transition-all flex-shrink-0`;
-  const stackVisibility = 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100';
 
   return (
     <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col ${compact ? 'w-48 flex-shrink-0' : ''} hover:shadow-md transition-shadow`}>
@@ -177,8 +174,8 @@ export default function PropertyCard({
           {heartFilled ? '♥' : '♡'}
         </button>
 
-        {/* Right-side action stack: 🔍 / ⚠ / ✕ — vertically centred */}
-        <div className={`absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 ${stackVisibility} transition-opacity`}>
+        {/* Right-side action stack: 🔍 / ⚠ / ✕ — vertically centred, always visible */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1.5">
           {actions.onAnalyse && (
             <button
               type="button"
@@ -190,7 +187,7 @@ export default function PropertyCard({
               🔍
             </button>
           )}
-          {actions.onReportDead && isOwn && !isExpired && (
+          {actions.onReportDead && !isExpired && (
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); actions.onReportDead!(item); }}

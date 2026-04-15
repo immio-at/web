@@ -610,6 +610,8 @@ export default function EntdeckenPage() {
       if (item.source === 'own') {
         optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
         reportUnavailable(item.id).catch(() => {});
+      } else {
+        setScrapedListings(prev => prev.filter(l => l.id !== `scraped-${item.scrapedListingId}`));
       }
     },
     onDismiss: (item: CardProperty) => {

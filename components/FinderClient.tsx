@@ -323,6 +323,10 @@ export default function FinderClient({
       if (item.source === 'own') {
         optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
         reportUnavailable(item.id).catch(() => {});
+      } else {
+        setCurrent(c => c + 1);
+        setDragX(0); setDragY(0);
+        setDismissedIds(prev => new Set(prev).add(`scraped-${item.scrapedListingId}`));
       }
     },
     onDismiss: (item: CardProperty) => {
