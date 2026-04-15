@@ -135,9 +135,9 @@ export default function PresetFilters({
   const pillSize = compact
     ? 'rounded-full px-2 py-0.5 text-[10px] font-medium border'
     : 'rounded-full px-3 py-1 text-xs font-medium border';
-  const plusSize = compact
-    ? 'rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium border border-dashed'
-    : 'rounded-full w-7 h-7 flex items-center justify-center text-sm font-medium border border-dashed';
+  const createBtnSize = compact
+    ? 'rounded-full px-2 py-0.5 text-[10px] font-medium border border-dashed'
+    : 'rounded-full px-3 py-1 text-xs font-medium border border-dashed';
   const dividerHeight = compact ? 'h-4' : 'h-5';
   const rowGap = compact ? 'gap-1' : 'gap-1.5';
   const rowSpacing = compact ? 'space-y-1 py-1' : 'space-y-1.5 py-2';
@@ -288,11 +288,9 @@ export default function PresetFilters({
 
       <button
         onClick={handleCreate}
-        aria-label={t('createFilter')}
-        title={t('createFilter')}
-        className={`${plusSize} border-gray-300 text-gray-400 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors`}
+        className={`${createBtnSize} border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap`}
       >
-        +
+        {t('createFilter')}
       </button>
 
       {hasAnyActive && (
