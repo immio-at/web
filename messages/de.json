@@ -961,8 +961,9 @@
     "perSqm": "/m²"
   },
   "propertyCard": {
-    "addToFunnel": "Zum Funnel",
-    "moveToStage": "Verschieben",
+    "saveToFunnel": "In Funnel speichern",
+    "alreadyInFunnel": "Bereits im Funnel",
+    "alreadyInFunnelWithStage": "Im Funnel · {stage}",
     "analyse": "Analyse",
     "reportDead": "Link melden",
     "dismiss": "Entfernen",

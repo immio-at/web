@@ -21,10 +21,11 @@ export interface CardProperty {
   source: 'own' | 'scraped';
   scrapedListingId?: string;
   emailReceivedAt?: string | null;
+  savedByUser?: boolean;
 }
 
 export interface CardActions {
-  onStageChange: (item: CardProperty, stage: string) => void;
+  onSaveToFunnel?: (item: CardProperty) => void | Promise<void>;
   onAnalyse?: (item: CardProperty) => void;
   onReportDead?: (item: CardProperty) => void;
   onDismiss: (item: CardProperty) => void;
@@ -39,17 +40,12 @@ const STAGE_I18N_KEY: Record<string, string> = {
   parked: 'parked', won: 'won',
 };
 
-const ASSIGNABLE_STAGES = [
-  'investigating', 'interested', 'due_diligence_completed', 'visited', 'offer_made', 'parked', 'won',
-];
-
 // ─── Platform labels ─────────────────────────────────────────────────────────
 
 const PLATFORM_LABELS: Record<string, string> = {
   willhaben: 'Willhaben', immoscout24: 'ImmoScout24', immowelt: 'Immowelt',
   bazar: 'Bazar.at', immmo: 'immmo.at', raiffeisen: 'Raiffeisen',
   sreal: 's REAL', oerag: 'ÖRAG', remax: 'RE/MAX',
-  // ADR-009 DO8: properties created via the from-Exposé upload path
   'exposé_upload': 'Exposé',
 };
 
@@ -77,18 +73,47 @@ export default function PropertyCard({
 }) {
   const t = useTranslations('propertyCard');
   const tStages = useTranslations('funnel.stages');
-  const [stageOpen, setStageOpen] = useState(false);
+
+  // Scraped heart optimistic fill (persists across re-renders within the session)
+  const [scrapedSaved, setScrapedSaved] = useState<boolean>(!!item.savedByUser);
 
   const priceText = formatPrice(item.price);
   const ppsmText = !compact ? formatPricePerSqm(item.price, item.sizeSqm) : null;
   const isExpired = item.listingStatus === 'expired';
-  const currentStage = item.status && STAGE_I18N_KEY[item.status]
+  const currentStageLabel = item.status && STAGE_I18N_KEY[item.status]
     ? tStages(STAGE_I18N_KEY[item.status])
     : null;
 
   function handleLink() {
     actions.onUrlClick?.(item);
   }
+
+  // Heart state + behaviour
+  const isOwn = item.source === 'own';
+  const heartFilled = isOwn || scrapedSaved;
+  const heartTooltip = isOwn
+    ? (currentStageLabel
+        ? t('alreadyInFunnelWithStage', { stage: currentStageLabel })
+        : t('alreadyInFunnel'))
+    : (scrapedSaved ? t('alreadyInFunnel') : t('saveToFunnel'));
+
+  async function handleHeart(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isOwn || scrapedSaved) return;
+    setScrapedSaved(true);
+    try {
+      await actions.onSaveToFunnel?.(item);
+    } catch {
+      setScrapedSaved(false);
+    }
+  }
+
+  // Button styling shared by the right-side action stack.
+  // Hover visibility on desktop (opacity-0 by default, opacity-100 on group-hover);
+  // always visible on mobile (sm:opacity-0 means desktop hides, mobile shows).
+  const actionBtn = `${compact ? 'p-1 text-[10px]' : 'p-1.5 text-xs'} bg-white/90 backdrop-blur-sm rounded-full border border-gray-200 shadow-sm transition-all flex-shrink-0`;
+  const stackVisibility = 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100';
 
   return (
     <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col ${compact ? 'w-48 flex-shrink-0' : ''} hover:shadow-md transition-shadow`}>
@@ -98,20 +123,21 @@ export default function PropertyCard({
         target="_blank"
         rel="noopener noreferrer"
         onClick={handleLink}
-        className={`block relative ${compact ? 'h-28' : 'h-48'} bg-gray-100 overflow-hidden flex-shrink-0`}
+        className={`group block relative ${compact ? 'h-28' : 'h-48'} bg-gray-100 overflow-hidden flex-shrink-0`}
       >
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={item.imageUrl}
             alt={item.title ?? ''}
-            className={`w-full h-full object-cover ${isExpired ? 'grayscale' : ''} ${!compact ? 'hover:scale-105 transition-transform duration-300' : ''}`}
+            className={`w-full h-full object-cover ${isExpired ? 'grayscale' : ''} ${!compact ? 'group-hover:scale-105 transition-transform duration-300' : ''}`}
             loading="lazy"
             onError={e => { e.currentTarget.style.display = 'none'; }}
           />
         ) : (
           <div className={`flex items-center justify-center h-full ${compact ? 'text-2xl' : 'text-4xl'} text-gray-300`}>🏠</div>
         )}
+
         {/* Source badge — green for search agent, grey for scraped */}
         {(() => {
           const isSearchAgent = !!item.emailReceivedAt;
@@ -127,12 +153,64 @@ export default function PropertyCard({
             </span>
           );
         })()}
-        {/* Expired badge */}
+
+        {/* Expired badge (bottom-left — heart owns top-right) */}
         {isExpired && (
-          <span className="absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50/90 text-amber-700 border border-amber-200">
+          <span className="absolute bottom-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50/90 text-amber-700 border border-amber-200">
             {t('expired')}
           </span>
         )}
+
+        {/* Heart — top-right of image */}
+        <button
+          type="button"
+          onClick={handleHeart}
+          title={heartTooltip}
+          aria-label={heartTooltip}
+          disabled={isOwn || scrapedSaved}
+          className={`absolute top-2 right-2 ${compact ? 'w-7 h-7 text-sm' : 'w-8 h-8 text-base'} flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm transition-all ${
+            heartFilled
+              ? 'text-teal-600'
+              : 'text-gray-400 hover:text-teal-600 hover:scale-110'
+          } ${isOwn ? 'cursor-default' : ''}`}
+        >
+          {heartFilled ? '♥' : '♡'}
+        </button>
+
+        {/* Right-side action stack: 🔍 / ⚠ / ✕ — vertically centred */}
+        <div className={`absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 ${stackVisibility} transition-opacity`}>
+          {actions.onAnalyse && (
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); actions.onAnalyse!(item); }}
+              title={t('analyse')}
+              aria-label={t('analyse')}
+              className={`${actionBtn} text-amber-600 hover:bg-amber-50`}
+            >
+              🔍
+            </button>
+          )}
+          {actions.onReportDead && isOwn && !isExpired && (
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); actions.onReportDead!(item); }}
+              title={t('reportDead')}
+              aria-label={t('reportDead')}
+              className={`${actionBtn} text-gray-500 hover:text-orange-500 hover:bg-orange-50`}
+            >
+              ⚠
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); actions.onDismiss(item); }}
+            title={t('dismiss')}
+            aria-label={t('dismiss')}
+            className={`${actionBtn} text-gray-500 hover:text-rose-500 hover:bg-rose-50`}
+          >
+            ✕
+          </button>
+        </div>
       </a>
 
       {/* Details */}
@@ -155,73 +233,9 @@ export default function PropertyCard({
             {compact && item.zipCode && <span>{item.zipCode}</span>}
           </div>
           {/* Current stage indicator */}
-          {currentStage && item.source === 'own' && item.status !== 'new' && (
-            <div className="text-[10px] text-teal-600 font-medium mt-1">{currentStage}</div>
+          {currentStageLabel && isOwn && item.status !== 'new' && (
+            <div className="text-[10px] text-teal-600 font-medium mt-1">{currentStageLabel}</div>
           )}
-        </div>
-
-        {/* Actions */}
-        <div className={`${compact ? 'mt-1.5 pt-1.5' : 'mt-2 pt-2'} border-t border-gray-100`}>
-          <div className="flex items-center gap-1">
-            {/* Stage dropdown */}
-            <div className="relative flex-1 min-w-0">
-              <button
-                onClick={() => setStageOpen(!stageOpen)}
-                className={`w-full text-left ${compact ? 'text-[10px] px-1.5 py-1' : 'text-xs px-2 py-1.5'} font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors truncate`}
-              >
-                {item.source === 'own' && item.status !== 'new' ? t('moveToStage') : t('addToFunnel')} ▾
-              </button>
-              {stageOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setStageOpen(false)} />
-                  <div className={`absolute bottom-full left-0 mb-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg ${compact ? 'w-36' : 'w-44'} py-1 max-h-48 overflow-y-auto`}>
-                    {ASSIGNABLE_STAGES.map(stage => (
-                      <button
-                        key={stage}
-                        onClick={() => { setStageOpen(false); actions.onStageChange(item, stage); }}
-                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 transition-colors ${
-                          item.status === stage ? 'text-teal-600 font-semibold' : 'text-gray-700'
-                        }`}
-                      >
-                        {tStages(STAGE_I18N_KEY[stage])}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Analyse */}
-            {actions.onAnalyse && (
-              <button
-                onClick={() => actions.onAnalyse!(item)}
-                title={t('analyse')}
-                className={`${compact ? 'p-1 text-[10px]' : 'p-1.5 text-xs'} text-amber-600 hover:bg-amber-50 rounded border border-gray-200 transition-colors flex-shrink-0`}
-              >
-                🔍
-              </button>
-            )}
-
-            {/* Report dead link */}
-            {actions.onReportDead && item.source === 'own' && !isExpired && (
-              <button
-                onClick={() => actions.onReportDead!(item)}
-                title={t('reportDead')}
-                className={`${compact ? 'p-1 text-[10px]' : 'p-1.5 text-xs'} text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded border border-gray-200 transition-colors flex-shrink-0`}
-              >
-                ⚠
-              </button>
-            )}
-
-            {/* Dismiss */}
-            <button
-              onClick={() => actions.onDismiss(item)}
-              title={t('dismiss')}
-              className={`${compact ? 'p-1 text-[10px]' : 'p-1.5 text-xs'} text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded border border-gray-200 transition-colors flex-shrink-0`}
-            >
-              ✕
-            </button>
-          </div>
         </div>
       </div>
     </div>

@@ -303,21 +303,16 @@ export default function FinderClient({
 
   // Card actions for the PropertyCard component
   const cardActions: CardActions = useMemo(() => ({
-    onStageChange: async (item: CardProperty, stage: string) => {
+    onSaveToFunnel: async (item: CardProperty) => {
+      if (item.source !== 'scraped' || !item.scrapedListingId) return;
       setLastAction('investigating');
       setCurrent(c => c + 1);
       setDragX(0); setDragY(0);
       setTimeout(() => setLastAction(null), 300);
-
-      if (item.source === 'scraped' && item.scrapedListingId) {
-        try {
-          await saveScrapedListing(item.scrapedListingId);
-          invalidateCache();
-        } catch { /* 409 */ }
-      } else {
-        trackInteraction(item.id, 'status_change');
-        update(item.id, { status: stage, movedToStageAt: new Date().toISOString() });
-      }
+      try {
+        await saveScrapedListing(item.scrapedListingId);
+        invalidateCache();
+      } catch { /* 409 */ }
     },
     onAnalyse: (item: CardProperty) => {
       if (item.source === 'own') trackInteraction(item.id, 'analysis');

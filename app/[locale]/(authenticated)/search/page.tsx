@@ -582,28 +582,22 @@ export default function EntdeckenPage() {
       source: l.source === 'email' ? 'own' : 'scraped',
       scrapedListingId: l.scrapedListingId,
       emailReceivedAt: l.emailReceivedAt,
+      savedByUser: l.savedByUser,
     };
   }
 
   const { update: updateProp, optimisticUpdate } = useProperties();
 
   const cardActions: CardActions = useMemo(() => ({
-    onStageChange: async (item: CardProperty, stage: string) => {
-      if (item.source === 'scraped' && item.scrapedListingId) {
-        // Save scraped listing to funnel at the selected stage
-        try {
-          await saveScrapedListing(item.scrapedListingId);
-          invalidateCache();
-          // Mark as saved in local state
-          setScrapedListings(prev => prev.map(l =>
-            l.id === `scraped-${item.scrapedListingId}` ? { ...l, savedByUser: true } : l
-          ));
-        } catch { /* 409 = already saved */ }
-      } else {
-        // Own property — move to stage
-        trackInteraction(item.id, 'status_change');
-        updateProp(item.id, { status: stage, movedToStageAt: new Date().toISOString() });
-      }
+    onSaveToFunnel: async (item: CardProperty) => {
+      if (item.source !== 'scraped' || !item.scrapedListingId) return;
+      try {
+        await saveScrapedListing(item.scrapedListingId);
+        invalidateCache();
+        setScrapedListings(prev => prev.map(l =>
+          l.id === `scraped-${item.scrapedListingId}` ? { ...l, savedByUser: true } : l
+        ));
+      } catch { /* 409 = already saved */ }
     },
     onAnalyse: (item: CardProperty) => {
       if (item.source === 'own') {

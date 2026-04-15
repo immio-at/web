@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { Property, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
-import { useProperties } from '@/hooks/useProperties';
+import { Property, SavedFilter, reportUnavailable, delistProperty, saveScrapedListing } from '@/lib/api';
+import { useProperties, invalidateCache as invalidatePropertiesCache } from '@/hooks/useProperties';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import DiscoverTile from '@/app/[locale]/(authenticated)/dashboard/components/DiscoverTile';
 import FunnelSummaryTile from '@/app/[locale]/(authenticated)/dashboard/components/FunnelSummaryTile';
@@ -38,11 +38,15 @@ export default function DashboardClient({
   const { update, optimisticUpdate } = useProperties();
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
 
-  // Card actions — shared across all carousels
+  // Card actions — shared across all carousels. Recommended carousel may include
+  // scraped listings, so onSaveToFunnel is wired for them (own items never hit it).
   const cardActions: CardActions = useMemo(() => ({
-    onStageChange: (item: CardProperty, stage: string) => {
-      trackInteraction(item.id, 'status_change');
-      update(item.id, { status: stage, movedToStageAt: new Date().toISOString() });
+    onSaveToFunnel: async (item: CardProperty) => {
+      if (item.source !== 'scraped' || !item.scrapedListingId) return;
+      try {
+        await saveScrapedListing(item.scrapedListingId);
+        invalidatePropertiesCache();
+      } catch { /* 409 = already saved */ }
     },
     onAnalyse: (item: CardProperty) => {
       trackInteraction(item.id, 'analysis');
