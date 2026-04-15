@@ -183,7 +183,7 @@ export default function PropertyCard({
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); actions.onAnalyse!(item); }}
               title={t('analyse')}
               aria-label={t('analyse')}
-              className={`${actionBtn} text-amber-600 hover:bg-amber-50`}
+              className={`${actionBtn} text-gray-500 grayscale hover:grayscale-0 hover:text-blue-600 hover:bg-blue-50`}
             >
               🔍
             </button>
