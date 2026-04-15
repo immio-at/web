@@ -36,11 +36,13 @@ interface Props {
   open: boolean;
   mode: 'create' | 'edit';
   editingFilter?: SavedFilter | null;
+  /** Pre-fill form values in create mode (ADR-013 FU4). Ignored in edit mode. */
+  initialValues?: FilterValues | null;
   onClose: () => void;
   onApply?: (filter: SavedFilter, isNew: boolean) => void;
 }
 
-export default function FilterModal({ open, mode, editingFilter, onClose, onApply }: Props) {
+export default function FilterModal({ open, mode, editingFilter, initialValues, onClose, onApply }: Props) {
   const t = useTranslations('presetFilters');
   const { properties } = useProperties();
   const { create, update } = useSavedFilters();
@@ -64,9 +66,9 @@ export default function FilterModal({ open, mode, editingFilter, onClose, onAppl
       setValues(savedFilterToValues(editingFilter));
     } else {
       setName('');
-      setValues(EMPTY_FILTERS);
+      setValues(initialValues ?? EMPTY_FILTERS);
     }
-  }, [open, mode, editingFilter]);
+  }, [open, mode, editingFilter, initialValues]);
 
   // Close on Escape
   useEffect(() => {

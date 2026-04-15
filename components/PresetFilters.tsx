@@ -36,7 +36,12 @@ import {
   togglePreset,
   savedFilterHasLocation,
 } from '@/lib/preset-filters';
-import { type BundeslandAbbreviation } from '@/lib/austria-plz-bundesland';
+import {
+  type BundeslandAbbreviation,
+  getPostcodesByBundesland,
+  BUNDESLAND_ABBREVIATIONS,
+} from '@/lib/austria-plz-bundesland';
+import { EMPTY_FILTERS, type FilterValues } from '@/components/FilterBar';
 import UserFilterPill from '@/components/filters/UserFilterPill';
 import FilterModal from '@/components/filters/FilterModal';
 
@@ -78,6 +83,7 @@ export default function PresetFilters({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editingFilterId, setEditingFilterId] = useState<string | null>(null);
+  const [modalInitialValues, setModalInitialValues] = useState<FilterValues | null>(null);
 
   const stageFilters = PRESET_FILTERS.filter(f => f.group === 'stage');
   const stateFilters = PRESET_FILTERS.filter(f => f.group === 'state');
@@ -97,6 +103,11 @@ export default function PresetFilters({
   // Bundesland selections) also render as active so the user sees the full
   // picture of what's being filtered. Non-interactive — changes go through
   // the filter itself.
+  //
+  // Detection: direct `bundeslaender` field first, then fall back to
+  // postcode-subset detection (a state is implied if all its postcodes
+  // appear in the filter's `postcodes` list — which is how filters created
+  // from the FilterBar / save-search flow currently store state selections).
   const impliedPresets = useMemo<Set<PresetFilterKey>>(() => {
     const implied = new Set<PresetFilterKey>();
     if (dashboardMode || !savedFilters || !activeSavedFilterIds || activeSavedFilterIds.size === 0) {
@@ -107,6 +118,16 @@ export default function PresetFilters({
       if (!sf) continue;
       for (const bl of sf.bundeslaender ?? []) {
         implied.add(bl as BundeslandAbbreviation);
+      }
+      if (sf.postcodes?.length) {
+        const pcSet = new Set(sf.postcodes);
+        for (const abbr of BUNDESLAND_ABBREVIATIONS) {
+          if (implied.has(abbr)) continue;
+          const statePcs = getPostcodesByBundesland(abbr);
+          if (statePcs && statePcs.length > 0 && statePcs.every(pc => pcSet.has(pc))) {
+            implied.add(abbr);
+          }
+        }
       }
     }
     return implied;
@@ -192,12 +213,32 @@ export default function PresetFilters({
   function handleCreate() {
     setModalMode('create');
     setEditingFilterId(null);
+    setModalInitialValues(null);
+    setModalOpen(true);
+  }
+
+  // FU4 — open the modal in create mode with the current preset state
+  // pre-filled. Active Bundesland pills become the location field (comma-
+  // joined abbreviations — resolvePostcodes handles them on save).
+  function handleSaveSearch() {
+    const activeStates: string[] = [];
+    for (const key of active) {
+      if (STATE_KEYS.has(key)) activeStates.push(key);
+    }
+    const prefill: FilterValues = {
+      ...EMPTY_FILTERS,
+      location: activeStates.join(', '),
+    };
+    setModalMode('create');
+    setEditingFilterId(null);
+    setModalInitialValues(prefill);
     setModalOpen(true);
   }
 
   function handleEdit(id: string) {
     setModalMode('edit');
     setEditingFilterId(id);
+    setModalInitialValues(null);
     setModalOpen(true);
   }
 
@@ -242,6 +283,17 @@ export default function PresetFilters({
     && activeSavedFilterIds
     && activeSavedFilterIds.size > 0;
   const hasAnyActive = active.size > 0 || hasAnySavedActive;
+
+  // FU4 — "Suche als Filter speichern" visibility: at least one Bundesland
+  // or source preset is active, no saved filter is active, and we're not
+  // inside the Dashboard compact tile.
+  const activeArr = Array.from(active);
+  const hasStatePresetActive = activeArr.some(k => STATE_KEYS.has(k));
+  const hasSourcePresetActive = activeArr.some(k => k === 'searchAgents' || k === 'excludeSearchAgents');
+  const canSaveSearch = !compact
+    && !dashboardMode
+    && !hasAnySavedActive
+    && (hasStatePresetActive || hasSourcePresetActive);
 
   // Bundesland row
   const bundeslandRow = (
@@ -318,11 +370,22 @@ export default function PresetFilters({
         {bundeslandRow}
         {showStages && stagesRow}
         {sourceRow}
+        {canSaveSearch && (
+          <div className={`flex ${justify}`}>
+            <button
+              onClick={handleSaveSearch}
+              className="text-xs text-teal-600 hover:text-teal-700 underline-offset-2 hover:underline px-1 whitespace-nowrap"
+            >
+              {t('saveSearch')}
+            </button>
+          </div>
+        )}
       </div>
       <FilterModal
         open={modalOpen}
         mode={modalMode}
         editingFilter={editingFilter}
+        initialValues={modalInitialValues}
         onClose={() => setModalOpen(false)}
         onApply={handleApplyFromModal}
       />

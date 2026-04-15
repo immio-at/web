@@ -1013,7 +1013,8 @@
     "T": "Tyrol",
     "V": "Vorarlberg",
     "B": "Burgenland",
-    "clearAll": "Clear all filters"
+    "clearAll": "Clear all filters",
+    "saveSearch": "Save search as filter"
   },
   "dossier": {
     "applied": "Applied ✓",

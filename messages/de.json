@@ -1013,7 +1013,8 @@
     "T": "Tirol",
     "V": "Vbg",
     "B": "Bgld",
-    "clearAll": "Alle Filter löschen"
+    "clearAll": "Alle Filter löschen",
+    "saveSearch": "Suche als Filter speichern"
   },
   "dossier": {
     "applied": "Übernommen ✓",
