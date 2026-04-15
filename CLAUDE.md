@@ -270,7 +270,10 @@ Set in Vercel dashboard — never commit to git.
 5. **Track 6 PL2 — Native mobile app** — React Native / Expo, iOS + Android.
 6. **Track 8 — Onboarding wizard, map view** — deferred until tester feedback.
 
-Recently completed (Session 35):
+Recently completed (Session 36):
+- Register error mapping — `lib/registerErrors.ts` translates backend error codes (weak_password, user_already_exists, invalid_email) to localised DE + EN strings. Used by RegisterModal + `/register` page. Fallback to backend message for unknown codes.
+
+Previously completed (Session 35):
 - Track 4 P2 — `/kontakt` page mirroring impressum layout. Honeypot form, DE + EN i18n, footer link swapped from mailto.
 - Request Access flow — back button + Google OAuth on both RegisterModal and `/register` page. OAuth users auto-approved server-side.
 - OAuth admin bug fix — AuthContext session-restore fallback now triggers on missing `isAdmin`/`approved` and persists both via `GET /auth/me`.
