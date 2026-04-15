@@ -35,7 +35,7 @@ export default function DashboardClient({
   savedFilters: SavedFilter[];
 }) {
   const t = useTranslations('dashboard.carousels');
-  const { update, optimisticUpdate } = useProperties();
+  const { update, optimisticUpdate, optimisticInsert } = useProperties();
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
 
   // Card actions — shared across all carousels. Recommended carousel may include
@@ -44,7 +44,8 @@ export default function DashboardClient({
     onSaveToFunnel: async (item: CardProperty) => {
       if (item.source !== 'scraped' || !item.scrapedListingId) return;
       try {
-        await saveScrapedListing(item.scrapedListingId);
+        const { property } = await saveScrapedListing(item.scrapedListingId);
+        optimisticInsert(property);
         invalidatePropertiesCache();
       } catch { /* 409 = already saved */ }
     },

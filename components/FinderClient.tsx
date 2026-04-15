@@ -93,7 +93,7 @@ export default function FinderClient({
 } = {}) {
   const t = useTranslations('finder');
   const { session, loading: authLoading } = useAuth();
-  const { properties: allOwn, loading: propsLoading, update, optimisticUpdate } = useProperties();
+  const { properties: allOwn, loading: propsLoading, update, optimisticUpdate, optimisticInsert } = useProperties();
   const { filters: savedFilters, remove: removeFilter } = useSavedFilters();
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(initialPresets ?? new Set());
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(initialSavedFilterIds ?? new Set());
@@ -223,7 +223,8 @@ export default function FinderClient({
         // Scraped — save to funnel
         setCurrent(c => c + 1);
         try {
-          await saveScrapedListing(card.scrapedListingId);
+          const { property } = await saveScrapedListing(card.scrapedListingId);
+          optimisticInsert(property);
           invalidateCache();
         } catch {
           // 409 = already saved, ignore
@@ -310,7 +311,8 @@ export default function FinderClient({
       setDragX(0); setDragY(0);
       setTimeout(() => setLastAction(null), 300);
       try {
-        await saveScrapedListing(item.scrapedListingId);
+        const { property } = await saveScrapedListing(item.scrapedListingId);
+        optimisticInsert(property);
         invalidateCache();
       } catch { /* 409 */ }
     },
@@ -344,7 +346,7 @@ export default function FinderClient({
     onUrlClick: (item: CardProperty) => {
       if (item.source === 'own') trackInteraction(item.id, 'url_click');
     },
-  }), [update, optimisticUpdate]);
+  }), [update, optimisticUpdate, optimisticInsert]);
 
   const loading = propsLoading || scrapedLoading;
 

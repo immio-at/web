@@ -586,13 +586,14 @@ export default function EntdeckenPage() {
     };
   }
 
-  const { update: updateProp, optimisticUpdate } = useProperties();
+  const { update: updateProp, optimisticUpdate, optimisticInsert } = useProperties();
 
   const cardActions: CardActions = useMemo(() => ({
     onSaveToFunnel: async (item: CardProperty) => {
       if (item.source !== 'scraped' || !item.scrapedListingId) return;
       try {
-        await saveScrapedListing(item.scrapedListingId);
+        const { property } = await saveScrapedListing(item.scrapedListingId);
+        optimisticInsert(property);
         invalidateCache();
         setScrapedListings(prev => prev.map(l =>
           l.id === `scraped-${item.scrapedListingId}` ? { ...l, savedByUser: true } : l
@@ -626,7 +627,7 @@ export default function EntdeckenPage() {
     onUrlClick: (item: CardProperty) => {
       if (item.source === 'own') trackInteraction(item.id, 'url_click');
     },
-  }), [updateProp, optimisticUpdate, cachedProperties]);
+  }), [updateProp, optimisticUpdate, optimisticInsert, cachedProperties]);
 
   const totalResults = presetsActive
     ? listings.length
