@@ -114,8 +114,12 @@ export default function PropertyCard({
     }
   }
 
-  // Button styling shared by the right-side action stack. Always visible.
-  const actionBtn = `${compact ? 'p-1 text-[10px]' : 'p-1.5 text-xs'} bg-white/90 backdrop-blur-sm rounded-full border border-gray-200 shadow-sm transition-all flex-shrink-0`;
+  // Button styling shared by the right-side action stack. Scales down in
+  // compact (Dashboard carousels) so buttons stay proportional to the
+  // smaller card chrome and the top action clears the heart on hover.
+  const actionBtn = `${
+    compact ? 'w-6 h-6 text-[10px]' : 'p-1.5 text-xs'
+  } inline-flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-full border border-gray-200 shadow-sm transition-all flex-shrink-0`;
 
   return (
     <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col ${compact ? 'w-48 flex-shrink-0' : ''} hover:shadow-md transition-shadow`}>
@@ -170,7 +174,7 @@ export default function PropertyCard({
           title={heartTooltip}
           aria-label={heartTooltip}
           disabled={isOwn || scrapedSaved}
-          className={`absolute top-2 right-2 ${compact ? 'w-7 h-7 text-sm' : 'w-8 h-8 text-base'} flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm transition-all ${
+          className={`absolute ${compact ? 'top-1.5 right-1.5 w-6 h-6 text-xs' : 'top-2 right-2 w-8 h-8 text-base'} flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm transition-all ${
             heartFilled
               ? 'text-teal-600'
               : 'text-gray-400 hover:text-teal-600 hover:scale-110'
@@ -179,9 +183,16 @@ export default function PropertyCard({
           {heartFilled ? '♥' : '♡'}
         </button>
 
-        {/* Right-side action stack: 🔍 / ⚠ / ✕ — vertically centred.
-            Hover-visible on desktop, always visible on mobile. */}
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+        {/* Right-side action stack: 🔍 / ⚠ / ✕.
+            Hover-visible on desktop, always visible on mobile.
+            Full size centres vertically on the image. Compact anchors
+            below the heart so the three buttons can never overlap it on
+            the smaller Dashboard cards. */}
+        <div className={`absolute ${
+          compact
+            ? 'right-1.5 top-9 flex-col gap-1'
+            : 'right-2 top-1/2 -translate-y-1/2 flex-col gap-1.5'
+        } flex opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity`}>
           {actions.onAnalyse && (
             <button
               type="button"
