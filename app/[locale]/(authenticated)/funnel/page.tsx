@@ -30,8 +30,8 @@ export default function FunnelPage() {
         <p className="text-gray-600 mt-1">{t('subtitle')}</p>
       </div>
 
-      <div className="mb-2">
-        <AddPropertyButton />
+      <div className="flex justify-end mb-2">
+        <AddPropertyButton size="lg" />
       </div>
 
       <PresetFilters
