@@ -399,14 +399,16 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
           onDrop={handleDrop}
         />
       ) : (
-        <div className="overflow-x-auto pb-4">
-          <div className="w-max">
-            {headerAction && (
-              <div className="flex justify-end mb-2">
-                {headerAction}
-              </div>
-            )}
-            <div className="flex gap-4">
+        <div className="pb-4">
+          {headerAction && (
+            <div className="flex justify-end mb-2">
+              {headerAction}
+            </div>
+          )}
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: `repeat(${FUNNEL_STAGES_DISPLAY.length}, minmax(0, 1fr))` }}
+          >
               {FUNNEL_STAGES_DISPLAY.map((stage) => {
             const stageProps = properties.filter(p => p.status === stage.key);
             const isOver = dragOverStage === stage.key;
@@ -426,7 +428,7 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
             return (
               <div
                 key={stage.key}
-                className="flex-shrink-0 w-60"
+                className="min-w-0"
                 onDragOver={(e) => handleDragOver(e, stage.key)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.key)}
@@ -485,7 +487,6 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
               </div>
             );
           })}
-            </div>
           </div>
         </div>
       )}
