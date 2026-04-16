@@ -266,7 +266,6 @@
     "saveToProperties": "Zu meinen Immobilien",
     "noListingsFound": "Keine Inserate gefunden.",
     "listingsFound": "{count} Inserate gefunden",
-    "includingOwn": "davon {count} eigene",
     "inFunnel": "Im Funnel",
     "loading": "Inserate werden geladen…",
     "viewGrid": "Kacheln",

@@ -695,11 +695,6 @@ export default function EntdeckenPage() {
               {listings.length === 0
                 ? t('noListingsFound')
                 : t('listingsFound', { count: totalResults.toLocaleString('de-AT') })}
-              {page === 1 && mergedUserCount > 0 && (
-                <span className="text-teal-600 ml-1">
-                  ({t('includingOwn', { count: mergedUserCount })})
-                </span>
-              )}
             </p>
           </div>
           <div className="flex gap-1">

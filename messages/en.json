@@ -266,7 +266,6 @@
     "saveToProperties": "Add to my properties",
     "noListingsFound": "No listings found.",
     "listingsFound": "{count} listings found",
-    "includingOwn": "including {count} from your inbox",
     "inFunnel": "In funnel",
     "loading": "Loading listings...",
     "viewGrid": "Grid",
