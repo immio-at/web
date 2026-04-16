@@ -16,6 +16,19 @@ let cache: Property[] | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL_MS = 120_000; // re-fetch from server after 2 minutes
 
+// Recent local-mutation guard — SSE 'properties' events fire at roughly the
+// same time as our own mutations land, and the triggered refetch can race the
+// backend write on pgbouncer / transaction-pooled connections. While a local
+// mutation is in flight we already have authoritative state (optimistic patch
+// + PATCH response), so we skip the SSE-driven refresh for a short window to
+// avoid a stale GET overwriting the optimistic state.
+let lastLocalMutationAt = 0;
+const LOCAL_MUTATION_GUARD_MS = 2000;
+
+function markLocalMutation() {
+  lastLocalMutationAt = Date.now();
+}
+
 // Listeners allow multiple mounted components to receive cache updates
 // e.g. if Dashboard and Funnel were both mounted simultaneously
 const listeners = new Set<(properties: Property[]) => void>();
@@ -131,8 +144,14 @@ export function useProperties() {
       notifyListeners(cache);
     }
 
-    // Persist to DB
-    await updateProperty(id, data);
+    // Persist to DB. Mark the mutation both before and after so any SSE
+    // refresh racing our own PATCH is suppressed on this tab.
+    markLocalMutation();
+    try {
+      await updateProperty(id, data);
+    } finally {
+      markLocalMutation();
+    }
   }, []);
 
   // ── Optimistic local-only update (arbitrary Property fields) ───────────────
@@ -148,6 +167,7 @@ export function useProperties() {
       cache = cache.map(p => p.id === id ? { ...p, ...data } : p);
       notifyListeners(cache);
     }
+    markLocalMutation();
   }, []);
 
   // ── Optimistic insert (ADR-010 I6) ────────────────────────────────────────
@@ -163,6 +183,7 @@ export function useProperties() {
       cache = [property, ...cache.filter(p => p.id !== property.id)];
       notifyListeners(cache);
     }
+    markLocalMutation();
   }, []);
 
   return {
@@ -197,6 +218,11 @@ export function invalidateCache() {
  * On fetch failure the cache stays null so the next mount retries.
  */
 export async function refreshPropertiesFromServer(): Promise<void> {
+  // If a local mutation landed within the guard window, skip — the cache
+  // already reflects authoritative state via the optimistic patch + PATCH
+  // response. Refetching here could overwrite it with a stale GET if the
+  // backend SSE emit runs concurrently with the write.
+  if (Date.now() - lastLocalMutationAt < LOCAL_MUTATION_GUARD_MS) return;
   cacheTimestamp = 0;
   try {
     const data = await getProperties();
