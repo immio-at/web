@@ -165,7 +165,7 @@ export default function PropertyCard({
         target="_blank"
         rel="noopener noreferrer"
         onClick={handleLink}
-        className={`group block relative ${compact ? 'h-28' : 'h-48'} bg-gray-100 overflow-hidden flex-shrink-0`}
+        className={`group block relative ${compact ? 'h-[7.7rem]' : 'h-[13.2rem]'} bg-gray-100 overflow-hidden flex-shrink-0`}
       >
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
