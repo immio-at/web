@@ -29,8 +29,8 @@ export const FUNNEL_STAGES = [
   { key: 'interested',    label: 'Interested',     header: 'bg-orange-200', parked: false },
   { key: 'due_diligence', label: 'Due Diligence',  header: 'bg-blue-300', parked: false },
   { key: 'offer_made',    label: 'Offer Made',     header: 'bg-blue-400', parked: false },
-  { key: 'parked',        label: 'Parked',         header: 'bg-slate-200', parked: true  },
   { key: 'won',           label: 'Won',            header: 'bg-green-600', parked: false },
+  { key: 'parked',        label: 'Parked',         header: 'bg-slate-200', parked: true  },
   { key: 'not_relevant',  label: 'Not Relevant',   header: '',             parked: false },
 ];
 

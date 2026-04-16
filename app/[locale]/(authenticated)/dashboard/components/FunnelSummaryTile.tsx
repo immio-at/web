@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Property } from '@/lib/api';
 
-const FUNNEL_STAGES = ['investigating', 'interested', 'due_diligence', 'offer_made', 'parked', 'won'];
+const FUNNEL_STAGES = ['investigating', 'interested', 'due_diligence', 'offer_made', 'won', 'parked'];
 
 const STAGE_I18N_KEY: Record<string, string> = {
   investigating: 'investigating', interested: 'interested',
