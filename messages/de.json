@@ -964,6 +964,8 @@
     "saveToFunnel": "In Funnel speichern",
     "alreadyInFunnel": "Bereits im Funnel",
     "alreadyInFunnelWithStage": "Im Funnel · {stage}",
+    "changeStage": "Stufe ändern",
+    "changeStageFrom": "Stufe ändern (aktuell: {stage})",
     "analyse": "Analyse",
     "reportDead": "Link melden",
     "dismiss": "Entfernen",

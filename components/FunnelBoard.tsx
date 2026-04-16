@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -9,6 +9,7 @@ import { useProperties } from '@/hooks/useProperties';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
+import PropertyCard, { type CardActions, type CardProperty } from '@/components/PropertyCard';
 
 const PropertyAnalysisModal = dynamic(
   () => import('@/components/PropertyAnalysisModal'),
@@ -252,6 +253,51 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
     }
   }
 
+  // Heart stage-picker dropdown state (ADR-012 PC2, Funnel variant).
+  // The PropertyCard's heart calls onMoveStage with its bounding rect;
+  // we render a DropdownPortal anchored there with the available stages.
+  const [heartMenu, setHeartMenu] = useState<{ propertyId: string; anchor: DOMRect } | null>(null);
+
+  function propertyToCard(p: Property): CardProperty {
+    return {
+      id: p.id,
+      title: p.title,
+      price: p.price ? parseFloat(String(p.price)) : null,
+      sizeSqm: p.sizeSqm ? parseFloat(String(p.sizeSqm)) : null,
+      rooms: p.rooms ? parseFloat(String(p.rooms)) : null,
+      location: p.location,
+      zipCode: p.zipCode,
+      imageUrl: p.imageUrl,
+      sourceUrl: p.sourceUrl,
+      platform: p.platform,
+      status: p.status,
+      listingStatus: p.listingStatus,
+      source: 'own',
+      emailReceivedAt: p.emailReceivedAt,
+    };
+  }
+
+  const cardActions: CardActions = useMemo(() => ({
+    onMoveStage: (item, anchor) => setHeartMenu({ propertyId: item.id, anchor }),
+    onAnalyse: (item) => {
+      trackInteraction(item.id, 'analysis');
+      const prop = all.find(p => p.id === item.id);
+      if (prop) setAnalyseProperty(prop);
+    },
+    onReportDead: (item) => handleReportUnavailable(item.id),
+    onDismiss: (item) => {
+      const prop = all.find(p => p.id === item.id);
+      if (!prop) return;
+      if (prop.listingStatus === 'expired') {
+        handleDelist(item.id);
+      } else {
+        requestMove(item.id, prop.title ?? '', 'not_relevant');
+      }
+    },
+    onUrlClick: (item) => trackInteraction(item.id, 'url_click'),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [all]);
+
   function handleDragStart(propertyId: string) {
     draggedId.current = propertyId;
   }
@@ -313,6 +359,29 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
         />
       )}
 
+      {heartMenu && (() => {
+        const current = all.find(p => p.id === heartMenu.propertyId);
+        const currentStage = current?.status;
+        const options: DropdownOption[] = FUNNEL_STAGES_DISPLAY
+          .filter(s => s.key !== currentStage)
+          .map(s => ({
+            key: s.key,
+            label: t(`stages.${STAGE_I18N_KEY[s.key] ?? s.key}`),
+            variant: 'default' as const,
+          }));
+        return (
+          <DropdownPortal
+            anchorRect={heartMenu.anchor}
+            options={options}
+            onSelect={(key) => {
+              if (current) requestMove(heartMenu.propertyId, current.title ?? '', key);
+              setHeartMenu(null);
+            }}
+            onClose={() => setHeartMenu(null)}
+          />
+        );
+      })()}
+
       <p className="text-sm text-gray-500 mb-4">{t('propertyCount', { count: properties.length })}</p>
 
       {zoomedStage ? (
@@ -320,9 +389,9 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
           stage={FUNNEL_STAGES_DISPLAY.find(s => s.key === zoomedStage)!}
           stageProps={properties.filter(p => p.status === zoomedStage)}
           isDragOver={dragOverStage === zoomedStage}
+          cardActions={cardActions}
+          toCard={propertyToCard}
           onBack={() => setZoomedStage(null)}
-          onMove={requestMove}
-          onAnalyse={(p) => { trackInteraction(p.id, 'analysis'); setAnalyseProperty(p); }}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           onDragOver={handleDragOver}
@@ -389,14 +458,20 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
                   }`}
                 >
                   {stageProps.map((prop) => (
-                    <FunnelCard
+                    <PropertyCard
                       key={prop.id}
-                      property={prop}
-                      stages={FUNNEL_STAGES_DISPLAY}
-                      onMove={requestMove}
-                      onAnalyse={(p) => { trackInteraction(p.id, 'analysis'); setAnalyseProperty(p); }}
-                      onDragStart={handleDragStart}
-                      onDragEnd={handleDragEnd}
+                      item={propertyToCard(prop)}
+                      actions={cardActions}
+                      compact
+                      fullWidth
+                      draggable={{
+                        onDragStart: (e) => {
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('text/plain', prop.id);
+                          handleDragStart(prop.id);
+                        },
+                        onDragEnd: handleDragEnd,
+                      }}
                     />
                   ))}
                   {stageProps.length === 0 && (
@@ -424,9 +499,9 @@ function ZoomedStageView({
   stage,
   stageProps,
   isDragOver,
+  cardActions,
+  toCard,
   onBack,
-  onMove,
-  onAnalyse,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -436,9 +511,9 @@ function ZoomedStageView({
   stage: typeof FUNNEL_STAGES_DISPLAY[number];
   stageProps: Property[];
   isDragOver: boolean;
+  cardActions: CardActions;
+  toCard: (p: Property) => CardProperty;
   onBack: () => void;
-  onMove: (id: string, title: string, status: string) => void;
-  onAnalyse: (p: Property) => void;
   onDragStart: (id: string) => void;
   onDragEnd: () => void;
   onDragOver: (e: React.DragEvent, stageKey: string) => void;
@@ -512,14 +587,20 @@ function ZoomedStageView({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {stageProps.map((prop) => (
-              <FunnelCard
+              <PropertyCard
                 key={prop.id}
-                property={prop}
-                stages={FUNNEL_STAGES_DISPLAY}
-                onMove={onMove}
-                onAnalyse={onAnalyse}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
+                item={toCard(prop)}
+                actions={cardActions}
+                compact
+                fullWidth
+                draggable={{
+                  onDragStart: (e) => {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', prop.id);
+                    onDragStart(prop.id);
+                  },
+                  onDragEnd,
+                }}
               />
             ))}
           </div>
@@ -529,183 +610,3 @@ function ZoomedStageView({
   );
 }
 
-// ─── Property card ────────────────────────────────────────────────────────────
-
-function FunnelCard({
-  property,
-  stages,
-  onMove,
-  onAnalyse,
-  onDragStart,
-  onDragEnd,
-}: {
-  property: Property;
-  stages: typeof FUNNEL_STAGES_DISPLAY;
-  onMove: (id: string, title: string, status: string) => void;
-  onAnalyse: (p: Property) => void;
-  onDragStart: (id: string) => void;
-  onDragEnd: () => void;
-}) {
-  const t = useTranslations('funnel');
-  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const btnRef = useRef<HTMLButtonElement>(null);
-
-  const isExpired = property.listingStatus === 'expired';
-
-  const rawPrice = property.price ? parseFloat(String(property.price)) : null;
-  const priceText = rawPrice ? formatPrice(rawPrice) : null;
-
-  const NOT_RELEVANT = { key: 'not_relevant', label: t('card.notRelevant'), variant: 'danger' as const };
-  const REPORT_UNAVAILABLE = { key: 'report_unavailable', label: t('card.reportUnavailable'), variant: 'warning' as const };
-  const REMOVE_FROM_VIEW = { key: 'delist', label: t('card.removeFromView'), variant: 'danger' as const };
-
-  // All cards get the full stage list so the user can move an expired property
-  // to any stage (e.g. they may still want to pursue it despite it being delisted).
-  // Expired cards additionally show Remove from View at the bottom.
-  // All cards show Report Unavailable (unless already expired) and Not Relevant.
-  const moveOptions: DropdownOption[] = [
-    ...stages
-      .filter(s => s.key !== property.status)
-      .map(s => ({ key: s.key, label: t(`stages.${STAGE_I18N_KEY[s.key] ?? s.key}`), variant: 'default' as const })),
-    ...(isExpired
-      ? [REMOVE_FROM_VIEW]
-      : [REPORT_UNAVAILABLE]
-    ),
-    NOT_RELEVANT,
-  ];
-
-  const closeMenu = useCallback(() => setAnchorRect(null), []);
-
-  function openMenu() {
-    if (!btnRef.current) return;
-    setAnchorRect(btnRef.current.getBoundingClientRect());
-  }
-
-  function handleSelect(key: string) {
-    closeMenu();
-    onMove(property.id, property.title ?? '', key);
-  }
-
-  function handleDragStart(e: React.DragEvent) {
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', property.id);
-    setIsDragging(true);
-    onDragStart(property.id);
-  }
-
-  function handleDragEnd() {
-    setIsDragging(false);
-    onDragEnd();
-  }
-
-  return (
-    <div
-      draggable
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      className={[
-        'bg-white rounded-lg shadow-sm border overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-150',
-        isDragging ? 'opacity-40' : 'opacity-100',
-        isExpired  ? 'border-amber-200 opacity-60' : 'border-gray-200',
-      ].join(' ')}
-    >
-      {/* Image + key info */}
-      <div className="flex gap-2 p-2">
-        <a
-          href={property.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => trackInteraction(property.id, 'url_click')}
-          className="flex-shrink-0 rounded overflow-hidden bg-gray-100"
-          style={{ width: '64px', height: '64px' }}
-          draggable={false}
-        >
-          {property.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={property.imageUrl}
-              alt={property.title ?? ''}
-              width={64}
-              height={64}
-              className={`w-full h-full object-cover hover:opacity-90 transition-opacity ${isExpired ? 'grayscale' : ''}`}
-              loading="lazy"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              draggable={false}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-2xl text-gray-300">🏠</div>
-          )}
-        </a>
-
-        <div className="flex-1 min-w-0 flex flex-col justify-center">
-          {priceText && (
-            <div className={`text-sm font-bold ${isExpired ? 'text-gray-400' : 'text-[#0F1F3D]'}`}>
-              {priceText}
-            </div>
-          )}
-          {property.location && (
-            <div className="text-xs text-gray-500 truncate">{property.location}</div>
-          )}
-          <div className="flex gap-2 text-xs text-gray-400 mt-0.5">
-            {property.sizeSqm && <span>{property.sizeSqm}m²</span>}
-            {property.sizeSqm && property.rooms && <span>·</span>}
-            {property.rooms && <span>{String(property.rooms)} {t('card.rooms')}</span>}
-          </div>
-        </div>
-      </div>
-
-      {/* Expired badge */}
-      {isExpired && (
-        <div className="mx-2 mb-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 font-medium flex items-center gap-1">
-          <span>⚠</span>
-          <span>{t('card.expired')}</span>
-        </div>
-      )}
-
-      {/* Title */}
-      <div className="px-2 pb-2">
-        <a
-          href={property.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => trackInteraction(property.id, 'url_click')}
-          className={`text-xs font-medium line-clamp-2 block ${
-            isExpired ? 'text-gray-400 hover:text-gray-500' : 'text-gray-700 hover:text-[#0F1F3D]'
-          }`}
-          draggable={false}
-        >
-          {property.title}
-        </a>
-      </div>
-
-      {/* Action bar */}
-      <div className="flex items-center gap-1 px-2 pb-2 border-t border-gray-100 pt-2">
-        <button
-          ref={btnRef}
-          onClick={openMenu}
-          className="flex-1 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded px-2 py-1 hover:bg-gray-50 transition-colors text-left"
-        >
-          {isExpired ? t('card.optionsButton') : t('card.moveButton')}
-        </button>
-
-        <button
-          onClick={() => onAnalyse(property)}
-          title={t('card.analyseTitle')}
-          className="p-1.5 rounded border border-gray-200 text-gray-400 hover:text-amber-500 hover:border-amber-200 hover:bg-amber-50 transition-colors text-sm leading-none"
-        >
-          🔍
-        </button>
-      </div>
-
-      {anchorRect && (
-        <DropdownPortal
-          anchorRect={anchorRect}
-          options={moveOptions}
-          onSelect={handleSelect}
-          onClose={closeMenu}
-        />
-      )}
-    </div>
-  );
-}

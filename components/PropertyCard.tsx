@@ -26,6 +26,12 @@ export interface CardProperty {
 
 export interface CardActions {
   onSaveToFunnel?: (item: CardProperty) => void | Promise<void>;
+  /**
+   * Own-card override. When provided, clicking the heart on an own
+   * property fires this callback instead of being a no-op. Used by the
+   * Funnel to open a stage-picker dropdown anchored to the heart.
+   */
+  onMoveStage?: (item: CardProperty, anchor: DOMRect) => void;
   onAnalyse?: (item: CardProperty) => void;
   onReportDead?: (item: CardProperty) => void;
   onDismiss: (item: CardProperty) => void;
@@ -66,10 +72,19 @@ export default function PropertyCard({
   item,
   actions,
   compact = false,
+  fullWidth = false,
+  draggable,
 }: {
   item: CardProperty;
   actions: CardActions;
   compact?: boolean;
+  /** Use 100% width of the parent instead of the default fixed w-48 (compact). */
+  fullWidth?: boolean;
+  /** When set, the card root becomes draggable (used by the Funnel kanban). */
+  draggable?: {
+    onDragStart: (e: React.DragEvent) => void;
+    onDragEnd: () => void;
+  };
 }) {
   const t = useTranslations('propertyCard');
   const tStages = useTranslations('funnel.stages');
@@ -96,15 +111,22 @@ export default function PropertyCard({
   // Heart state + behaviour
   const isOwn = item.source === 'own';
   const heartFilled = isOwn || scrapedSaved;
+  const ownCanMoveStage = isOwn && !!actions.onMoveStage;
   const heartTooltip = isOwn
-    ? (currentStageLabel
-        ? t('alreadyInFunnelWithStage', { stage: currentStageLabel })
-        : t('alreadyInFunnel'))
+    ? (ownCanMoveStage
+        ? (currentStageLabel ? t('changeStageFrom', { stage: currentStageLabel }) : t('changeStage'))
+        : (currentStageLabel
+            ? t('alreadyInFunnelWithStage', { stage: currentStageLabel })
+            : t('alreadyInFunnel')))
     : (scrapedSaved ? t('alreadyInFunnel') : t('saveToFunnel'));
 
-  async function handleHeart(e: React.MouseEvent) {
+  async function handleHeart(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
     e.stopPropagation();
+    if (ownCanMoveStage) {
+      actions.onMoveStage!(item, e.currentTarget.getBoundingClientRect());
+      return;
+    }
     if (isOwn || scrapedSaved) return;
     setScrapedSaved(true);
     try {
@@ -121,8 +143,22 @@ export default function PropertyCard({
     compact ? 'w-6 h-6 text-[10px]' : 'p-1.5 text-xs'
   } inline-flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-full border border-gray-200 shadow-sm transition-all flex-shrink-0`;
 
+  const widthClass = compact
+    ? (fullWidth ? 'w-full' : 'w-48 flex-shrink-0')
+    : '';
+  const draggableProps = draggable
+    ? {
+        draggable: true,
+        onDragStart: draggable.onDragStart,
+        onDragEnd: draggable.onDragEnd,
+      }
+    : {};
+
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col ${compact ? 'w-48 flex-shrink-0' : ''} hover:shadow-md transition-shadow`}>
+    <div
+      {...draggableProps}
+      className={`bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col ${widthClass} hover:shadow-md transition-shadow ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+    >
       {/* Image */}
       <a
         href={item.sourceUrl}
@@ -173,12 +209,12 @@ export default function PropertyCard({
           onClick={handleHeart}
           title={heartTooltip}
           aria-label={heartTooltip}
-          disabled={isOwn || scrapedSaved}
+          disabled={!ownCanMoveStage && (isOwn || scrapedSaved)}
           className={`absolute ${compact ? 'top-1.5 right-1.5 w-6 h-6 text-xs' : 'top-2 right-2 w-8 h-8 text-base'} flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm transition-all ${
             heartFilled
-              ? 'text-teal-600'
+              ? `text-teal-600${ownCanMoveStage ? ' hover:scale-110' : ''}`
               : 'text-gray-400 hover:text-teal-600 hover:scale-110'
-          } ${isOwn ? 'cursor-default' : ''}`}
+          } ${isOwn && !ownCanMoveStage ? 'cursor-default' : ''}`}
         >
           {heartFilled ? '♥' : '♡'}
         </button>
