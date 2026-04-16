@@ -159,10 +159,16 @@ function ConfirmNotRelevantModal({
 
 // ─── Main board ───────────────────────────────────────────────────────────────
 
-export default function FunnelBoard({ activePresets, activeSavedFilterIds, savedFilters }: {
+export default function FunnelBoard({ activePresets, activeSavedFilterIds, savedFilters, headerAction }: {
   activePresets?: Set<PresetFilterKey>;
   activeSavedFilterIds?: Set<string>;
   savedFilters?: SavedFilter[];
+  /**
+   * Optional right-aligned action rendered inside the kanban's horizontal
+   * scroll container so its right edge tracks the right edge of the
+   * rightmost column (Won) even when the board scrolls.
+   */
+  headerAction?: React.ReactNode;
 }) {
   const t = useTranslations('funnel');
   const { properties: all, loading, error, update, optimisticUpdate } = useProperties();
@@ -324,8 +330,15 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
           onDrop={handleDrop}
         />
       ) : (
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {FUNNEL_STAGES_DISPLAY.map((stage) => {
+        <div className="overflow-x-auto pb-4">
+          <div className="w-max">
+            {headerAction && (
+              <div className="flex justify-end mb-2">
+                {headerAction}
+              </div>
+            )}
+            <div className="flex gap-4">
+              {FUNNEL_STAGES_DISPLAY.map((stage) => {
             const stageProps = properties.filter(p => p.status === stage.key);
             const isOver = dragOverStage === stage.key;
 
@@ -397,6 +410,8 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
               </div>
             );
           })}
+            </div>
+          </div>
         </div>
       )}
     </div>

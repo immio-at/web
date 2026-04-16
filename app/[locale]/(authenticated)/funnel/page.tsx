@@ -30,10 +30,6 @@ export default function FunnelPage() {
         <p className="text-gray-600 mt-1">{t('subtitle')}</p>
       </div>
 
-      <div className="flex justify-end mb-2">
-        <AddPropertyButton size="lg" />
-      </div>
-
       <PresetFilters
         active={activePresets}
         onChange={setActivePresets}
@@ -43,7 +39,12 @@ export default function FunnelPage() {
         onDeleteFilter={removeFilter}
       />
 
-      <FunnelBoard activePresets={activePresets} activeSavedFilterIds={activeSavedFilterIds} savedFilters={savedFilters} />
+      <FunnelBoard
+        activePresets={activePresets}
+        activeSavedFilterIds={activeSavedFilterIds}
+        savedFilters={savedFilters}
+        headerAction={<AddPropertyButton size="lg" />}
+      />
     </div>
   );
 }
