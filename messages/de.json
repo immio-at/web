@@ -1015,6 +1015,11 @@
     "clearAll": "Alle Filter löschen",
     "saveSearch": "Suche als Filter speichern"
   },
+  "undoToast": {
+    "dismissed": "Entfernt",
+    "untitled": "Ohne Titel",
+    "undo": "Rückgängig"
+  },
   "dossier": {
     "applied": "Übernommen ✓",
     "applyTooltip": "Diesen Wert in die Immobilie übernehmen",

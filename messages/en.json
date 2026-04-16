@@ -1015,6 +1015,11 @@
     "clearAll": "Clear all filters",
     "saveSearch": "Save search as filter"
   },
+  "undoToast": {
+    "dismissed": "Dismissed",
+    "untitled": "Untitled",
+    "undo": "Undo"
+  },
   "dossier": {
     "applied": "Applied ✓",
     "applyTooltip": "Apply this value to the property record",

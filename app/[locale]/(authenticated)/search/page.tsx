@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
@@ -19,6 +19,7 @@ import FilterBar, {
 } from '@/components/FilterBar';
 import PresetFilters from '@/components/PresetFilters';
 import SortControl from '@/components/SortControl';
+import UndoToastStack, { type UndoToastEntry } from '@/components/UndoToastStack';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
 import dynamic from 'next/dynamic';
@@ -374,6 +375,20 @@ export default function EntdeckenPage() {
   const [scrapedLoading, setScrapedLoading] = useState(true);
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Dismiss UX state ─────────────────────────────────────────────────────
+  // Keep dismissed listing ids in a synchronous local set so the card hides
+  // instantly even when a filter-active refetch is in flight. `undoSnapshots`
+  // stores enough state to restore each entry — own properties remember their
+  // prior status; scraped listings remember the UnifiedListing itself.
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [undoEntries, setUndoEntries] = useState<UndoToastEntry[]>([]);
+  const undoSnapshotsRef = useRef<Map<string, {
+    source: 'own' | 'scraped';
+    ownId?: string;
+    previousStatus?: string;
+    scrapedListing?: UnifiedListing;
+  }>>(new Map());
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveFilterError, setSaveFilterError] = useState<string | null>(null);
   const [saveFilterSuccess, setSaveFilterSuccess] = useState<string | null>(null);
@@ -484,12 +499,18 @@ export default function EntdeckenPage() {
       merged = merged.filter(l => passesSavedFilters(l, savedFilters, activeSavedFilterIds));
     }
 
+    // Hide dismissed listings (local-only, zero-lag — survives the undo
+    // window and persists until the user navigates away or undoes).
+    if (dismissedIds.size > 0) {
+      merged = merged.filter(l => !dismissedIds.has(l.id));
+    }
+
     const userCount = page === 1
       ? merged.filter(l => l.source === 'email').length
       : 0;
 
     return { listings: merged, mergedUserCount: userCount };
-  }, [scrapedListings, filteredUserProps, page, activePresets, activeSavedFilterIds, savedFilters]);
+  }, [scrapedListings, filteredUserProps, page, activePresets, activeSavedFilterIds, savedFilters, dismissedIds]);
 
   const loading = scrapedLoading;
 
@@ -615,18 +636,72 @@ export default function EntdeckenPage() {
       }
     },
     onDismiss: (item: CardProperty) => {
+      // Unified listing id across own + scraped — matches listing.id in the grid.
+      const listingId = item.source === 'own'
+        ? `prop-${item.id}`
+        : `scraped-${item.scrapedListingId}`;
+
+      // Hide the card synchronously so the grid doesn't wait on a PATCH round
+      // trip or a filter-active refetch.
+      setDismissedIds(prev => {
+        const next = new Set(prev);
+        next.add(listingId);
+        return next;
+      });
+
       if (item.source === 'own') {
+        const prev = cachedProperties.find(p => p.id === item.id);
+        undoSnapshotsRef.current.set(listingId, {
+          source: 'own',
+          ownId: item.id,
+          previousStatus: prev?.status ?? 'new',
+        });
         updateProp(item.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() });
+      } else {
+        const existing = scrapedListings.find(l => l.id === listingId);
+        if (existing) {
+          undoSnapshotsRef.current.set(listingId, {
+            source: 'scraped',
+            scrapedListing: existing,
+          });
+        }
       }
-      // For scraped: just hide from view
-      if (item.source === 'scraped') {
-        setScrapedListings(prev => prev.filter(l => l.id !== `scraped-${item.scrapedListingId}`));
-      }
+
+      setUndoEntries(entries => [
+        ...entries,
+        { id: listingId, label: item.title ?? '', createdAt: Date.now() },
+      ]);
     },
     onUrlClick: (item: CardProperty) => {
       if (item.source === 'own') trackInteraction(item.id, 'url_click');
     },
-  }), [updateProp, optimisticUpdate, optimisticInsert, cachedProperties]);
+  }), [updateProp, optimisticUpdate, optimisticInsert, cachedProperties, scrapedListings]);
+
+  const handleUndoDismiss = useCallback((listingId: string) => {
+    const snapshot = undoSnapshotsRef.current.get(listingId);
+    setDismissedIds(prev => {
+      const next = new Set(prev);
+      next.delete(listingId);
+      return next;
+    });
+    setUndoEntries(entries => entries.filter(e => e.id !== listingId));
+    undoSnapshotsRef.current.delete(listingId);
+    if (!snapshot) return;
+    if (snapshot.source === 'own' && snapshot.ownId) {
+      updateProp(snapshot.ownId, {
+        status: snapshot.previousStatus ?? 'new',
+        movedToStageAt: new Date().toISOString(),
+      });
+    }
+    // Scraped listings auto-restore via the dismissedIds filter — no state
+    // mutation needed since the UnifiedListing stays in scrapedListings.
+  }, [updateProp]);
+
+  const handleUndoExpire = useCallback((listingId: string) => {
+    setUndoEntries(entries => entries.filter(e => e.id !== listingId));
+    undoSnapshotsRef.current.delete(listingId);
+    // dismissedIds stays — card remains hidden even after the toast fades.
+  }, []);
 
   const totalResults = presetsActive
     ? listings.length
@@ -818,6 +893,12 @@ export default function EntdeckenPage() {
           onClose={() => setAnalyseProperty(null)}
         />
       )}
+
+      <UndoToastStack
+        entries={undoEntries}
+        onUndo={handleUndoDismiss}
+        onExpire={handleUndoExpire}
+      />
     </div>
   );
 }
