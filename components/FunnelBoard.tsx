@@ -550,6 +550,7 @@ function ZoomedStageView({
       onDragOver={(e) => onDragOver(e, stage.key)}
       onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, stage.key)}
+      className="max-w-7xl mx-auto"
     >
       <div className={`${stage.header} rounded-t-lg px-4 py-3 flex items-center gap-3`}>
         <button
