@@ -42,7 +42,7 @@ export interface CardActions {
 
 const STAGE_I18N_KEY: Record<string, string> = {
   new: 'new', investigating: 'investigating', interested: 'interested',
-  due_diligence_completed: 'dueDiligenceCompleted', visited: 'visited', offer_made: 'offerMade',
+  due_diligence: 'dueDiligence', offer_made: 'offerMade',
   parked: 'parked', won: 'won',
 };
 

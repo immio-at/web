@@ -203,10 +203,18 @@ These are pure TypeScript functions with no side effects — keep them that way.
 ## Property & Funnel State
 
 ### Funnel Stages — canonical list
-`new` → `investigating` → `interested` → `due_diligence_completed` → `visited` → `offer_made`
+`new` → `investigating` → `interested` → `due_diligence` → `offer_made`
 → `won` | `parked` | `not_relevant` | `delisted`
 
-`due_diligence_completed` was renamed from `visit_booked` 2026-04-10 (Session 31). The DB key is `due_diligence_completed` (snake_case), the i18n key is `dueDiligenceCompleted` (camelCase), the preset key is `stage_due_diligence_completed`. Stage labels: English funnel header "Due Diligence Completed", German "Due Diligence abgeschlossen", both pill labels "Due Diligence". Stage keys appear in many places (FUNNEL_STAGES in `lib/constants.ts`, STAGE_KEY_TO_STATUS in `lib/preset-filters.ts`, FUNNEL_STATUSES in `lib/recommendations.ts`, ASSIGNABLE_STAGES in `PropertyCard.tsx`, several STAGE_I18N_KEY copies in FunnelBoard / PropertyCard / analytics page / FunnelSummaryTile) — any future stage rename must touch ALL of these.
+**Stage semantics** (Session 38, 2026-04-16):
+- **investigating** — landing spot for anything slightly interesting.
+- **interested** — passed the first check; user is working through a brief analysis (quick calculation or gathering more detail).
+- **due_diligence** — in-depth analysis, property visit, scouring documents, talking with lawyer / coach / accountant about the impact of purchase. Merged from the previous `due_diligence_completed` + `visited` stages (Session 38) — a property visit is part of the due-diligence work.
+- **offer_made** — due diligence passed and an offer was submitted.
+- **parked** — due diligence didn't pass but the user isn't ready to discard completely (side branch, not forward motion).
+- **won** — purchase closed.
+
+`due_diligence` history: renamed from `visit_booked` → `due_diligence_completed` (Session 31, 2026-04-10), then `due_diligence_completed` merged with `visited` → `due_diligence` (Session 38, 2026-04-16). The DB key is `due_diligence` (snake_case), the i18n key is `dueDiligence` (camelCase), the preset key is `stage_due_diligence`. Stage keys appear in many places (FUNNEL_STAGES in `lib/constants.ts`, STAGE_KEY_TO_STATUS in `lib/preset-filters.ts`, FUNNEL_STATUSES in `lib/recommendations.ts`, several STAGE_I18N_KEY copies in FunnelBoard / PropertyCard / analytics page / FunnelSummaryTile, the `STAGES` list in `StageSelectorInput.tsx`) — any future stage rename must touch ALL of these.
 
 Terminal stages: `won`, `parked`, `not_relevant`, `delisted`
 - `delisted` — hidden from all views (user dismissed an expired listing)

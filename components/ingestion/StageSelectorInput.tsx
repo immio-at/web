@@ -17,8 +17,7 @@ const STAGES = [
   'new',
   'investigating',
   'interested',
-  'due_diligence_completed',
-  'visited',
+  'due_diligence',
   'offer_made',
 ] as const;
 
@@ -40,8 +39,7 @@ export default function StageSelectorInput({ value, onChange, disabled }: Props)
     new: 'new',
     investigating: 'investigating',
     interested: 'interested',
-    due_diligence_completed: 'dueDiligenceCompleted',
-    visited: 'visited',
+    due_diligence: 'dueDiligence',
     offer_made: 'offerMade',
   };
 

@@ -19,7 +19,7 @@ const PropertyAnalysisModal = dynamic(
 // Map snake_case stage keys to camelCase translation keys
 const STAGE_I18N_KEY: Record<string, string> = {
   new: 'new', investigating: 'investigating', interested: 'interested',
-  due_diligence_completed: 'dueDiligenceCompleted', visited: 'visited', offer_made: 'offerMade',
+  due_diligence: 'dueDiligence', offer_made: 'offerMade',
   parked: 'parked', won: 'won', not_relevant: 'notRelevant',
 };
 
@@ -418,7 +418,7 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
             const avg = prices.length > 0 ? total / prices.length : 0;
             const hasPrice = prices.length > 0;
 
-            const isLight    = stage.parked || stage.key === 'investigating' || stage.key === 'interested' || stage.key === 'due_diligence_completed';
+            const isLight    = stage.parked || stage.key === 'investigating' || stage.key === 'interested' || stage.key === 'due_diligence';
             const labelStyle = isLight ? 'text-slate-600 font-semibold text-sm' : 'text-white font-semibold text-sm';
             const summaryStyle = isLight ? 'text-slate-500' : 'text-white opacity-80';
             const iconStyle = isLight ? 'text-slate-500' : 'text-white opacity-80';
@@ -538,7 +538,7 @@ function ZoomedStageView({
   const avg = prices.length > 0 ? total / prices.length : 0;
   const hasPrice = prices.length > 0;
 
-  const isLight    = stage.parked || stage.key === 'investigating' || stage.key === 'interested' || stage.key === 'due_diligence_completed';
+  const isLight    = stage.parked || stage.key === 'investigating' || stage.key === 'interested' || stage.key === 'due_diligence';
   const labelStyle = isLight ? 'text-slate-700 font-semibold text-base' : 'text-white font-semibold text-base';
   const summaryStyle = isLight ? 'text-slate-500' : 'text-white opacity-80';
   const backStyle = isLight
