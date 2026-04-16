@@ -123,23 +123,38 @@ export default function FinderClient({
     return activeStates.flatMap(abbr => getPostcodesByBundesland(abbr) ?? []);
   }, [activePresets]);
 
-  // Fetch scraped listings — re-fetches when state presets or sort change
+  // Fetch scraped listings — re-fetches when state presets or sort change.
+  // Pull multiple pages so the swipe deck doesn't flicker in size when a
+  // filter change shifts which listings overlap with the user's already-
+  // saved sourceUrls (backend returns 20 per page; one page of scraped
+  // minus overlaps sometimes leaves only a handful of cards).
+  const MAX_FINDER_PAGES = 5; // up to 100 scraped listings in the deck
   const fetchScraped = useCallback(async () => {
     if (authLoading || !session) return;
     try {
       setScrapedLoading(true);
-      const params: Record<string, unknown> = {
-        page: 1,
+      const baseParams: Record<string, unknown> = {
         hideNullPrice: true,
         sortBy,
         sortOrder,
       };
       if (presetPostcodes.length > 0) {
-        params.postcodes = presetPostcodes;
+        baseParams.postcodes = presetPostcodes;
       }
-      // Fetch multiple pages to have a decent card stack
-      const data = await getScrapedListings(params as any);
-      setScrapedCards(data.data.map(scrapedToCard));
+      // Fetch page 1 first so we know the true total page count, then
+      // parallel-fetch the rest up to MAX_FINDER_PAGES.
+      const first = await getScrapedListings({ ...baseParams, page: 1 } as any);
+      const extraPages = Math.min(first.totalPages ?? 1, MAX_FINDER_PAGES) - 1;
+      let data = first.data;
+      if (extraPages > 0) {
+        const rest = await Promise.all(
+          Array.from({ length: extraPages }, (_, i) =>
+            getScrapedListings({ ...baseParams, page: i + 2 } as any).then(r => r.data),
+          ),
+        );
+        data = data.concat(...rest);
+      }
+      setScrapedCards(data.map(scrapedToCard));
     } catch {
       setScrapedCards([]);
     } finally {
