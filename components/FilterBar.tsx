@@ -218,7 +218,7 @@ export default function FilterBar({
             </div>
           </div>
 
-          {/* Line 3: Size + Rooms */}
+          {/* Line 3: Size + Rooms + primary actions (AddProperty + Search) */}
           <div className="flex flex-wrap gap-3 items-end mt-3">
             <div className="flex flex-col gap-1">
               <label className={labelClass}>{t('sizeFrom')}</label>
@@ -236,9 +236,20 @@ export default function FilterBar({
               <label className={labelClass}>{t('roomsTo')}</label>
               <input type="number" value={values.maxRooms} onChange={set('maxRooms')} placeholder={t('roomsToPlaceholder')} step="0.5" className={`${inputClass} w-24`} />
             </div>
+
+            <div className="flex-1" />
+
+            <AddPropertyButton size="lg" />
+
+            <button
+              type="submit"
+              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {t('search')}
+            </button>
           </div>
 
-          {/* Actions row: Saved-filter selector + buttons */}
+          {/* Actions row: Saved-filter selector + secondary buttons */}
           <div className="flex flex-wrap gap-3 items-center mt-3">
             {/* Saved filter selector */}
             {savedFilters && savedFilters.length > 0 && (
@@ -289,16 +300,6 @@ export default function FilterBar({
 
             {/* Spacer */}
             <div className="flex-1" />
-
-            {/* Action buttons */}
-            <AddPropertyButton />
-
-            <button
-              type="submit"
-              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              {t('search')}
-            </button>
 
             {isFilterActive(values) && (
               <button

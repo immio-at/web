@@ -10,6 +10,7 @@ import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/aus
 import { useAuth } from '@/context/AuthContext';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import PresetFilters from '@/components/PresetFilters';
+import AddPropertyButton from '@/components/ingestion/AddPropertyButton';
 
 export default function DiscoverTile({
   savedFilters,
@@ -123,8 +124,13 @@ export default function DiscoverTile({
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
-      <h3 className="text-base font-semibold text-gray-900 mb-1">{t('title')}</h3>
-      <p className="text-sm text-gray-400 mb-3">{t('subtitle')}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-semibold text-gray-900 mb-1">{t('title')}</h3>
+          <p className="text-sm text-gray-400 mb-3">{t('subtitle')}</p>
+        </div>
+        <AddPropertyButton />
+      </div>
 
       {/* ADR-008 pill bar — Bundesland row + source/filter row.
           dashboardMode: clicking a saved filter pill populates the

@@ -12,7 +12,6 @@ import AnalyticsSnapshotTile from '@/app/[locale]/(authenticated)/dashboard/comp
 import PropertyCarousel from '@/app/[locale]/(authenticated)/dashboard/components/PropertyCarousel';
 import RecommendedCarousel from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
 import { type CardProperty, type CardActions } from '@/components/PropertyCard';
-import AddPropertyButton from '@/components/ingestion/AddPropertyButton';
 import { useTranslations } from 'next-intl';
 
 const PropertyAnalysisModal = dynamic(
@@ -75,12 +74,8 @@ export default function DashboardClient({
 
   return (
     <div>
-      {/* ADR-010 unified Add Property entry point */}
-      <div className="flex justify-end mb-4">
-        <AddPropertyButton />
-      </div>
-
-      {/* Summary Tiles — 2×2 grid, equal row heights */}
+      {/* Summary Tiles — 2×2 grid, equal row heights.
+          Add Property entry point now lives in the DiscoverTile header. */}
       <div className="grid grid-cols-1 lg:grid-cols-2 lg:auto-rows-fr gap-4 mb-8">
         <DiscoverTile savedFilters={savedFilters} properties={properties} />
         <FunnelSummaryTile properties={properties} />

@@ -24,16 +24,20 @@ const PropertyAnalysisModal = dynamic(
   { ssr: false },
 );
 
-export default function AddPropertyButton() {
+export default function AddPropertyButton({ size = 'default' }: { size?: 'default' | 'lg' } = {}) {
   const t = useTranslations('addProperty');
   const [modalOpen, setModalOpen] = useState(false);
   const [createdProperty, setCreatedProperty] = useState<Property | null>(null);
+
+  const sizeClass = size === 'lg'
+    ? 'text-sm px-4 py-2'
+    : 'text-xs px-3 py-1.5';
 
   return (
     <>
       <button
         onClick={() => setModalOpen(true)}
-        className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:border-blue-300 transition-colors"
+        className={`inline-flex items-center gap-1.5 font-medium rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:border-blue-300 transition-colors ${sizeClass}`}
       >
         <span>＋</span>
         <span>{t('button')}</span>
