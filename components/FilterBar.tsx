@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { SavedFilter, CreateSavedFilterDto } from '@/lib/api';
 import { resolveBundesland, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
+import AddPropertyButton from '@/components/ingestion/AddPropertyButton';
 
 // ─── Filter values type ──────────────────────────────────────────────────────
 
@@ -238,7 +239,7 @@ export default function FilterBar({
           </div>
 
           {/* Actions row: Saved-filter selector + buttons */}
-          <div className="flex flex-wrap gap-3 items-center mt-4 pt-3 border-t border-gray-100">
+          <div className="flex flex-wrap gap-3 items-center mt-3">
             {/* Saved filter selector */}
             {savedFilters && savedFilters.length > 0 && (
               <div className="relative" ref={dropdownRef}>
@@ -290,6 +291,8 @@ export default function FilterBar({
             <div className="flex-1" />
 
             {/* Action buttons */}
+            <AddPropertyButton />
+
             <button
               type="submit"
               className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
