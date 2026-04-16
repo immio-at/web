@@ -185,14 +185,21 @@ export default function PresetFilters({
     );
   }
 
-  function PresetPill({ filterKey, labelKey }: { filterKey: PresetFilterKey; labelKey: string }) {
+  function PresetPill({ filterKey, labelKey, tone = 'blue' }: {
+    filterKey: PresetFilterKey;
+    labelKey: string;
+    tone?: 'blue' | 'teal';
+  }) {
     const isActive = active.has(filterKey);
+    const activeClass = tone === 'teal'
+      ? 'bg-teal-600 text-white border-teal-600'
+      : 'bg-blue-600 text-white border-blue-600';
     return (
       <button
         onClick={() => handleToggle(filterKey)}
         className={`${pillSize} transition-colors whitespace-nowrap ${
           isActive
-            ? 'bg-blue-600 text-white border-blue-600'
+            ? activeClass
             : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
         }`}
       >
@@ -304,11 +311,13 @@ export default function PresetFilters({
     </div>
   );
 
-  // Funnel stages row (Discover only)
+  // Funnel stages row (Discover only). Stage pills use teal — the
+  // site's funnel accent — so they visually tie back to the Funnel
+  // stage column headers and the in-funnel heart state.
   const stagesRow = (
     <div className={`flex flex-wrap items-center ${rowGap} ${justify}`}>
       {stageFilters.map(f => (
-        <PresetPill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
+        <PresetPill key={f.key} filterKey={f.key} labelKey={f.labelKey} tone="teal" />
       ))}
     </div>
   );
