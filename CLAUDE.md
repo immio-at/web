@@ -147,7 +147,10 @@ components/
 ├── DashboardClient.tsx         ← Dashboard logic: tiles/table views, carousels, filters
 ├── FilterBar.tsx               ← Shared filter component (Search, Dashboard, Finder)
 ├── PropertyAnalysisModal.tsx   ← Full-screen ROI calculator + document uploads
-├── ingestion/                  ← ADR-010: AddPropertyButton, AddPropertyModal, UrlTab, ExposeTab, ManualTab, StageSelectorInput, SupportedPortalLogos
+├── PropertyCard.tsx            ← ADR-012 unified card. Props: `compact`, `fullWidth`, `draggable: { onDragStart, onDragEnd }`. Actions include `onMoveStage(item, DOMRect)` — when set on own items, heart click fires it so the parent can open a stage-picker dropdown anchored to the button. Funnel kanban uses `compact + fullWidth + draggable`; stage-zoom uses full-size (no compact); Dashboard carousels use compact (w-48 fixed width); Discover uses full-size.
+├── SortControl.tsx             ← Standalone sort dropdown + asc/desc toggle. Used prominently on Discover (above results grid) + Finder (under pill bar). Auto-refreshes on change.
+├── UndoToastStack.tsx          ← Bottom-left stack of 5-second undo toasts. Used on Discover for ✕ dismissals. Stacks upward via `flex-col-reverse`. Per-entry timer keyed to `createdAt`.
+├── ingestion/                  ← ADR-010: AddPropertyButton (accepts `size: 'default' | 'lg'`), AddPropertyModal, UrlTab, ExposeTab, ManualTab, StageSelectorInput, SupportedPortalLogos
 ├── (inline in search/page.tsx) ← ListingCard — scraped listing card with save button
 └── analysis/
     ├── PropertyInfoStrip.tsx
@@ -278,6 +281,22 @@ Set in Vercel dashboard — never commit to git.
 5. **Track 6 PL2 — Native mobile app** — React Native / Expo, iOS + Android.
 6. **Track 8 — Onboarding wizard, map view** — deferred until tester feedback.
 
+Recently completed (Session 39, 2026-04-16):
+- Session 37 + 38 promoted to prod (immio.at + IMMIO-backend). Includes TD14 catch-up migration, stage merge (`visited`+`due_diligence_completed`→`due_diligence`), ADR-012/013, SortControl, etc.
+- Parked ↔ Won column swap; Offer Made recoloured `blue-400`.
+- Full-width funnel kanban via `grid-template-columns: repeat(N, minmax(0, 1fr))` — removed the old `overflow-x-auto` + `w-60` fixed sizing.
+- PropertyCard image +10% taller (compact `h-[7.7rem]`, full `h-[13.2rem]`).
+- Discover dismiss — zero-lag via local `dismissedIds` Set; new `UndoToastStack` (5s per-entry, bottom-left, stacks upward).
+
+Recently completed (Session 38, 2026-04-16):
+- Unified PropertyCard on Funnel kanban + stage zoom (heart opens stage picker for own via `onMoveStage`).
+- AddPropertyButton repositioning across Dashboard (DiscoverTile header), Funnel (right-aligned `headerAction` slot), Discover (inline with filter fields at input height via `size='lg'`).
+- Three-phase column-header palette.
+- Stage merge: `visited` + `due_diligence_completed` → `due_diligence`.
+
+Recently completed (Session 37, 2026-04-15):
+- ADR-012 + ADR-013 shipped (Tracks 10 + 11). Scraped save → Investigating + SSE emit + optimisticInsert. TD14 resolved (retroactive ADR-009 DO1 migration). SSE refresh-in-place pattern replaces clearXxxCache flash-empty. SortControl + hideNullPrice hardcoded.
+
 Recently completed (Session 36):
 - Register error mapping — `lib/registerErrors.ts` translates backend error codes (weak_password, user_already_exists, invalid_email) to localised DE + EN strings. Used by RegisterModal + `/register` page. Fallback to backend message for unknown codes.
 
@@ -318,22 +337,27 @@ Previously completed (Sessions 32–33):
 - **`/settings/filters` (F6)** — bulk management page. Lists every filter oldest-first with Edit / Delete / "New filter" actions. Tier limit indicator (X / Y used) with upgrade prompt at the cap. `TIER_LIMITS` constant on the page mirrors the backend SavedFiltersService rules — keep in sync.
 - i18n: `presetFilters.*` and `settingsFilters.*` namespaces in de.json + en.json
 
-## Unified PropertyCard
-- `components/PropertyCard.tsx` — shared card for Dashboard carousels (compact) and Discover grid (full)
-- Exports: `CardProperty` interface, `CardActions` interface
-- Source badge: green "Platform Suchagent" for email-parsed, grey "Platform" for scraped (checks `emailReceivedAt`)
-- Actions: funnel stage dropdown (move/add), analyse (🔍), report dead link (⚠, own only), dismiss (✕)
-- i18n: `propertyCard` namespace in de.json + en.json
+## Unified PropertyCard (ADR-012)
+- `components/PropertyCard.tsx` — shared card across Dashboard carousels (compact), Discover grid (full), Funnel kanban (compact + fullWidth + draggable), and Funnel stage-zoom (full).
+- Exports: `CardProperty` interface, `CardActions` interface.
+- Layout: image on top with three overlays — source badge top-left (green "… Suchagent" for email-parsed, grey for scraped), heart top-right, `🔍 / ⚠ / ✕` vertical action stack right-middle (hover-visible on desktop, always-visible on mobile). Expired badge bottom-left.
+- Heart behaviour:
+  - Scraped: outline, click → `onSaveToFunnel` (save to Investigating, optimistic fill). Scraped state resets on `item.id` change so reused card instances don't leak filled state between swipes.
+  - Own: filled teal. Default click is a no-op (tooltip shows current stage). On Funnel, `onMoveStage(item, rect)` is provided — click fires it with the heart's bounding rect so the parent can anchor a stage-picker dropdown.
+- Props: `compact`, `fullWidth` (compact defaults to `w-48`; set true to use `w-full`), `draggable: { onDragStart, onDragEnd }` (used by the kanban for HTML5 drag).
+- Column-header colour palette on the Funnel is defined in `lib/constants.ts` under `FUNNEL_STAGES[].header`. Pair-checks `isLight` in FunnelBoard to choose dark vs white label text.
+- i18n: `propertyCard` namespace in de.json + en.json — `saveToFunnel`, `alreadyInFunnel`, `alreadyInFunnelWithStage`, `changeStage`, `changeStageFrom`, `analyse`, `reportDead`, `dismiss`, `expired`.
 
 ## Entdecken Page (`/search`)
 Browse scraped listings from all active sources (Raiffeisen, s REAL, ÖRAG, RE/MAX, Kurier, Der Standard).
-- Unified FilterBar: keyword + PLZ/Bundesland, price + €/m², size + rooms (saved filter dropdown removed)
-- Preset + saved filter pills below FilterBar — state presets server-side, time/source client-side
-- Unified PropertyCard with stage dropdown, analyse, report, dismiss
-- Null-price listings hidden by default ("Ohne Preis anzeigen" toggle)
-- Saving a listing invalidates the `useProperties` cache so Dashboard/Funnel update immediately
-- Pagination: 20 per page (hidden when client-only presets active)
-- Reads preset + saved filter selections from URL params (from Dashboard)
+- Unified FilterBar: keyword + PLZ/Bundesland, price + €/m², size + rooms. Add Property + Search buttons inline on the Size + Rooms row, right-aligned via `ml-auto`; no horizontal line.
+- Preset + saved filter pills below FilterBar — state presets server-side, time/source client-side.
+- `SortControl` rendered prominently above the results grid, next to the listing count + view toggle. Auto-refreshes on change (updates both `filterValues` and `applied`).
+- Unified PropertyCard. `✕` dismiss is zero-lag: the search page maintains a local `dismissedIds: Set<string>` applied as the last filter in the listings memo, so cards disappear synchronously regardless of filter-active refetch latency. Pairs with a stacking `<UndoToastStack>` (bottom-left, 5-second per-entry timer). Undo restores own-property status or unhides the scraped row; expire drops the toast and keeps the card hidden.
+- Null-price listings always hidden — the `showHidden` checkbox was removed, `hideNullPrice: true` hardcoded everywhere.
+- Saving a listing optimistically inserts into the `useProperties` cache so the Funnel's Investigating column populates instantly.
+- Pagination: 20 per page (hidden when client-only presets active).
+- Reads preset + saved filter selections from URL params (from Dashboard).
 
 ## Recommendation Engine
 - `lib/recommendations.ts` — derives criteria from funnel properties, scores candidates
