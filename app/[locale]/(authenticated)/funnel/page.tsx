@@ -1,18 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import dynamic from 'next/dynamic';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
+import { useProperties } from '@/hooks/useProperties';
 import FunnelBoard from '@/components/FunnelBoard';
 import PresetFilters from '@/components/PresetFilters';
 import AddPropertyButton from '@/components/ingestion/AddPropertyButton';
 import { type PresetFilterKey } from '@/lib/preset-filters';
+import { type Property } from '@/lib/api';
+
+const PropertyAnalysisModal = dynamic(
+  () => import('@/components/PropertyAnalysisModal'),
+  { ssr: false },
+);
 
 export default function FunnelPage() {
   const t = useTranslations('funnel');
+  const searchParams = useSearchParams();
   const { filters: savedFilters, remove: removeFilter } = useSavedFilters();
+  const { properties } = useProperties();
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(new Set());
+  const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
+
+  // Deep-link: ?analyse=PROPERTY_ID opens the analysis modal automatically.
+  // Used by the browser extension's "Already in IMMIO" button.
+  useEffect(() => {
+    const analyseId = searchParams.get('analyse');
+    if (!analyseId || properties.length === 0) return;
+    const prop = properties.find(p => p.id === analyseId);
+    if (prop) setAnalyseProperty(prop);
+  }, [searchParams, properties]);
 
   function toggleSavedFilter(id: string) {
     setActiveSavedFilterIds(prev => {
@@ -45,6 +66,13 @@ export default function FunnelPage() {
         savedFilters={savedFilters}
         headerAction={<AddPropertyButton size="lg" />}
       />
+
+      {analyseProperty && (
+        <PropertyAnalysisModal
+          property={analyseProperty}
+          onClose={() => setAnalyseProperty(null)}
+        />
+      )}
     </div>
   );
 }
