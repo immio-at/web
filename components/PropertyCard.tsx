@@ -203,20 +203,31 @@ export default function PropertyCard({
           </span>
         )}
 
-        {/* Heart — top-right of image */}
+        {/* House icon — top-right of image */}
         <button
           type="button"
           onClick={handleHeart}
           title={heartTooltip}
           aria-label={heartTooltip}
           disabled={!ownCanMoveStage && (isOwn || scrapedSaved)}
-          className={`absolute ${compact ? 'top-1.5 right-1.5 w-6 h-6 text-xs' : 'top-2 right-2 w-8 h-8 text-base'} flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm transition-all ${
+          className={`absolute ${compact ? 'top-1.5 right-1.5 w-6 h-6' : 'top-2 right-2 w-8 h-8'} flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm transition-all ${
             heartFilled
               ? `text-teal-600${ownCanMoveStage ? ' hover:scale-110' : ''}`
               : 'text-gray-400 hover:text-teal-600 hover:scale-110'
           } ${isOwn && !ownCanMoveStage ? 'cursor-default' : ''}`}
         >
-          {heartFilled ? '♥' : '♡'}
+          <svg
+            viewBox="0 0 24 24"
+            className={compact ? 'w-3.5 h-3.5' : 'w-4.5 h-4.5'}
+            fill={heartFilled ? 'currentColor' : 'none'}
+            stroke="currentColor"
+            strokeWidth={heartFilled ? 0 : 2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10.5z" />
+            {!heartFilled && <path d="M9 21V14h6v7" />}
+          </svg>
         </button>
 
       </a>
