@@ -25,6 +25,8 @@ import {
 } from '@/lib/api';
 import DossierTab from '@/components/property/DossierTab';
 import MrgWarningBanner from '@/components/property/MrgWarningBanner';
+import { useProperties } from '@/hooks/useProperties';
+import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
 import {
   calcOwnerResults,
   calcRentalResults,
@@ -236,14 +238,23 @@ function tabLabel(tab: Tab): string {
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
+const STAGE_I18N_KEY: Record<string, string> = {
+  new: 'new', investigating: 'investigating', interested: 'interested',
+  due_diligence: 'dueDiligence', offer_made: 'offerMade',
+  parked: 'parked', won: 'won',
+};
+
 export default function PropertyAnalysisModal({ property, onClose, initialViewMode = 'analyses' }: Props) {
   const t = useTranslations('analysis');
+  const tStages = useTranslations('funnel.stages');
+  const { update: updateProperty } = useProperties();
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [currentStage, setCurrentStage] = useState(property.status);
   // ADR-009 DO4: top-level toggle between the analyses workspace and the
   // Property Dossier (documents + AI extraction + structured property data).
   const [viewMode, setViewMode] = useState<'analyses' | 'dossier'>(initialViewMode);
@@ -640,14 +651,34 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
                   {property.zipCode && <span>{property.zipCode}</span>}
                 </div>
               </div>
-              <a
-                href={property.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-[#F5A623] hover:underline flex-shrink-0 font-medium"
-              >
-                {t('openListing')}
-              </a>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <select
+                  value={currentStage}
+                  onChange={(e) => {
+                    const newStage = e.target.value;
+                    setCurrentStage(newStage);
+                    updateProperty(property.id, {
+                      status: newStage,
+                      movedToStageAt: new Date().toISOString(),
+                    });
+                  }}
+                  className="text-xs border border-[#e2e6ed] rounded-lg px-2 py-1.5 bg-white text-[#0F1F3D] focus:outline-none focus:ring-1 focus:ring-[#F5A623]"
+                >
+                  {FUNNEL_STAGES_DISPLAY.map(s => (
+                    <option key={s.key} value={s.key}>
+                      {tStages(STAGE_I18N_KEY[s.key] ?? s.key)}
+                    </option>
+                  ))}
+                </select>
+                <a
+                  href={property.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-[#F5A623] hover:underline font-medium"
+                >
+                  {t('openListing')}
+                </a>
+              </div>
             </div>
 
             {/* ── Section 1: Nutzung ── */}
