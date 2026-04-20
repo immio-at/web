@@ -73,8 +73,10 @@ function NumInput({
   readOnly?: boolean;
   hint?: string;
 }) {
-  // Round display value to avoid floating point artifacts (e.g. 4.499999 → 4.5)
-  const displayValue = value != null ? parseFloat(value.toFixed(4)) : '';
+  // Round display value to avoid floating point artifacts (e.g. 4.499999 → 4.5).
+  // Guard against Prisma Decimal strings sneaking in at runtime.
+  const numValue = value != null ? (typeof value === 'number' ? value : parseFloat(String(value))) : null;
+  const displayValue = numValue != null && !isNaN(numValue) ? parseFloat(numValue.toFixed(4)) : '';
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide">{label}</label>
@@ -258,7 +260,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
   const [docLabel, setDocLabel] = useState(t('documents.types.0'));
   const [docError, setDocError] = useState<string | null>(null);
 
-  const sizeSqm = property.sizeSqm;
+  const sizeSqm = property.sizeSqm != null ? parseFloat(String(property.sizeSqm)) : null;
 
   // Active tab's draft
   const draft = tabs[activeTab]?.draft ?? blankAnalysis(property);
