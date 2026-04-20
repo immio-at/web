@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
@@ -19,7 +18,6 @@ const PropertyAnalysisModal = dynamic(
 
 export default function FunnelPage() {
   const t = useTranslations('funnel');
-  const searchParams = useSearchParams();
   const { filters: savedFilters, remove: removeFilter } = useSavedFilters();
   const { properties } = useProperties();
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
@@ -27,13 +25,15 @@ export default function FunnelPage() {
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
 
   // Deep-link: ?analyse=PROPERTY_ID opens the analysis modal automatically.
-  // Used by the browser extension's "Already in IMMIO" button.
+  // Reads from window.location.search instead of useSearchParams to avoid
+  // the Suspense boundary requirement in Next.js production builds.
   useEffect(() => {
-    const analyseId = searchParams.get('analyse');
+    const params = new URLSearchParams(window.location.search);
+    const analyseId = params.get('analyse');
     if (!analyseId || properties.length === 0) return;
     const prop = properties.find(p => p.id === analyseId);
     if (prop) setAnalyseProperty(prop);
-  }, [searchParams, properties]);
+  }, [properties]);
 
   function toggleSavedFilter(id: string) {
     setActiveSavedFilterIds(prev => {
