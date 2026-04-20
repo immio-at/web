@@ -281,6 +281,14 @@ Set in Vercel dashboard — never commit to git.
 5. **Track 6 PL2 — Native mobile app** — React Native / Expo, iOS + Android.
 6. **Track 8 — Onboarding wizard, map view** — deferred until tester feedback.
 
+Recently completed (Session 40, 2026-04-20):
+- ADR-014 Browser Extension — `/auth/extension-callback` (hash-based token handoff to extension), `/extension-welcome` (first-run page).
+- Funnel `?analyse=PROPERTY_ID` deep-link auto-opens PropertyAnalysisModal. Used by the extension's "Already in IMMIO" button.
+- PropertyCard: house icon replaces heart (inline SVG, filled/stroked states).
+- Analysis modal: funnel stage `<select>` dropdown in the info strip next to "Öffnen". Stage changes fire `useProperties().update` optimistically.
+- Analysis modal crash fix: `property.sizeSqm` is a Prisma Decimal string → `NumInput.toFixed()` crashed. `parseFloat(String(...))` at assignment + runtime guard in `NumInput`.
+- Discover: `onReportDead` zero-lag via shared `hideCard()` + `dismissedIds`. Action stack moved outside `<a>` with `z-10` for reliable click targets.
+
 Recently completed (Session 39, 2026-04-16):
 - Session 37 + 38 promoted to prod (immio.at + IMMIO-backend). Includes TD14 catch-up migration, stage merge (`visited`+`due_diligence_completed`→`due_diligence`), ADR-012/013, SortControl, etc.
 - Parked ↔ Won column swap; Offer Made recoloured `blue-400`.
