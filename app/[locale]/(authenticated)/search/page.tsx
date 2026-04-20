@@ -609,6 +609,37 @@ export default function EntdeckenPage() {
 
   const { update: updateProp, optimisticUpdate, optimisticInsert } = useProperties();
 
+  // Shared instant-hide helper for both ⚠ report-dead and ✕ dismiss.
+  // Adds the card to dismissedIds (zero-lag local filter), snapshots
+  // enough state for undo, and pushes an undo toast entry.
+  function hideCard(listingId: string, item: CardProperty) {
+    setDismissedIds(prev => {
+      const next = new Set(prev);
+      next.add(listingId);
+      return next;
+    });
+    if (item.source === 'own') {
+      const prev = cachedProperties.find(p => p.id === item.id);
+      undoSnapshotsRef.current.set(listingId, {
+        source: 'own',
+        ownId: item.id,
+        previousStatus: prev?.status ?? 'new',
+      });
+    } else {
+      const existing = scrapedListings.find(l => l.id === listingId);
+      if (existing) {
+        undoSnapshotsRef.current.set(listingId, {
+          source: 'scraped',
+          scrapedListing: existing,
+        });
+      }
+    }
+    setUndoEntries(entries => [
+      ...entries,
+      { id: listingId, label: item.title ?? '', createdAt: Date.now() },
+    ]);
+  }
+
   const cardActions: CardActions = useMemo(() => ({
     onSaveToFunnel: async (item: CardProperty) => {
       if (item.source !== 'scraped' || !item.scrapedListingId) return;
@@ -628,49 +659,23 @@ export default function EntdeckenPage() {
       }
     },
     onReportDead: (item: CardProperty) => {
-      if (item.source === 'own') {
-        optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
-        reportUnavailable(item.id).catch(() => {});
-      } else {
-        setScrapedListings(prev => prev.filter(l => l.id !== `scraped-${item.scrapedListingId}`));
-      }
-    },
-    onDismiss: (item: CardProperty) => {
-      // Unified listing id across own + scraped — matches listing.id in the grid.
       const listingId = item.source === 'own'
         ? `prop-${item.id}`
         : `scraped-${item.scrapedListingId}`;
-
-      // Hide the card synchronously so the grid doesn't wait on a PATCH round
-      // trip or a filter-active refetch.
-      setDismissedIds(prev => {
-        const next = new Set(prev);
-        next.add(listingId);
-        return next;
-      });
-
+      hideCard(listingId, item);
       if (item.source === 'own') {
-        const prev = cachedProperties.find(p => p.id === item.id);
-        undoSnapshotsRef.current.set(listingId, {
-          source: 'own',
-          ownId: item.id,
-          previousStatus: prev?.status ?? 'new',
-        });
-        updateProp(item.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() });
-      } else {
-        const existing = scrapedListings.find(l => l.id === listingId);
-        if (existing) {
-          undoSnapshotsRef.current.set(listingId, {
-            source: 'scraped',
-            scrapedListing: existing,
-          });
-        }
+        optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
+        reportUnavailable(item.id).catch(() => {});
       }
-
-      setUndoEntries(entries => [
-        ...entries,
-        { id: listingId, label: item.title ?? '', createdAt: Date.now() },
-      ]);
+    },
+    onDismiss: (item: CardProperty) => {
+      const listingId = item.source === 'own'
+        ? `prop-${item.id}`
+        : `scraped-${item.scrapedListingId}`;
+      hideCard(listingId, item);
+      if (item.source === 'own') {
+        updateProp(item.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() });
+      }
     },
     onUrlClick: (item: CardProperty) => {
       if (item.source === 'own') trackInteraction(item.id, 'url_click');

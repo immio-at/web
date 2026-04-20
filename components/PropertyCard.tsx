@@ -157,7 +157,7 @@ export default function PropertyCard({
   return (
     <div
       {...draggableProps}
-      className={`bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col ${widthClass} hover:shadow-md transition-shadow ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      className={`group relative bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col ${widthClass} hover:shadow-md transition-shadow ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
       {/* Image */}
       <a
@@ -165,7 +165,7 @@ export default function PropertyCard({
         target="_blank"
         rel="noopener noreferrer"
         onClick={handleLink}
-        className={`group block relative ${compact ? 'h-[7.7rem]' : 'h-[13.2rem]'} bg-gray-100 overflow-hidden flex-shrink-0`}
+        className={`block relative ${compact ? 'h-[7.7rem]' : 'h-[13.2rem]'} bg-gray-100 overflow-hidden flex-shrink-0`}
       >
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -219,49 +219,52 @@ export default function PropertyCard({
           {heartFilled ? '♥' : '♡'}
         </button>
 
-        {/* Right-side action stack: 🔍 / ⚠ / ✕.
-            Hover-visible on desktop, always visible on mobile.
-            Full size centres vertically on the image. Compact anchors
-            below the heart so the three buttons can never overlap it on
-            the smaller Dashboard cards. */}
-        <div className={`absolute ${
-          compact
-            ? 'right-1.5 top-9 flex-col gap-1'
-            : 'right-2 top-1/2 -translate-y-1/2 flex-col gap-1.5'
-        } flex opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity`}>
-          {actions.onAnalyse && (
-            <button
-              type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); actions.onAnalyse!(item); }}
-              title={t('analyse')}
-              aria-label={t('analyse')}
-              className={`${actionBtn} text-gray-500 grayscale hover:grayscale-0 hover:text-blue-600 hover:bg-blue-50`}
-            >
-              🔍
-            </button>
-          )}
-          {actions.onReportDead && !isExpired && (
-            <button
-              type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); actions.onReportDead!(item); }}
-              title={t('reportDead')}
-              aria-label={t('reportDead')}
-              className={`${actionBtn} text-gray-500 hover:text-orange-500 hover:bg-orange-50`}
-            >
-              ⚠
-            </button>
-          )}
+      </a>
+
+      {/* Right-side action stack: 🔍 / ⚠ / ✕.
+          Lives OUTSIDE the <a> so clicks never accidentally navigate to
+          the listing URL. Positioned over the image via the card root's
+          `relative` + `group` (hover triggers on card, not just image).
+          Full size centres vertically on the image. Compact anchors
+          below the heart so the three buttons can never overlap it on
+          the smaller Dashboard cards. */}
+      <div className={`absolute z-10 ${
+        compact
+          ? 'right-1.5 top-9 flex-col gap-1'
+          : 'right-2 top-[6.6rem] -translate-y-1/2 flex-col gap-1.5'
+      } flex opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity`}>
+        {actions.onAnalyse && (
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); actions.onDismiss(item); }}
-            title={t('dismiss')}
-            aria-label={t('dismiss')}
-            className={`${actionBtn} text-gray-500 hover:text-rose-500 hover:bg-rose-50`}
+            onClick={() => actions.onAnalyse!(item)}
+            title={t('analyse')}
+            aria-label={t('analyse')}
+            className={`${actionBtn} text-gray-500 grayscale hover:grayscale-0 hover:text-blue-600 hover:bg-blue-50`}
           >
-            ✕
+            🔍
           </button>
-        </div>
-      </a>
+        )}
+        {actions.onReportDead && !isExpired && (
+          <button
+            type="button"
+            onClick={() => actions.onReportDead!(item)}
+            title={t('reportDead')}
+            aria-label={t('reportDead')}
+            className={`${actionBtn} text-gray-500 hover:text-orange-500 hover:bg-orange-50`}
+          >
+            ⚠
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => actions.onDismiss(item)}
+          title={t('dismiss')}
+          aria-label={t('dismiss')}
+          className={`${actionBtn} text-gray-500 hover:text-rose-500 hover:bg-rose-50`}
+        >
+          ✕
+        </button>
+      </div>
 
       {/* Details */}
       <div className={`${compact ? 'p-2' : 'p-3'} flex flex-col flex-grow`}>
