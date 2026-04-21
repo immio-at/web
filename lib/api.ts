@@ -832,3 +832,65 @@ export async function sendContactMessage(data: ContactMessageInput): Promise<voi
   err.code = code;
   throw err;
 }
+
+// ─── Due Diligence Check Engine (ADR-013) ───────────────────────────────────
+
+export interface DueDiligenceCheckResult {
+  checkId: string;
+  result: string;
+  confidence: 'high' | 'medium' | 'low';
+  summary: string;
+  detail: string;
+  missingFields: string[];
+  flags: string[];
+  statuteRefs: string[];
+}
+
+export interface DueDiligenceRun {
+  id: string;
+  propertyId: string;
+  userId: string;
+  runAt: string;
+  documentsUsed: string[];
+  overallScore: number | null;
+  status: 'pending' | 'complete' | 'failed';
+  mrgStatus: DueDiligenceCheckResult | null;
+  grundbuchEncumbrances: DueDiligenceCheckResult | null;
+  vorkaufsrecht: DueDiligenceCheckResult | null;
+  energieausweis: DueDiligenceCheckResult | null;
+  betriebskosten: DueDiligenceCheckResult | null;
+  reparaturruecklage: DueDiligenceCheckResult | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function runDueDiligence(
+  propertyId: string,
+  documentKeys: string[] = [],
+): Promise<DueDiligenceRun> {
+  const token = await getAuthToken();
+  const res = await fetch(`${API_URL}/due-diligence/${propertyId}/run`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ documentKeys }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? `DD run failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getDueDiligenceResults(
+  propertyId: string,
+): Promise<DueDiligenceRun[]> {
+  const token = await getAuthToken();
+  const res = await fetch(`${API_URL}/due-diligence/${propertyId}/results`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`DD results fetch failed: ${res.status}`);
+  return res.json();
+}

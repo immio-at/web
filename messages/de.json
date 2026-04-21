@@ -1020,6 +1020,37 @@
     "untitled": "Ohne Titel",
     "undo": "Rückgängig"
   },
+  "dueDiligence": {
+    "title": "Due Diligence Prüfung",
+    "subtitle": "KI-gestützte Prüfung Ihrer Dokumente gegen österreichisches Immobilienrecht.",
+    "startButton": "Due Diligence starten",
+    "proRequired": "Dieses Feature ist nur mit einem Pro-Abonnement verfügbar.",
+    "noDocuments": "Bitte laden Sie zuerst Dokumente im Dossier hoch.",
+    "disclaimer": "Rechtlicher Hinweis: Die Due-Diligence-Prüfung von IMMIO ist ein Hilfsmittel zur Vorauswahl und ersetzt keine rechtliche oder steuerliche Beratung. IMMIO übernimmt keine Haftung für die Richtigkeit oder Vollständigkeit der Prüfergebnisse. Konsultieren Sie vor dem Kauf stets einen Rechtsanwalt und Steuerberater.",
+    "precheck": {
+      "title": "Prüfung vorbereiten",
+      "selectDocs": "Welche Dokumente sollen geprüft werden?",
+      "completeness": "Dokumentenvollständigkeit",
+      "cancel": "Abbrechen",
+      "run": "Prüfung starten"
+    },
+    "running": {
+      "title": "Prüfung läuft…",
+      "subtitle": "Die 6 Checks werden nacheinander durchgeführt. Dies kann bis zu 30 Sekunden dauern."
+    },
+    "results": {
+      "title": "Prüfergebnis",
+      "overallScore": "Gesamtbewertung",
+      "newRun": "Neue Prüfung",
+      "statuteRefs": "Rechtsgrundlage",
+      "missingFields": "Fehlende Daten"
+    },
+    "actions": {
+      "noAction": "Keine Aktion",
+      "moveToDueDiligence": "Due Diligence abgeschlossen",
+      "park": "Immobilie parken"
+    }
+  },
   "dossier": {
     "applied": "Übernommen ✓",
     "applyTooltip": "Diesen Wert in die Immobilie übernehmen",

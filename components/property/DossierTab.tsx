@@ -32,6 +32,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useProperties } from '@/hooks/useProperties';
 import MrgWarningBanner from './MrgWarningBanner';
 import EditableField, { type FieldKind } from './EditableField';
+import DueDiligencePanel from '@/components/due-diligence/DueDiligencePanel';
 
 interface Props {
   property: Property;
@@ -523,6 +524,9 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
           </div>
         )}
       </section>
+
+      {/* ─── Due Diligence Check Engine (ADR-013) ──────────────────────── */}
+      <DueDiligencePanel property={property} documents={documents} />
 
       {/* ─── Section 2: AI Extraction ─────────────────────────────────── */}
       <section className="bg-white rounded-lg border border-gray-200 p-4">

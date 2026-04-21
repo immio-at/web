@@ -1020,6 +1020,37 @@
     "untitled": "Untitled",
     "undo": "Undo"
   },
+  "dueDiligence": {
+    "title": "Due Diligence Check",
+    "subtitle": "AI-assisted document review against Austrian property law.",
+    "startButton": "Start Due Diligence",
+    "proRequired": "This feature requires a Pro subscription.",
+    "noDocuments": "Please upload documents to the Dossier first.",
+    "disclaimer": "Legal notice: IMMIO's Due Diligence check is a screening tool and does not constitute legal or tax advice. IMMIO assumes no liability for the accuracy or completeness of the results. Always consult a lawyer and tax advisor before purchasing.",
+    "precheck": {
+      "title": "Prepare check",
+      "selectDocs": "Which documents should be checked?",
+      "completeness": "Document completeness",
+      "cancel": "Cancel",
+      "run": "Start check"
+    },
+    "running": {
+      "title": "Running checks…",
+      "subtitle": "All 6 checks run in sequence. This may take up to 30 seconds."
+    },
+    "results": {
+      "title": "Check results",
+      "overallScore": "Overall score",
+      "newRun": "New check",
+      "statuteRefs": "Legal basis",
+      "missingFields": "Missing data"
+    },
+    "actions": {
+      "noAction": "No action",
+      "moveToDueDiligence": "Due Diligence completed",
+      "park": "Park property"
+    }
+  },
   "dossier": {
     "applied": "Applied ✓",
     "applyTooltip": "Apply this value to the property record",
