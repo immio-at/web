@@ -1043,7 +1043,8 @@
       "overallScore": "Gesamtbewertung",
       "newRun": "Neue Prüfung",
       "statuteRefs": "Rechtsgrundlage",
-      "missingFields": "Fehlende Daten"
+      "missingFields": "Fehlende Daten",
+      "documentsUsed": "Verwendete Dokumente"
     },
     "actions": {
       "noAction": "Keine Aktion",

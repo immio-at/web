@@ -861,6 +861,7 @@ export interface DueDiligenceCheckResult {
   missingFields: string[];
   flags: string[];
   statuteRefs: string[];
+  documentsUsed?: { label: string; fileName: string }[];
 }
 
 export interface DueDiligenceRun {

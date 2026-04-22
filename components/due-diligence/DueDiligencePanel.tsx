@@ -293,6 +293,16 @@ export default function DueDiligencePanel({ property, documents }: Props) {
                     </div>
                   )}
 
+                  {/* Documents used */}
+                  {check.documentsUsed && check.documentsUsed.length > 0 && (
+                    <div>
+                      <span className="font-medium text-gray-500">{t('results.documentsUsed')}:</span>{' '}
+                      <span className="text-gray-600">
+                        {check.documentsUsed.map(d => `${d.label} (${d.fileName})`).join(', ')}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Flags */}
                   {check.flags.length > 0 && (
                     <div className="bg-amber-50 border border-amber-200 rounded p-2">

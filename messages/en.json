@@ -1043,7 +1043,8 @@
       "overallScore": "Overall score",
       "newRun": "New check",
       "statuteRefs": "Legal basis",
-      "missingFields": "Missing data"
+      "missingFields": "Missing data",
+      "documentsUsed": "Documents used"
     },
     "actions": {
       "noAction": "No action",
