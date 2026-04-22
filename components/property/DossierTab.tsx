@@ -642,9 +642,6 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
         )}
       </section>
 
-      {/* ─── Due Diligence Check Engine (ADR-013) ──────────────────────── */}
-      <DueDiligencePanel property={property} documents={documents} />
-
       {/* ─── Section 2: AI Extraction ─────────────────────────────────── */}
       <section className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center justify-between">
@@ -684,6 +681,9 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
           <div className="bg-red-50 border border-red-200 rounded p-2 mt-2 text-xs text-red-700">{extractError}</div>
         )}
       </section>
+
+      {/* ─── Due Diligence Check Engine (ADR-013) ──────────────────────── */}
+      <DueDiligencePanel property={property} documents={documents} />
 
       {/* ─── Section 3: Structured Property Data ──────────────────────── */}
       <section className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
