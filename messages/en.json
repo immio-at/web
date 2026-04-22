@@ -1036,7 +1036,7 @@
     },
     "running": {
       "title": "Running checks…",
-      "subtitle": "All 6 checks run in sequence. This may take up to 30 seconds."
+      "subtitle": "All 6 checks run in sequence with automatic retry on rate limits. This can take up to 2 minutes."
     },
     "results": {
       "title": "Check results",

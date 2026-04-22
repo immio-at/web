@@ -45,8 +45,9 @@ interface Props {
 }
 
 const DOC_LABELS = [
-  'Exposé', 'Energieausweis', 'Grundbuchauszug', 'Grundriss', 'Provisionsvereinbarung',
-  'Widerrufsformular', 'Protokoll', 'Kaufanbot', 'Kaufvertrag', 'Gutachten', 'Sonstiges',
+  'Exposé', 'Energieausweis', 'Grundbuchauszug', 'Wohnungseigentumsvertrag', 'Grundriss',
+  'Provisionsvereinbarung', 'Widerrufsformular', 'Protokoll', 'Kaufanbot', 'Kaufvertrag',
+  'Gutachten', 'Sonstiges',
 ];
 
 // Keyword → label. First match wins. Case-insensitive substring on the
@@ -55,6 +56,10 @@ const DOC_LABELS = [
 const LABEL_KEYWORDS: { keyword: string; label: string }[] = [
   { keyword: 'grundbuch', label: 'Grundbuchauszug' },
   { keyword: 'gba',       label: 'Grundbuchauszug' },
+  { keyword: 'wohnungseigentum', label: 'Wohnungseigentumsvertrag' },
+  { keyword: 'weg-vertrag', label: 'Wohnungseigentumsvertrag' },
+  { keyword: 'wev',       label: 'Wohnungseigentumsvertrag' },
+  { keyword: 'weg_vertrag', label: 'Wohnungseigentumsvertrag' },
   { keyword: 'expose',    label: 'Exposé' },
   { keyword: 'exposé',    label: 'Exposé' },
   { keyword: 'exposee',   label: 'Exposé' },

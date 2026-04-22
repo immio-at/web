@@ -1036,7 +1036,7 @@
     },
     "running": {
       "title": "Prüfung läuft…",
-      "subtitle": "Die 6 Checks werden nacheinander durchgeführt. Dies kann bis zu 30 Sekunden dauern."
+      "subtitle": "Die 6 Checks werden nacheinander durchgeführt, mit automatischem Retry bei Rate-Limits. Dies kann bis zu 2 Minuten dauern."
     },
     "results": {
       "title": "Prüfergebnis",
