@@ -530,38 +530,41 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
 
       {/* ─── Section 2: AI Extraction ─────────────────────────────────── */}
       <section className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">{t('extraction.title')}</h3>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">{t('extraction.title')}</h3>
+            <p className="text-xs text-gray-500 mt-0.5">{t('extraction.hint')}</p>
+          </div>
+          {isPro && (
+            <button
+              onClick={handleExtract}
+              disabled={extracting}
+              className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {extracting
+                ? t('extraction.extracting')
+                : details?.extractedAt
+                  ? t('extraction.reExtract')
+                  : t('extraction.extract')}
+            </button>
+          )}
+        </div>
 
-        {!isPro ? (
-          <div className="bg-slate-50 border border-slate-200 rounded p-3">
+        {!isPro && (
+          <div className="bg-slate-50 border border-slate-200 rounded p-3 mt-3">
             <p className="text-xs text-slate-600 mb-2">🔒 {t('extraction.proLockedHint')}</p>
             <p className="text-xs text-slate-500">{t('extraction.proLockedSub')}</p>
           </div>
-        ) : (
-          <>
-            <p className="text-xs text-gray-500 mb-3">{t('extraction.hint')}</p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleExtract}
-                disabled={extracting}
-                className="text-xs font-medium px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition-colors"
-              >
-                {extracting
-                  ? t('extraction.extracting')
-                  : details?.extractedAt
-                    ? t('extraction.reExtract')
-                    : t('extraction.extract')}
-              </button>
-              {details?.extractedAt && (
-                <span className="text-xs text-gray-400">
-                  {t('extraction.lastExtracted', { when: formatDate(details.extractedAt) })}
-                </span>
-              )}
-            </div>
-            {extractError && (
-              <div className="bg-red-50 border border-red-200 rounded p-2 mt-2 text-xs text-red-700">{extractError}</div>
-            )}
-          </>
+        )}
+
+        {isPro && details?.extractedAt && (
+          <p className="text-xs text-gray-400 mt-2">
+            {t('extraction.lastExtracted', { when: formatDate(details.extractedAt) })}
+          </p>
+        )}
+
+        {extractError && (
+          <div className="bg-red-50 border border-red-200 rounded p-2 mt-2 text-xs text-red-700">{extractError}</div>
         )}
       </section>
 

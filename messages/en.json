@@ -1069,7 +1069,7 @@
     },
     "extraction": {
       "title": "AI Extraction",
-      "hint": "Extract structured property data from your uploaded Exposé using Claude.",
+      "hint": "Extract structured property data into an analysis from your uploaded Exposé.",
       "extract": "Extract from Exposé",
       "reExtract": "Re-extract",
       "extracting": "Extracting…",

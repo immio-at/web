@@ -1069,7 +1069,7 @@
     },
     "extraction": {
       "title": "KI-Extraktion",
-      "hint": "Strukturierte Immobiliendaten aus dem hochgeladenen Exposé mit Claude extrahieren.",
+      "hint": "Strukturierte Immobiliendaten aus dem hochgeladenen Exposé in eine Analyse übernehmen.",
       "extract": "Aus Exposé extrahieren",
       "reExtract": "Erneut extrahieren",
       "extracting": "Wird extrahiert…",
