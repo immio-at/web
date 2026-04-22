@@ -520,6 +520,23 @@ export async function getDocumentDownloadUrl(propertyId: string, documentId: str
   return data.url;
 }
 
+export async function updateDocumentLabel(
+  propertyId: string,
+  documentId: string,
+  label: string,
+): Promise<PropertyDocument> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${propertyId}/documents/${documentId}`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ label }),
+  });
+  return handleResponse(response);
+}
+
 export async function deleteDocument(propertyId: string, documentId: string): Promise<void> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/${propertyId}/documents/${documentId}`, {

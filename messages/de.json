@@ -1060,10 +1060,13 @@
     "documents": {
       "title": "Dokumente",
       "upload": "PDF hochladen",
+      "choose": "Dateien auswählen",
       "uploading": "Wird hochgeladen…",
       "delete": "Löschen",
       "empty": "Noch keine Dokumente. Lade ein Exposé hoch, um die KI-Extraktion zu nutzen.",
+      "dropHint": "PDFs hierher ziehen oder auswählen — der Typ wird automatisch erkannt",
       "errorUpload": "Upload fehlgeschlagen",
+      "errorPdfOnly": "Nur PDF-Dateien werden unterstützt.",
       "maxReached": "Max. 10 Dokumente",
       "confirmDelete": "Dokument \"{name}\" löschen?"
     },

@@ -26,6 +26,7 @@ import {
   getDocuments,
   uploadDocument,
   getDocumentDownloadUrl,
+  updateDocumentLabel,
   deleteDocument,
 } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -44,9 +45,45 @@ interface Props {
 }
 
 const DOC_LABELS = [
-  'Exposé', 'Energieausweis', 'Grundriss', 'Provisionsvereinbarung',
+  'Exposé', 'Energieausweis', 'Grundbuchauszug', 'Grundriss', 'Provisionsvereinbarung',
   'Widerrufsformular', 'Protokoll', 'Kaufanbot', 'Kaufvertrag', 'Gutachten', 'Sonstiges',
 ];
+
+// Keyword → label. First match wins. Case-insensitive substring on the
+// filename (stripped of extension). Unknown names fall back to Sonstiges
+// so the user can correct it post-upload via the inline dropdown.
+const LABEL_KEYWORDS: { keyword: string; label: string }[] = [
+  { keyword: 'grundbuch', label: 'Grundbuchauszug' },
+  { keyword: 'gba',       label: 'Grundbuchauszug' },
+  { keyword: 'expose',    label: 'Exposé' },
+  { keyword: 'exposé',    label: 'Exposé' },
+  { keyword: 'exposee',   label: 'Exposé' },
+  { keyword: 'energie',   label: 'Energieausweis' },
+  { keyword: 'eaw',       label: 'Energieausweis' },
+  { keyword: 'hwb',       label: 'Energieausweis' },
+  { keyword: 'grundriss', label: 'Grundriss' },
+  { keyword: 'plan',      label: 'Grundriss' },
+  { keyword: 'provision', label: 'Provisionsvereinbarung' },
+  { keyword: 'makler',    label: 'Provisionsvereinbarung' },
+  { keyword: 'widerruf',  label: 'Widerrufsformular' },
+  { keyword: 'protokoll', label: 'Protokoll' },
+  { keyword: 'jahresabrechnung', label: 'Protokoll' },
+  { keyword: 'kaufanbot', label: 'Kaufanbot' },
+  { keyword: 'anbot',     label: 'Kaufanbot' },
+  { keyword: 'kaufvertrag', label: 'Kaufvertrag' },
+  { keyword: 'vertrag',   label: 'Kaufvertrag' },
+  { keyword: 'gutachten', label: 'Gutachten' },
+  { keyword: 'nutzwert',  label: 'Gutachten' },
+  { keyword: 'bewertung', label: 'Gutachten' },
+];
+
+function inferLabelFromFilename(filename: string): string {
+  const stem = filename.replace(/\.[^.]+$/, '').toLowerCase();
+  for (const { keyword, label } of LABEL_KEYWORDS) {
+    if (stem.includes(keyword)) return label;
+  }
+  return 'Sonstiges';
+}
 
 const APPLYABLE_FIELDS: PropertyDetailsApplyableField[] = [
   'exposePrice', 'purchaseDate', 'bkUmlagefaehig', 'bkNichtUmlagefaehig',
@@ -169,8 +206,8 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
 
   // Document upload state
   const [uploading, setUploading] = useState(false);
-  const [docLabel, setDocLabel] = useState<string>('Exposé');
   const [docError, setDocError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Initial load — details + documents in parallel
   useEffect(() => {
@@ -288,19 +325,73 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
     }
   }
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function handleFiles(fileList: FileList | File[] | null) {
+    if (!fileList) return;
+    const files = Array.from(fileList).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+    if (files.length === 0) {
+      setDocError(t('documents.errorPdfOnly'));
+      return;
+    }
+    const slotsLeft = 10 - documents.length;
+    const toUpload = files.slice(0, slotsLeft);
+    const overflow = files.length > slotsLeft;
+
     setUploading(true);
     setDocError(null);
     try {
-      const doc = await uploadDocument(property.id, file, docLabel);
-      setDocuments(prev => [doc, ...prev]);
-    } catch (err) {
-      setDocError(err instanceof Error ? err.message : t('documents.errorUpload'));
+      const results = await Promise.allSettled(
+        toUpload.map(f => uploadDocument(property.id, f, inferLabelFromFilename(f.name))),
+      );
+      const newDocs: PropertyDocument[] = [];
+      const failures: string[] = [];
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        if (r.status === 'fulfilled') newDocs.push(r.value);
+        else failures.push(`${toUpload[i].name}: ${r.reason instanceof Error ? r.reason.message : 'failed'}`);
+      }
+      if (newDocs.length > 0) setDocuments(prev => [...newDocs, ...prev]);
+      if (failures.length > 0) setDocError(failures.join('\n'));
+      else if (overflow) setDocError(t('documents.maxReached'));
     } finally {
       setUploading(false);
-      e.target.value = '';
+    }
+  }
+
+  function handleUploadInput(e: React.ChangeEvent<HTMLInputElement>) {
+    handleFiles(e.target.files);
+    e.target.value = '';
+  }
+
+  function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only clear when leaving the container (not when moving over children)
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    handleFiles(e.dataTransfer.files);
+  }
+
+  async function handleLabelChange(doc: PropertyDocument, newLabel: string) {
+    if (newLabel === doc.label) return;
+    const before = documents;
+    setDocuments(prev => prev.map(d => (d.id === doc.id ? { ...d, label: newLabel } : d)));
+    try {
+      await updateDocumentLabel(property.id, doc.id, newLabel);
+    } catch (err) {
+      console.error('Label update failed', err);
+      setDocuments(before);
     }
   }
 
@@ -462,49 +553,60 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
   return (
     <div className="space-y-6">
       {/* ─── Section 1: Documents ─────────────────────────────────────── */}
-      <section className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">
-          {t('documents.title')} <span className="text-gray-400 font-normal">({documents.length})</span>
-        </h3>
-
-        <div className="flex items-center gap-2 mb-3">
-          <select
-            value={docLabel}
-            onChange={(e) => setDocLabel(e.target.value)}
-            className="border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-700 bg-white"
-          >
-            {DOC_LABELS.map(l => <option key={l} value={l}>{l}</option>)}
-          </select>
+      <section
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`bg-white rounded-lg border p-4 transition-colors ${
+          isDragging ? 'border-teal-500 border-2 bg-teal-50' : 'border-gray-200'
+        }`}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-900">
+            {t('documents.title')} <span className="text-gray-400 font-normal">({documents.length})</span>
+          </h3>
           <label className={`text-xs font-medium px-3 py-1.5 rounded border cursor-pointer transition-colors ${
             uploading || documents.length >= 10
               ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
               : 'bg-teal-600 text-white border-teal-600 hover:bg-teal-700'
           }`}>
-            {uploading ? t('documents.uploading') : t('documents.upload')}
+            {uploading ? t('documents.uploading') : t('documents.choose')}
             <input
               type="file"
-              accept=".pdf"
-              onChange={handleUpload}
+              accept=".pdf,application/pdf"
+              multiple
+              onChange={handleUploadInput}
               disabled={uploading || documents.length >= 10}
               className="hidden"
             />
           </label>
-          {documents.length >= 10 && (
-            <span className="text-xs text-amber-600">{t('documents.maxReached')}</span>
-          )}
         </div>
 
+        {documents.length >= 10 && (
+          <p className="text-xs text-amber-600 mb-2">{t('documents.maxReached')}</p>
+        )}
+
         {docError && (
-          <div className="bg-red-50 border border-red-200 rounded p-2 mb-2 text-xs text-red-700">{docError}</div>
+          <div className="bg-red-50 border border-red-200 rounded p-2 mb-2 text-xs text-red-700 whitespace-pre-line">{docError}</div>
         )}
 
         {documents.length === 0 ? (
-          <p className="text-xs text-gray-400 italic">{t('documents.empty')}</p>
+          <div className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+            isDragging ? 'border-teal-400 bg-teal-50' : 'border-gray-200'
+          }`}>
+            <p className="text-xs text-gray-500">{t('documents.dropHint')}</p>
+          </div>
         ) : (
           <div className="space-y-1">
             {documents.map(doc => (
               <div key={doc.id} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-gray-50">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-400 w-24 truncate">{doc.label}</span>
+                <select
+                  value={doc.label}
+                  onChange={(e) => handleLabelChange(doc, e.target.value)}
+                  className="text-[10px] font-mono uppercase tracking-widest text-gray-500 bg-transparent border border-transparent hover:border-gray-200 focus:border-gray-300 rounded px-1 py-0.5 w-32 truncate"
+                >
+                  {DOC_LABELS.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
                 <button
                   onClick={() => handleDownload(doc)}
                   className="flex-1 text-xs text-left text-blue-600 hover:underline truncate"
@@ -521,6 +623,11 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
                 </button>
               </div>
             ))}
+            {isDragging && (
+              <div className="rounded-lg border-2 border-dashed border-teal-400 bg-teal-50 p-4 text-center mt-2">
+                <p className="text-xs text-teal-700">{t('documents.dropHint')}</p>
+              </div>
+            )}
           </div>
         )}
       </section>

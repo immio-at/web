@@ -1060,10 +1060,13 @@
     "documents": {
       "title": "Documents",
       "upload": "Upload PDF",
+      "choose": "Choose files",
       "uploading": "Uploading…",
       "delete": "Delete",
       "empty": "No documents yet. Upload an Exposé to enable AI extraction.",
+      "dropHint": "Drop PDFs here or choose files — the type is detected automatically",
       "errorUpload": "Upload failed",
+      "errorPdfOnly": "Only PDF files are supported.",
       "maxReached": "Max 10 documents",
       "confirmDelete": "Delete document \"{name}\"?"
     },
