@@ -281,6 +281,14 @@ Set in Vercel dashboard — never commit to git.
 5. **Track 6 PL2 — Native mobile app** — React Native / Expo, iOS + Android.
 6. **Track 8 — Onboarding wizard, map view** — deferred until tester feedback.
 
+Recently completed (Session 42, 2026-04-22):
+- **ADR-013 Due Diligence Check Engine — frontend** shipped end-to-end. Single `components/due-diligence/DueDiligencePanel.tsx` with idle → precheck → running → results state machine (not the three separate components originally scoped). Mounted inside `DossierTab` **below** the AI Extraction section (Extraction sits higher per demo feedback). `runDueDiligence()` + `getDueDiligenceResults()` API client. `DueDiligenceCheckResult` + `DueDiligenceRun` types. `dueDiligence.*` i18n namespace DE + EN. Running-screen hint says "up to 2 minutes" (429-retry can stretch out the run).
+- **Dossier Documents redesigned:** drag-and-drop zone on the whole Documents card (`onDragOver`/`onDragLeave`/`onDrop` with `isDragging` state for teal highlight). Multi-file `<input multiple>` with `Promise.allSettled` parallel uploads. **Label dropdown removed from upload UI** — label is auto-inferred from filename keywords via `inferLabelFromFilename()` (grundbuch → Grundbuchauszug, eaw/hwb/energie → Energieausweis, wohnungseigentum/wev → Wohnungseigentumsvertrag, abrechnung/bk → Protokoll, etc.). Unknown filenames fall back to Sonstiges. Each row's label becomes an inline `<select>` so users can correct mistakes (optimistic PATCH with rollback via `updateDocumentLabel()`).
+- **Two new document labels** added to `DOC_LABELS` (mirroring backend): `Grundbuchauszug` and `Wohnungseigentumsvertrag` (WEG/WEV). Now 12 labels total.
+- **Extract section layout:** matched to DD panel (title + subtitle on left, right-aligned Pro-only button). Hint copy updated to "Extract structured property data into an analysis from your uploaded Exposé" / "Strukturierte Immobiliendaten aus dem hochgeladenen Exposé in eine Analyse übernehmen".
+- **Dossier section order:** Documents → **AI Extraction** → Due Diligence → Structured Data. AI Extraction sits above Due Diligence.
+- i18n: new `documents.choose`, `documents.dropHint`, `documents.errorPdfOnly`; `dueDiligence.*` namespace; `dueDiligence.results.documentsUsed`.
+
 Recently completed (Session 40, 2026-04-20):
 - ADR-014 Browser Extension — `/auth/extension-callback` (hash-based token handoff to extension), `/extension-welcome` (first-run page).
 - Funnel `?analyse=PROPERTY_ID` deep-link auto-opens PropertyAnalysisModal. Used by the extension's "Already in IMMIO" button.
@@ -390,9 +398,17 @@ Browse scraped listings from all active sources (Raiffeisen, s REAL, ÖRAG, RE/M
 - **Analysis-draft sync after Dossier → Apply** — when DossierTab fires `onPropertyApplied(field, value)`, the modal's `handleDossierApplied` patches every open analysis tab's draft (`exposePrice → listPrice`, `purchaseDate`, `bkUmlagefaehig`, `bkNichtUmlagefaehig`) and auto-saves saved tabs in the background. Unsaved new tabs (id === null) stay dirty so the user explicitly commits.
 
 ## Property Dossier (ADR-009)
-- `components/property/DossierTab.tsx` — three-section Dossier view: Documents, AI Extraction, Structured Property Data. Mounts inside `PropertyAnalysisModal` when viewMode === 'dossier'.
+- `components/property/DossierTab.tsx` — four sections as of Session 42: Documents → AI Extraction → Due Diligence → Structured Property Data. Mounts inside `PropertyAnalysisModal` when viewMode === 'dossier'.
 - `components/property/EditableField.tsx` — generic inline-edit cell. Six input kinds: number, integer, text, date, boolean, enum. Click to edit, Enter or blur commits, Escape cancels (uses a `cancelledRef` so Escape wins the blur race). Purely presentational — parent provides `onSave`.
 - `components/property/MrgWarningBanner.tsx` — amber banner reused by DossierTab Section 3 and the rental analysis tab header. Wording is deliberately hedged ("Mögliches MRG-Objekt", "Signale deuten auf", "Rechtliche Beratung wird empfohlen") — never a legal classification.
+- **Documents section (Session 42):** whole card is a drop zone (`onDragOver`/`onDragLeave`/`onDrop`). Multi-file `<input multiple>`, `Promise.allSettled` parallel uploads, 10-doc cap with overflow notice. **No label picker at upload** — `inferLabelFromFilename()` matches keywords against the lower-cased filename stem (first match wins; unknown → Sonstiges). 12 labels including `Grundbuchauszug` and `Wohnungseigentumsvertrag`. Each row's label is an inline `<select>` wired to `updateDocumentLabel()` with optimistic-patch + rollback.
+
+## Due Diligence Check Engine (ADR-013 — shipped Session 42)
+- `components/due-diligence/DueDiligencePanel.tsx` — single component holds the entire DD flow as a state machine: `idle` (entry button, Pro gate, doc-count gate) → `precheck` (document selection checkboxes + completeness matrix + global legal disclaimer + start button) → `running` (spinner, "up to 2 minutes" hint) → `results` (scored list of 6 check rows with confidence badge, expandable rows showing detail / statute refs / flags / `documentsUsed`, plus three funnel-action buttons: Keine Aktion / Due Diligence abgeschlossen / Immobilie verwerfen).
+- On mount, fetches the latest run via `getDueDiligenceResults()` and jumps straight to `results` if one exists. "New check" button returns to `idle`.
+- API functions in `lib/api.ts`: `runDueDiligence(propertyId, documentKeys)` → `DueDiligenceRun`; `getDueDiligenceResults(propertyId)` → `DueDiligenceRun[]`. Types: `DueDiligenceCheckResult` (includes optional `documentsUsed[{label, fileName, textAvailable?}]`), `DueDiligenceRun` (6 nullable per-check result fields).
+- Funnel actions call `useProperties().update` optimistically — user stays on the results screen after action (no dismiss).
+- i18n: `dueDiligence.*` namespace. The backend is the runtime bottleneck (pdf-parse on first-run backfill + 6 sequential Haiku calls) — budget 30-90s per run on first use of a property, faster on subsequent runs since extracted text is cached.
 ## Add Property Modal (ADR-010 — shipped Session 33)
 - `components/ingestion/AddPropertyButton.tsx` — "＋ Immobilie hinzufügen" button used on Funnel header + Dashboard top-right. Opens AddPropertyModal. On successful creation opens PropertyAnalysisModal on the new property (Dossier view via `initialViewMode='dossier'`).
 - `components/ingestion/AddPropertyModal.tsx` — modal shell with tab bar (Webseite / Exposé / Manuell), shared funnel-stage selector (`StageSelectorInput`), submit button. Owns active tab + stage + submit state. Maps structured backend errors (UNSUPPORTED_URL, PRO_REQUIRED, DAILY_LIMIT, duplicate) to i18n strings. Closes on Escape and outside click.
