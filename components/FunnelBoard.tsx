@@ -225,10 +225,14 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
     }
   }
 
-  async function confirmNotRelevant() {
+  function confirmNotRelevant() {
     if (!pendingMove) return;
-    await moveToStage(pendingMove.propertyId, 'not_relevant');
+    // Close the modal synchronously — moveToStage applies an optimistic cache
+    // patch that hides the card immediately, so there's no reason to block the
+    // dismiss on the backend round-trip.
+    const { propertyId } = pendingMove;
     setPendingMove(null);
+    moveToStage(propertyId, 'not_relevant');
   }
 
   // Optimistic: update local state immediately, fire API call in background.
