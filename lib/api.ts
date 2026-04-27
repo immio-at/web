@@ -273,9 +273,11 @@ export async function importFromUrl(url: string, status?: string): Promise<{ mes
 
 // ─── Interactions ─────────────────────────────────────────────────────────────
 
+export type InteractionType = 'view' | 'analysis' | 'url_click' | 'status_change' | 'makler_contact';
+
 export async function trackInteraction(
   propertyId: string,
-  type: 'view' | 'analysis' | 'url_click' | 'status_change',
+  type: InteractionType,
 ): Promise<void> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/${propertyId}/interactions`, {
@@ -290,7 +292,7 @@ export async function trackInteraction(
 }
 
 export async function trackInteractionBatch(
-  interactions: { propertyId: string; type: 'view' | 'analysis' | 'url_click' | 'status_change' }[],
+  interactions: { propertyId: string; type: InteractionType }[],
 ): Promise<void> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/interactions/batch`, {
@@ -600,6 +602,12 @@ export interface PropertyDetails {
 
   // Risk signal
   mrgRisk: boolean | null;
+
+  // Makler contact (ADR-009 v1.1)
+  maklerName: string | null;
+  maklerPhone: string | null;
+  maklerEmail: string | null;
+  maklerOrganisation: string | null;
 
   createdAt: string;
   updatedAt: string;

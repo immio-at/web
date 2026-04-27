@@ -25,6 +25,8 @@ import {
 } from '@/lib/api';
 import DossierTab from '@/components/property/DossierTab';
 import MrgWarningBanner from '@/components/property/MrgWarningBanner';
+import MaklerBlock from '@/components/property/MaklerBlock';
+import { PropertyDetails } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
 import {
@@ -263,7 +265,11 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
   // to render the MrgWarningBanner above the rental analysis section.
   // Stale-after-extract is acceptable in this slice — the user can close
   // and reopen the modal to see the updated state.
-  const [mrgRisk, setMrgRisk] = useState<boolean | null>(null);
+  // Now stores the full PropertyDetails object so MaklerBlock (ADR-009 v1.1)
+  // can read maklerName/Phone/Email/Organisation off the same fetch and
+  // mutate them through onDetailsChange.
+  const [details, setDetails] = useState<PropertyDetails | null>(null);
+  const mrgRisk = details?.mrgRisk ?? null;
 
   // Documents
   const [documents, setDocuments] = useState<PropertyDocument[]>([]);
@@ -302,11 +308,12 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
       }
     }
     load();
-    // ADR-009 DO6: fetch the Dossier mrgRisk flag in parallel — independent
+    // ADR-009 DO6 + v1.1: fetch the full Dossier row in parallel — independent
     // of the main load so a 4xx (no Dossier yet) doesn't block the analyses.
+    // The same fetch powers the MRG banner and the Makler block.
     getPropertyDetails(property.id)
-      .then(resp => setMrgRisk(resp.details?.mrgRisk ?? null))
-      .catch(() => setMrgRisk(null));
+      .then(resp => setDetails(resp.details))
+      .catch(() => setDetails(null));
   }, [property.id, t, property]);
 
   // ── Sync + auto-save open analysis drafts when → Apply is clicked ──────
@@ -531,25 +538,93 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
 
+  // Shared PropertyInfoStrip block — rendered once at the top of the modal
+  // (ADR-003 §10) regardless of which mode the user is in.
+  const propertyInfoStrip = (
+    <div className="px-6 pt-3">
+      <div className="flex items-center gap-4 bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
+        {property.imageUrl && (
+          <img src={property.imageUrl} alt="" className="w-20 h-16 object-cover rounded-lg flex-shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[#6b7a99]">
+            {property.price && (
+              <span className="font-semibold text-[#0F1F3D]">
+                {'€'} {Math.round(parseFloat(String(property.price))).toLocaleString('de-AT')}
+              </span>
+            )}
+            {sizeSqm && <span>{sizeSqm} m²</span>}
+            {property.rooms && <span>{String(property.rooms)} {t('rooms')}</span>}
+            {property.location && <span>{property.location}</span>}
+            {property.zipCode && <span>{property.zipCode}</span>}
+          </div>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <select
+            value={currentStage}
+            onChange={(e) => {
+              const newStage = e.target.value;
+              setCurrentStage(newStage);
+              updateProperty(property.id, {
+                status: newStage,
+                movedToStageAt: new Date().toISOString(),
+              });
+            }}
+            className="text-xs border border-[#e2e6ed] rounded-lg px-2 py-1.5 bg-white text-[#0F1F3D] focus:outline-none focus:ring-1 focus:ring-[#F5A623]"
+          >
+            {FUNNEL_STAGES_DISPLAY.map(s => (
+              <option key={s.key} value={s.key}>
+                {tStages(STAGE_I18N_KEY[s.key] ?? s.key)}
+              </option>
+            ))}
+          </select>
+          {property.sourceUrl && (
+            <a
+              href={property.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[#F5A623] hover:underline font-medium"
+            >
+              {t('openListing')}
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4 px-2">
       <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl my-auto">
 
-        {/* ── Header ── */}
+        {/* ── Header — title + Deal ID inline pill (ADR-003 §10) ── */}
         <div className="flex items-start justify-between p-6 pb-3 border-b border-[#e2e6ed]">
-          <div>
+          <div className="min-w-0 flex-1 pr-4">
             <p className="text-xs text-[#6b7a99] uppercase tracking-widest mb-1">{t('header')}</p>
-            <h2 className="text-lg font-semibold text-[#0F1F3D] leading-tight">{property.title ?? t('defaultPropertyTitle')}</h2>
-            {currentTab?.dealId && (
-              <span className="inline-block mt-1 text-xs font-mono bg-[#f8f9fb] border border-[#e2e6ed] px-2 py-0.5 rounded text-[#6b7a99]">
-                {currentTab.dealId}
-              </span>
-            )}
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <h2 className="text-lg font-semibold text-[#0F1F3D] leading-tight">{property.title ?? t('defaultPropertyTitle')}</h2>
+              {currentTab?.dealId && (
+                <span className="text-xs font-mono bg-slate-100 border border-slate-200 text-slate-500 px-2 py-0.5 rounded">
+                  {currentTab.dealId}
+                </span>
+              )}
+            </div>
           </div>
-          <button onClick={onClose} className="text-[#6b7a99] hover:text-[#0F1F3D] transition-colors text-2xl leading-none">✕</button>
+          <button onClick={onClose} className="text-[#6b7a99] hover:text-[#0F1F3D] transition-colors text-2xl leading-none flex-shrink-0">✕</button>
         </div>
 
-        {/* ── Mode toggle: Analyses ↔ Dossier (ADR-009 DO4) ── */}
+        {/* ── PropertyInfoStrip — always visible (ADR-003 §10) ── */}
+        {propertyInfoStrip}
+
+        {/* ── Makler block — always visible, hidden when empty (ADR-009 v1.1) ── */}
+        <MaklerBlock
+          property={property}
+          details={details}
+          dealId={currentTab?.dealId ?? null}
+          onDetailsChange={(next) => setDetails(next)}
+        />
+
+        {/* ── Mode toggle: Analyses ↔ Objektdaten (ADR-009 DO4 / ADR-003 §10) ── */}
         <div className="px-6 pt-3 flex items-center gap-1.5">
           <button
             onClick={() => setViewMode('analyses')}
@@ -563,14 +638,13 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
           </button>
           <button
             onClick={() => setViewMode('dossier')}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors flex items-center gap-1 ${
+            className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
               viewMode === 'dossier'
                 ? 'bg-[#0F1F3D] text-white border-[#0F1F3D]'
                 : 'bg-white text-[#6b7a99] border-[#e2e6ed] hover:bg-[#f8f9fb]'
             }`}
           >
-            <span>📎</span>
-            <span>{t('viewMode.dossier')}</span>
+            {t('viewMode.dossier')}
           </button>
         </div>
 
@@ -633,53 +707,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
         ) : (
           <div className="p-6 space-y-8">
 
-            {/* ── Section 0: Property Info Strip ── */}
-            <div className="flex items-center gap-4 bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
-              {property.imageUrl && (
-                <img src={property.imageUrl} alt="" className="w-20 h-16 object-cover rounded-lg flex-shrink-0" />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[#6b7a99]">
-                  {property.price && (
-                    <span className="font-semibold text-[#0F1F3D]">
-                      {'\u20AC'} {Math.round(parseFloat(String(property.price))).toLocaleString('de-AT')}
-                    </span>
-                  )}
-                  {sizeSqm && <span>{sizeSqm} m²</span>}
-                  {property.rooms && <span>{String(property.rooms)} {t('rooms')}</span>}
-                  {property.location && <span>{property.location}</span>}
-                  {property.zipCode && <span>{property.zipCode}</span>}
-                </div>
-              </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <select
-                  value={currentStage}
-                  onChange={(e) => {
-                    const newStage = e.target.value;
-                    setCurrentStage(newStage);
-                    updateProperty(property.id, {
-                      status: newStage,
-                      movedToStageAt: new Date().toISOString(),
-                    });
-                  }}
-                  className="text-xs border border-[#e2e6ed] rounded-lg px-2 py-1.5 bg-white text-[#0F1F3D] focus:outline-none focus:ring-1 focus:ring-[#F5A623]"
-                >
-                  {FUNNEL_STAGES_DISPLAY.map(s => (
-                    <option key={s.key} value={s.key}>
-                      {tStages(STAGE_I18N_KEY[s.key] ?? s.key)}
-                    </option>
-                  ))}
-                </select>
-                <a
-                  href={property.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-[#F5A623] hover:underline font-medium"
-                >
-                  {t('openListing')}
-                </a>
-              </div>
-            </div>
+            {/* InfoStrip moved to the modal shell — Section 0 deleted */}
 
             {/* ── Section 1: Nutzung ── */}
             <div>

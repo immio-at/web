@@ -16,7 +16,7 @@ import {
   Property,
 } from '@/lib/api';
 
-export type InteractionType = 'view' | 'analysis' | 'url_click' | 'status_change';
+export type InteractionType = 'view' | 'analysis' | 'url_click' | 'status_change' | 'makler_contact';
 
 export function trackInteraction(propertyId: string, type: InteractionType = 'view') {
   // Fire-and-forget — don't block UI on tracking

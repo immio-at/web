@@ -1184,5 +1184,23 @@
       "dailyLimit": "Daily extraction limit reached. Try again tomorrow.",
       "generic": "Something went wrong. Please try again."
     }
+  },
+  "propertyModal": {
+    "makler": {
+      "label": "Agent",
+      "add": "Add agent",
+      "name": "Name",
+      "namePlaceholder": "e.g. Bernhard Müller",
+      "phone": "Phone",
+      "phonePlaceholder": "+43 …",
+      "email": "Email",
+      "emailPlaceholder": "name@example.at",
+      "organisation": "Organisation",
+      "organisationPlaceholder": "e.g. Engel & Völkers Wien",
+      "emailSubjectPrefix": "Inquiry about",
+      "emailSubjectFallback": "Inquiry about your listing",
+      "errorEmail": "Invalid email address",
+      "errorSave": "Failed to save agent contact."
+    }
   }
 }

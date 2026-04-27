@@ -606,7 +606,7 @@
     },
     "viewMode": {
       "analyses": "Analysen",
-      "dossier": "Dossier"
+      "dossier": "Objektdaten"
     },
     "openListing": "Öffnen ↗",
     "rooms": "Zimmer",
@@ -1183,6 +1183,24 @@
       "proRequired": "Exposé-Upload ist nur im Pro-Tarif verfügbar.",
       "dailyLimit": "Tägliches Extraktionslimit erreicht. Bitte morgen erneut versuchen.",
       "generic": "Ein Fehler ist aufgetreten. Bitte versuche es erneut."
+    }
+  },
+  "propertyModal": {
+    "makler": {
+      "label": "Makler",
+      "add": "Makler hinzufügen",
+      "name": "Name",
+      "namePlaceholder": "z.B. Bernhard Müller",
+      "phone": "Telefon",
+      "phonePlaceholder": "+43 …",
+      "email": "E-Mail",
+      "emailPlaceholder": "name@beispiel.at",
+      "organisation": "Organisation",
+      "organisationPlaceholder": "z.B. Engel & Völkers Wien",
+      "emailSubjectPrefix": "Anfrage zu",
+      "emailSubjectFallback": "Anfrage zur Immobilie",
+      "errorEmail": "Ungültige E-Mail-Adresse",
+      "errorSave": "Fehler beim Speichern des Makler-Kontakts."
     }
   }
 }
