@@ -448,4 +448,4 @@ Browse scraped listings from all active sources (Raiffeisen, s REAL, ÖRAG, RE/M
 - **TD10** Saved filter `sources` enum maintenance — new scraped sources need corresponding values added to TEXT[] enum
 - **TD13** `platformListedAt` columns empty — schema added but no parser/scraper extracts listing dates yet
 - **TD14** Prisma migration history out of sync — schema changes applied via SQL Editor
-- **TD15** ImmoScout24 title not parsed — IS24 emails don't contain title, parser sets null
+- ~~**TD15**~~ ~~ImmoScout24 title not parsed~~ — **Resolved.** Backend `EmailsService.backfillImmoScout24Title()` patches the title via the IS24 URL parser after email import. Frontend picks up the change via SSE within ~3s.
