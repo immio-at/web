@@ -923,21 +923,67 @@
         "contactText": "To exercise your rights, contact:"
       },
       "section7": {
-        "title": "7. Right to lodge a complaint",
+        "title": "7. Processing of contact data of real-estate agents and listing parties",
+        "intro": "When you save a property in IMMIO — whether by forwarding a search-agent email, pasting a URL from a property portal, uploading an Exposé, or entering data manually — we may process contact data of the person responsible for the listing. This data includes:",
+        "dataItems": [
+          "Name (given name and surname)",
+          "Telephone number",
+          "Email address",
+          "Organisation or agency"
+        ],
+        "purposeHeading": "Purpose of processing",
+        "purposeText": "This contact data is stored solely to enable you to contact the listing party in the course of your property search. It is visible only to you and is not shared platform-wide or with any other user.",
+        "basisHeading": "Lawful basis",
+        "basisIntro": "Processing is carried out on the basis of legitimate interest under Article 6(1)(f) GDPR. We have conducted a balancing assessment as required by that provision and conclude that the rights of the data subject do not override the processing because:",
+        "basisItems": [
+          "the data is professional contact information already published on the source listing;",
+          "the processing is consistent with industry-standard practice in property purchase preparation;",
+          "the data is stored in your private user account and is not redistributed;",
+          "no automated outreach, marketing, or profiling is performed."
+        ],
+        "basisFooter": "The underlying Legitimate Interest Assessment (LIA) is documented internally and is available on request from the supervisory authority.",
+        "sourceHeading": "Source of data",
+        "sourceText": "The contact data originates from the listing itself — from the forwarded search-agent email, from the listing portal's web page, from your uploaded Exposé PDF (via AI extraction), or from your manual entry.",
+        "recipientsHeading": "Recipients",
+        "recipientsIntro": "The data is stored exclusively on our technical service provider's servers (Supabase, EU region). No transfer to third parties takes place. In particular:",
+        "recipientsItems": [
+          "the data is not used for marketing communication to the agents or listing parties concerned;",
+          "the data is not aggregated or published platform-wide;",
+          "the data is not used to train AI models."
+        ],
+        "retentionHeading": "Retention period",
+        "retentionText": "Contact data is bound to the corresponding property record in your account and is deleted together with that record when you remove the property from your account or delete your user account.",
+        "userRightsHeading": "Your rights as a user",
+        "userRightsText": "You can view, edit, or delete the stored agent contact data at any time via the editing function in your account.",
+        "subjectRightsHeading": "Rights of the data subject (agent or listing party)",
+        "subjectRightsIntro": "Persons whose contact data is stored in our system have the following rights under GDPR:",
+        "subjectRights": [
+          ["Right of access", "Article 15 GDPR"],
+          ["Right to rectification", "Article 16 GDPR"],
+          ["Right to erasure", "Article 17 GDPR"],
+          ["Right to restriction of processing", "Article 18 GDPR"],
+          ["Right to object", "Article 21 GDPR"]
+        ],
+        "subjectRightsContact": "To exercise these rights, please contact ",
+        "subjectRightsContactSuffix": " (or the postal address listed in our Impressum). Upon receipt of a valid request, the relevant data will be deleted or corrected within the statutory time limit; confirmation will follow by email.",
+        "draftNotice": "Note: this clause is currently under legal review. IMMIO is not yet publicly launched — this text serves as the binding boilerplate during the tester phase."
+      },
+      "section8": {
+        "title": "8. Right to lodge a complaint",
         "intro": "You have the right to lodge a complaint with the competent data protection authority. For Austria, this is:",
         "authorityName": "Austrian Data Protection Authority",
         "authorityAddress": "Barichgasse 40–42, 1030 Vienna"
       },
-      "section8": {
-        "title": "8. Cookies",
+      "section9": {
+        "title": "9. Cookies",
         "text": "IMMIO exclusively uses technically necessary cookies for session management (authentication tokens). No tracking, advertising or analytics cookies are used. Therefore, no cookie consent is required."
       },
-      "section9": {
-        "title": "9. Changes to this privacy policy",
+      "section10": {
+        "title": "10. Changes to this privacy policy",
         "text": "We reserve the right to amend this privacy policy in the event of changes to the platform or legal requirements. The current version is always available on this page. In the case of material changes, we will inform registered users by email."
       },
-      "lastUpdated": "Last updated: March 2026",
-      "version": "Version 1.0"
+      "lastUpdated": "Last updated: April 2026",
+      "version": "Version 1.1 (tester boilerplate)"
     }
   },
   "common": {

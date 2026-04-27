@@ -156,12 +156,16 @@ export default async function DatenschutzPage() {
         </Section>
 
         <Section title={t('section7.title')}>
+          <MaklerClause t={t} />
+        </Section>
+
+        <Section title={t('section8.title')}>
           <p className="text-sm text-gray-600 font-light leading-relaxed">
-            {t('section7.intro')}
+            {t('section8.intro')}
           </p>
           <div className="mt-3 p-4 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 font-light space-y-1">
-            <p className="font-medium text-primary">{t('section7.authorityName')}</p>
-            <p>{t('section7.authorityAddress')}</p>
+            <p className="font-medium text-primary">{t('section8.authorityName')}</p>
+            <p>{t('section8.authorityAddress')}</p>
             <p>
               <a href="https://www.dsb.gv.at" target="_blank" rel="noreferrer" className="text-teal-600 hover:underline">
                 www.dsb.gv.at
@@ -170,15 +174,15 @@ export default async function DatenschutzPage() {
           </div>
         </Section>
 
-        <Section title={t('section8.title')}>
-          <p className="text-sm text-gray-600 font-light leading-relaxed">
-            {t('section8.text')}
-          </p>
-        </Section>
-
         <Section title={t('section9.title')}>
           <p className="text-sm text-gray-600 font-light leading-relaxed">
             {t('section9.text')}
+          </p>
+        </Section>
+
+        <Section title={t('section10.title')}>
+          <p className="text-sm text-gray-600 font-light leading-relaxed">
+            {t('section10.text')}
           </p>
         </Section>
 
@@ -269,6 +273,95 @@ function ProcessorRow({ label, value }: { label: string; value: string }) {
     <div className="flex gap-3 text-xs">
       <span className="text-gray-400 font-light min-w-[100px] shrink-0">{label}</span>
       <span className="text-gray-600 font-light">{value}</span>
+    </div>
+  );
+}
+
+// MaklerClause — renders the §7 contact-data-of-listing-parties clause (ADR-009 v1.1).
+// Boilerplate text under legal review — see docs/legal/Datenschutz-Makler-Clause.md.
+type Translator = ((key: string) => string) & { raw: (key: string) => unknown };
+function MaklerClause({ t }: { t: Translator }) {
+  const dataItems = (t.raw('section7.dataItems') as string[]) ?? [];
+  const basisItems = (t.raw('section7.basisItems') as string[]) ?? [];
+  const recipientsItems = (t.raw('section7.recipientsItems') as string[]) ?? [];
+  const subjectRights = (t.raw('section7.subjectRights') as [string, string][]) ?? [];
+
+  return (
+    <div className="text-sm text-gray-600 font-light leading-relaxed space-y-5">
+
+      <p>{t('section7.intro')}</p>
+      <ul className="space-y-1.5">
+        {dataItems.map((item) => (
+          <li key={item} className="flex gap-2"><span className="text-gray-300 shrink-0">&mdash;</span>{item}</li>
+        ))}
+      </ul>
+
+      <ClauseBlock heading={t('section7.purposeHeading')}>
+        <p>{t('section7.purposeText')}</p>
+      </ClauseBlock>
+
+      <ClauseBlock heading={t('section7.basisHeading')}>
+        <p>{t('section7.basisIntro')}</p>
+        <ul className="space-y-1.5 mt-2">
+          {basisItems.map((item) => (
+            <li key={item} className="flex gap-2"><span className="text-gray-300 shrink-0">&mdash;</span>{item}</li>
+          ))}
+        </ul>
+        <p className="mt-2">{t('section7.basisFooter')}</p>
+      </ClauseBlock>
+
+      <ClauseBlock heading={t('section7.sourceHeading')}>
+        <p>{t('section7.sourceText')}</p>
+      </ClauseBlock>
+
+      <ClauseBlock heading={t('section7.recipientsHeading')}>
+        <p>{t('section7.recipientsIntro')}</p>
+        <ul className="space-y-1.5 mt-2">
+          {recipientsItems.map((item) => (
+            <li key={item} className="flex gap-2"><span className="text-gray-300 shrink-0">&mdash;</span>{item}</li>
+          ))}
+        </ul>
+      </ClauseBlock>
+
+      <ClauseBlock heading={t('section7.retentionHeading')}>
+        <p>{t('section7.retentionText')}</p>
+      </ClauseBlock>
+
+      <ClauseBlock heading={t('section7.userRightsHeading')}>
+        <p>{t('section7.userRightsText')}</p>
+      </ClauseBlock>
+
+      <ClauseBlock heading={t('section7.subjectRightsHeading')}>
+        <p>{t('section7.subjectRightsIntro')}</p>
+        <ul className="space-y-2 mt-2">
+          {subjectRights.map(([right, basis]) => (
+            <li key={right} className="flex gap-3">
+              <span className="font-medium text-primary shrink-0 min-w-[200px]">{right}</span>
+              <span className="text-xs font-mono text-teal-600 bg-teal-50 px-2 py-0.5 rounded self-start whitespace-nowrap">
+                {basis}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3">
+          {t('section7.subjectRightsContact')}
+          <a href="mailto:datenschutz@immio.at" className="text-teal-600 hover:underline">datenschutz@immio.at</a>
+          {t('section7.subjectRightsContactSuffix')}
+        </p>
+      </ClauseBlock>
+
+      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+        {t('section7.draftNotice')}
+      </p>
+    </div>
+  );
+}
+
+function ClauseBlock({ heading, children }: { heading: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs font-mono uppercase tracking-widest text-gray-400 mb-1.5">{heading}</p>
+      <div className="space-y-2">{children}</div>
     </div>
   );
 }

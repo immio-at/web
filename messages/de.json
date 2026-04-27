@@ -923,21 +923,67 @@
         "contactText": "Zur Ausübung Ihrer Rechte wenden Sie sich an:"
       },
       "section7": {
-        "title": "7. Beschwerderecht",
+        "title": "7. Verarbeitung von Kontaktdaten von Immobilienmaklern und Inserenten",
+        "intro": "Wenn Sie eine Immobilie in IMMIO speichern — sei es durch Weiterleitung eines Suchagent-E-Mails, durch Einfügen einer URL aus einer Immobilienplattform, durch Hochladen eines Exposés oder durch manuelle Eingabe — verarbeiten wir gegebenenfalls Kontaktdaten der für das Inserat verantwortlichen Person. Diese Daten umfassen:",
+        "dataItems": [
+          "Name (Vor- und Nachname)",
+          "Telefonnummer",
+          "E-Mail-Adresse",
+          "Organisation oder Maklerbüro"
+        ],
+        "purposeHeading": "Zweck der Verarbeitung",
+        "purposeText": "Diese Kontaktdaten werden ausschließlich zu dem Zweck gespeichert, Ihnen den Kontakt zur inserierenden Person im Rahmen Ihrer Immobiliensuche zu erleichtern. Sie sind nur für Sie sichtbar und werden nicht plattformweit oder mit anderen Nutzerinnen und Nutzern geteilt.",
+        "basisHeading": "Rechtsgrundlage",
+        "basisIntro": "Die Verarbeitung erfolgt auf Grundlage unseres berechtigten Interesses sowie Ihres berechtigten Interesses gemäß Art. 6 Abs. 1 lit. f DSGVO. Wir haben eine Interessenabwägung durchgeführt und kommen zu dem Ergebnis, dass die schutzwürdigen Interessen der betroffenen Personen die Verarbeitung nicht überwiegen, weil:",
+        "basisItems": [
+          "es sich um beruflich bereits öffentlich kommunizierte Kontaktdaten handelt (auf der Inseratsplattform öffentlich angezeigt);",
+          "die Verarbeitung im branchenüblichen Rahmen einer Immobilienkaufanbahnung erfolgt;",
+          "die Daten in Ihrem privaten Nutzerkonto gespeichert und nicht weiterverbreitet werden;",
+          "keine automatisierte Kontaktaufnahme, kein Marketing und keine Profilbildung erfolgt."
+        ],
+        "basisFooter": "Die zugrundeliegende Interessenabwägung (Legitimate Interest Assessment, LIA) wird intern dokumentiert und auf Anforderung der Datenschutzbehörde vorgelegt.",
+        "sourceHeading": "Quelle der Daten",
+        "sourceText": "Die Kontaktdaten stammen aus dem Inserat selbst — entweder aus dem weitergeleiteten E-Mail des Suchagents, aus der von der Inseratsplattform abgerufenen Webseite, aus dem von Ihnen hochgeladenen Exposé-PDF (per KI-Auslesung) oder aus Ihrer manuellen Eingabe.",
+        "recipientsHeading": "Empfänger",
+        "recipientsIntro": "Die Daten werden ausschließlich auf den Servern unseres technischen Dienstleisters (Supabase, EU-Region) gespeichert. Eine Weitergabe an Dritte erfolgt nicht. Insbesondere:",
+        "recipientsItems": [
+          "werden die Daten nicht für Werbezwecke gegenüber den betroffenen Maklern oder Inserenten verwendet;",
+          "werden die Daten nicht plattformweit aggregiert oder veröffentlicht;",
+          "werden die Daten nicht zum Training von KI-Modellen verwendet."
+        ],
+        "retentionHeading": "Speicherdauer",
+        "retentionText": "Die Kontaktdaten sind an den jeweiligen Immobilieneintrag in Ihrem Konto gebunden und werden mit diesem gemeinsam gelöscht, sobald Sie die Immobilie aus Ihrem Konto entfernen oder Ihr Nutzerkonto löschen.",
+        "userRightsHeading": "Ihre Rechte als Nutzerin oder Nutzer",
+        "userRightsText": "Sie können die gespeicherten Makler-Kontaktdaten jederzeit über die Bearbeitungsfunktion in Ihrem Konto einsehen, ändern oder löschen.",
+        "subjectRightsHeading": "Rechte der betroffenen Person (Makler oder Inserent)",
+        "subjectRightsIntro": "Personen, deren Kontaktdaten in unserem System gespeichert sind, haben gegenüber IMMIO insbesondere die folgenden Rechte gemäß DSGVO:",
+        "subjectRights": [
+          ["Recht auf Auskunft", "Art. 15 DSGVO"],
+          ["Recht auf Berichtigung", "Art. 16 DSGVO"],
+          ["Recht auf Löschung", "Art. 17 DSGVO"],
+          ["Recht auf Einschränkung der Verarbeitung", "Art. 18 DSGVO"],
+          ["Widerspruchsrecht", "Art. 21 DSGVO"]
+        ],
+        "subjectRightsContact": "Anfragen bezüglich der Ausübung dieser Rechte richten Sie bitte an ",
+        "subjectRightsContactSuffix": " (oder an die im Impressum genannte Anschrift). Nach Eingang einer berechtigten Anfrage werden die betreffenden Daten innerhalb der gesetzlichen Frist gelöscht oder berichtigt; die Bestätigung erfolgt per E-Mail.",
+        "draftNotice": "Hinweis: Diese Klausel befindet sich derzeit in der anwaltlichen Prüfung. IMMIO ist noch nicht öffentlich verfügbar — der vorliegende Text dient während der Tester-Phase als verbindliche Boilerplate."
+      },
+      "section8": {
+        "title": "8. Beschwerderecht",
         "intro": "Sie haben das Recht, sich bei der zuständigen Datenschutzbehörde zu beschweren. Für Österreich ist dies:",
         "authorityName": "Österreichische Datenschutzbehörde",
         "authorityAddress": "Barichgasse 40–42, 1030 Wien"
       },
-      "section8": {
-        "title": "8. Cookies",
+      "section9": {
+        "title": "9. Cookies",
         "text": "IMMIO verwendet ausschließlich technisch notwendige Cookies für die Sitzungsverwaltung (Authentifizierungstoken). Es werden keine Tracking-, Werbe- oder Analyse-Cookies eingesetzt. Es sind daher keine Cookie-Einwilligungen erforderlich."
       },
-      "section9": {
-        "title": "9. Änderungen dieser Datenschutzerklärung",
+      "section10": {
+        "title": "10. Änderungen dieser Datenschutzerklärung",
         "text": "Wir behalten uns vor, diese Datenschutzerklärung bei Änderungen der Plattform oder der rechtlichen Anforderungen anzupassen. Die jeweils aktuelle Version ist auf dieser Seite verfügbar. Bei wesentlichen Änderungen informieren wir registrierte Nutzer per Email."
       },
-      "lastUpdated": "Zuletzt aktualisiert: März 2026",
-      "version": "Version 1.0"
+      "lastUpdated": "Zuletzt aktualisiert: April 2026",
+      "version": "Version 1.1 (Tester-Boilerplate)"
     }
   },
   "common": {
