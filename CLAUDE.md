@@ -65,7 +65,7 @@ app/[locale]/                        ← All routes under locale segment (de def
     ├── finder/page.tsx              ← Tinder-style swipe UI
     ├── settings/page.tsx
     ├── search/page.tsx              ← Entdecken — browse scraped listings, filter + save to funnel
-    ├── analytics/page.tsx           ← Coming Soon
+    ├── analytics/page.tsx           ← Live data dashboard (stat cards, funnel chart, heatmap, milestones)
     └── admin/page.tsx               ← User management, invite codes
 ```
 
@@ -123,7 +123,7 @@ Do not create a `/login` route. Session expiry redirects to `/?signin=true`.
 - NavBar has DE/EN toggle button — uses `router.replace(pathname, { locale })` to switch
 - Locale preference persisted to `localStorage` key `immio_locale`
 - Funnel stage names use `funnel.stages.*` namespace — shared between FunnelBoard and DashboardClient
-- Stage key mapping: snake_case DB keys (`visit_booked`) → camelCase i18n keys (`visitBooked`) via `STAGE_I18N_KEY`
+- Stage key mapping: snake_case DB keys (`due_diligence`) → camelCase i18n keys (`dueDiligence`) via `STAGE_I18N_KEY`
 - **When adding new strings**: add to BOTH `messages/de.json` and `messages/en.json`
 
 **Google OAuth sign-in**
@@ -347,7 +347,7 @@ Previously completed (Sessions 32–33):
 - `components/filters/UserFilterPill.tsx` — single user-defined filter pill with kebab dropdown. Edit (opens FilterModal pre-filled), Delete (confirm dialog → `onDeleteFilter`).
 - `components/filters/FilterModal.tsx` + `FilterModalForm.tsx` — full-form create/edit modal. Live property count combines own properties (instant from cache) + scraped listings (debounced 400ms `getScrapedListings`). Two save buttons: Update + Apply (edit only, PATCHes in place) and Save as New + Apply (POST). Closes on Escape and outside click.
 - Source presets: "Search Agents" / "Exclude Search Agents" (mutually exclusive, check `emailReceivedAt`)
-- Stage presets: 9 funnel stages (New, Investigating, Interested, Due Diligence, Visited, Offer Made, Parked, Won, Not Relevant). OR within group. Scraped listings without status pass through.
+- Stage presets: 8 funnel stages (New, Investigating, Interested, Due Diligence, Offer Made, Parked, Won, Not Relevant). OR within group. Scraped listings without status pass through. (Visited was merged into Due Diligence in Session 38.)
 - State presets: 9 Austrian states (OR within group, AND with other groups). Sent server-side on Discover and Finder (resolved to postcodes via `getPostcodesByBundesland`)
 - Dashboard Discover tile pre-caches per-state scraped counts on mount (10 parallel calls) for instant toggle
 - **`/settings/filters` (F6)** — bulk management page. Lists every filter oldest-first with Edit / Delete / "New filter" actions. Tier limit indicator (X / Y used) with upgrade prompt at the cap. `TIER_LIMITS` constant on the page mirrors the backend SavedFiltersService rules — keep in sync.
