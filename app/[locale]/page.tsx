@@ -2,7 +2,8 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from '@/i18n/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import SignInModal from '@/components/SignInModal';
 import RegisterModal from '@/components/RegisterModal';
@@ -91,14 +92,8 @@ function LandingPageInner() {
 
   function handleLangToggle() {
     const newLocale = locale === 'de' ? 'en' : 'de';
-    // For 'as-needed' prefix: de has no prefix, en has /en prefix
-    if (newLocale === 'de') {
-      // Remove /en prefix if present
-      const newPath = pathname.replace(/^\/en/, '') || '/';
-      router.push(newPath);
-    } else {
-      router.push(`/en${pathname}`);
-    }
+    localStorage.setItem('immio_locale', newLocale);
+    router.replace(pathname, { locale: newLocale });
   }
 
   // Use t.raw() for structured data (arrays of objects, string arrays)
