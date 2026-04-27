@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getProperties, Property, updateProperty } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { pruneOrphanedModalModes } from '@/hooks/useModalMode';
 
 // ─── Module-level cache ───────────────────────────────────────────────────────
 // Stored outside the hook so it persists across page navigations.
@@ -15,6 +16,12 @@ import { useAuth } from '@/context/AuthContext';
 let cache: Property[] | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL_MS = 120_000; // re-fetch from server after 2 minutes
+
+// ADR-012 v1.1 PC8 — one-shot localStorage cleanup for orphaned
+// `immio.modalMode.{propertyId}` entries. Runs once per app boot after the
+// first successful properties fetch, so a property the user dismissed in a
+// previous session doesn't leave a stale modal-mode entry behind.
+let modalModePruned = false;
 
 // Recent local-mutation guard — SSE 'properties' events fire at roughly the
 // same time as our own mutations land, and the triggered refetch can race the
@@ -46,6 +53,11 @@ function notifyListeners(properties: Property[]) {
 export function clearPropertiesCache(): void {
   cache = null;
   cacheTimestamp = 0;
+  // Re-arm the one-shot modal-mode prune so the next user's sign-in
+  // sweeps any entries the previous user left behind (UUID collisions
+  // can't happen, but the pruner removes anything not in the new
+  // user's cache so this keeps localStorage tidy).
+  modalModePruned = false;
   notifyListeners([]);
 }
 
@@ -75,6 +87,14 @@ export function useProperties() {
       // Update this component + any other mounted components
       setProperties(data);
       notifyListeners(data);
+
+      // PC8 — prune orphaned modal-mode localStorage entries once per
+      // app boot. Cheap (no network), runs after we know the full
+      // property list, fire-and-forget on failure.
+      if (!modalModePruned) {
+        modalModePruned = true;
+        pruneOrphanedModalModes(new Set(data.map(p => p.id)));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load properties');
     } finally {

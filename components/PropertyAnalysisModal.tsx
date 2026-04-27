@@ -26,6 +26,7 @@ import {
 import DossierTab from '@/components/property/DossierTab';
 import MrgWarningBanner from '@/components/property/MrgWarningBanner';
 import MaklerBlock from '@/components/property/MaklerBlock';
+import { useModalMode } from '@/hooks/useModalMode';
 import { PropertyDetails } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
@@ -257,9 +258,12 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [currentStage, setCurrentStage] = useState(property.status);
-  // ADR-009 DO4: top-level toggle between the analyses workspace and the
-  // Property Dossier (documents + AI extraction + structured property data).
-  const [viewMode, setViewMode] = useState<'analyses' | 'dossier'>(initialViewMode);
+  // ADR-009 DO4 + ADR-012 v1.1 PC7: top-level toggle between Analysen
+  // (multi-tab calculator) and Objektdaten/Dossier (companion data).
+  // The choice is restored from localStorage per property; the
+  // initialViewMode prop is only honoured as a first-time default for
+  // properties that have no stored mode yet (ADR-010 post-submit flow).
+  const [viewMode, setViewMode] = useModalMode(property.id, initialViewMode);
 
   // ADR-009 DO6: MRG risk flag, fetched once when the modal opens. Used
   // to render the MrgWarningBanner above the rental analysis section.

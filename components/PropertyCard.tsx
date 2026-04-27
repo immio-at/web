@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -108,6 +108,30 @@ export default function PropertyCard({
     actions.onUrlClick?.(item);
   }
 
+  // ADR-012 v1.1 PC5 — image-tap opens the modal. We track the pointer's
+  // initial coordinates so we can suppress accidental taps during a swipe
+  // (Finder) or drag (Funnel). Movement > 6px between pointerdown and click
+  // is treated as gesture, not tap.
+  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+  function handleImagePointerDown(e: React.PointerEvent<HTMLButtonElement>) {
+    pointerDownRef.current = { x: e.clientX, y: e.clientY };
+  }
+  function handleImageClick(e: React.MouseEvent<HTMLButtonElement>) {
+    const start = pointerDownRef.current;
+    pointerDownRef.current = null;
+    if (start) {
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
+      if (dx * dx + dy * dy > 36) return; // 6px movement threshold
+    }
+    e.stopPropagation();
+    actions.onAnalyse?.(item);
+  }
+
+  // ADR-012 v1.1 PC6 — external-link button. When sourceUrl is null
+  // (manual properties), render disabled with a different tooltip.
+  const hasSourceUrl = !!item.sourceUrl && item.sourceUrl.length > 0;
+
   // Heart state + behaviour
   const isOwn = item.source === 'own';
   const heartFilled = isOwn || scrapedSaved;
@@ -159,13 +183,13 @@ export default function PropertyCard({
       {...draggableProps}
       className={`group relative bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col ${widthClass} hover:shadow-md transition-shadow ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
-      {/* Image */}
-      <a
-        href={item.sourceUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={handleLink}
-        className={`block relative ${compact ? 'h-[7.7rem]' : 'h-[13.2rem]'} bg-gray-100 overflow-hidden flex-shrink-0`}
+      {/* Image — ADR-012 v1.1 PC5: tapping opens the modal (was: link to source). */}
+      <button
+        type="button"
+        onPointerDown={handleImagePointerDown}
+        onClick={handleImageClick}
+        aria-label={t('analyse')}
+        className={`block w-full text-left relative ${compact ? 'h-[7.7rem]' : 'h-[13.2rem]'} bg-gray-100 overflow-hidden flex-shrink-0 cursor-pointer`}
       >
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -230,7 +254,7 @@ export default function PropertyCard({
           </svg>
         </button>
 
-      </a>
+      </button>
 
       {/* Right-side action stack: 🔍 / ⚠ / ✕.
           Lives OUTSIDE the <a> so clicks never accidentally navigate to
@@ -244,15 +268,30 @@ export default function PropertyCard({
           ? 'right-1.5 top-9 flex-col gap-1'
           : 'right-2 top-[6.6rem] -translate-y-1/2 flex-col gap-1.5'
       } flex opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity`}>
-        {actions.onAnalyse && (
+        {/* ADR-012 v1.1 PC6: external-link replaces the 🔍 view button —
+            opens the source listing in a new tab; modal is now the image-tap
+            target. Disabled state for manual properties without sourceUrl. */}
+        {hasSourceUrl ? (
+          <a
+            href={item.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => { e.stopPropagation(); handleLink(); }}
+            title={t('openExternal')}
+            aria-label={t('openExternal')}
+            className={`${actionBtn} text-gray-500 hover:text-blue-600 hover:bg-blue-50`}
+          >
+            <ExternalLinkIcon compact={compact} />
+          </a>
+        ) : (
           <button
             type="button"
-            onClick={() => actions.onAnalyse!(item)}
-            title={t('analyse')}
-            aria-label={t('analyse')}
-            className={`${actionBtn} text-gray-500 grayscale hover:grayscale-0 hover:text-blue-600 hover:bg-blue-50`}
+            disabled
+            title={t('openExternalUnavailable')}
+            aria-label={t('openExternalUnavailable')}
+            className={`${actionBtn} text-gray-300 cursor-not-allowed`}
           >
-            🔍
+            <ExternalLinkIcon compact={compact} />
           </button>
         )}
         {actions.onReportDead && !isExpired && (
@@ -303,5 +342,27 @@ export default function PropertyCard({
         </div>
       </div>
     </div>
+  );
+}
+
+// Lucide-style external-link icon (inlined to avoid pulling lucide-react
+// for a single icon — the codebase already inlines its other SVGs).
+function ExternalLinkIcon({ compact }: { compact: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={compact ? 12 : 14}
+      height={compact ? 12 : 14}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M15 3h6v6" />
+      <path d="M10 14L21 3" />
+      <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+    </svg>
   );
 }

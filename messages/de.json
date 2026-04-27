@@ -1011,6 +1011,8 @@
     "changeStage": "Stufe ändern",
     "changeStageFrom": "Stufe ändern (aktuell: {stage})",
     "analyse": "Analyse",
+    "openExternal": "Originalanzeige öffnen",
+    "openExternalUnavailable": "Keine Originalanzeige verfügbar",
     "reportDead": "Link melden",
     "dismiss": "Entfernen",
     "expired": "Nicht verfügbar"
