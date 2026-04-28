@@ -508,56 +508,66 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
   // ─────────────────────────────────────────────────────────────────────────
 
   // Shared PropertyInfoStrip block — rendered once at the top of the modal
-  // (ADR-003 §10) regardless of which mode the user is in.
+  // (ADR-003 §10) regardless of which mode the user is in. The MaklerBlock
+  // nests inside the same box (separated by a top border) so the user sees
+  // a single unified property summary card.
   const propertyInfoStrip = (
     <div className="px-6 pt-3">
-      <div className="flex items-center gap-4 bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
-        {property.imageUrl && (
-          <img src={property.imageUrl} alt="" className="w-20 h-16 object-cover rounded-lg flex-shrink-0" />
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[#6b7a99]">
-            {property.price && (
-              <span className="font-semibold text-[#0F1F3D]">
-                {'€'} {Math.round(parseFloat(String(property.price))).toLocaleString('de-AT')}
-              </span>
+      <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
+        <div className="flex items-center gap-4">
+          {property.imageUrl && (
+            <img src={property.imageUrl} alt="" className="w-20 h-16 object-cover rounded-lg flex-shrink-0" />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[#6b7a99]">
+              {property.price && (
+                <span className="font-semibold text-[#0F1F3D]">
+                  {'€'} {Math.round(parseFloat(String(property.price))).toLocaleString('de-AT')}
+                </span>
+              )}
+              {sizeSqm && <span>{sizeSqm} m²</span>}
+              {property.rooms && <span>{String(property.rooms)} {t('rooms')}</span>}
+              {property.location && <span>{property.location}</span>}
+              {property.zipCode && <span>{property.zipCode}</span>}
+            </div>
+          </div>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <select
+              value={currentStage}
+              onChange={(e) => {
+                const newStage = e.target.value;
+                setCurrentStage(newStage);
+                updateProperty(property.id, {
+                  status: newStage,
+                  movedToStageAt: new Date().toISOString(),
+                });
+              }}
+              className="text-xs border border-[#e2e6ed] rounded-lg px-2 py-1.5 bg-white text-[#0F1F3D] focus:outline-none focus:ring-1 focus:ring-[#F5A623]"
+            >
+              {FUNNEL_STAGES_DISPLAY.map(s => (
+                <option key={s.key} value={s.key}>
+                  {tStages(STAGE_I18N_KEY[s.key] ?? s.key)}
+                </option>
+              ))}
+            </select>
+            {property.sourceUrl && (
+              <a
+                href={property.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[#F5A623] hover:underline font-medium"
+              >
+                {t('openListing')}
+              </a>
             )}
-            {sizeSqm && <span>{sizeSqm} m²</span>}
-            {property.rooms && <span>{String(property.rooms)} {t('rooms')}</span>}
-            {property.location && <span>{property.location}</span>}
-            {property.zipCode && <span>{property.zipCode}</span>}
           </div>
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <select
-            value={currentStage}
-            onChange={(e) => {
-              const newStage = e.target.value;
-              setCurrentStage(newStage);
-              updateProperty(property.id, {
-                status: newStage,
-                movedToStageAt: new Date().toISOString(),
-              });
-            }}
-            className="text-xs border border-[#e2e6ed] rounded-lg px-2 py-1.5 bg-white text-[#0F1F3D] focus:outline-none focus:ring-1 focus:ring-[#F5A623]"
-          >
-            {FUNNEL_STAGES_DISPLAY.map(s => (
-              <option key={s.key} value={s.key}>
-                {tStages(STAGE_I18N_KEY[s.key] ?? s.key)}
-              </option>
-            ))}
-          </select>
-          {property.sourceUrl && (
-            <a
-              href={property.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-[#F5A623] hover:underline font-medium"
-            >
-              {t('openListing')}
-            </a>
-          )}
-        </div>
+        <MaklerBlock
+          property={property}
+          details={details}
+          dealId={currentTab?.dealId ?? null}
+          onDetailsChange={(next) => setDetails(next)}
+        />
       </div>
     </div>
   );
@@ -582,16 +592,8 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
           <button onClick={onClose} className="text-[#6b7a99] hover:text-[#0F1F3D] transition-colors text-2xl leading-none flex-shrink-0">✕</button>
         </div>
 
-        {/* ── PropertyInfoStrip — always visible (ADR-003 §10) ── */}
+        {/* ── PropertyInfoStrip + Makler block — unified card (ADR-003 §10 / ADR-009 v1.1) ── */}
         {propertyInfoStrip}
-
-        {/* ── Makler block — always visible, hidden when empty (ADR-009 v1.1) ── */}
-        <MaklerBlock
-          property={property}
-          details={details}
-          dealId={currentTab?.dealId ?? null}
-          onDetailsChange={(next) => setDetails(next)}
-        />
 
         {/* ── Mode toggle: Analyses ↔ Objektdaten (ADR-009 DO4 / ADR-003 §10) ── */}
         <div className="px-6 pt-3 flex items-center gap-1.5">

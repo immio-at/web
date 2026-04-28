@@ -56,13 +56,20 @@ export default function MaklerBlock({ property, details, dealId, onDetailsChange
       const next = await updatePropertyDetails(property.id, { [field]: payload });
       onDetailsChange(next);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
-      // Backend returns INVALID_MAKLER_EMAIL on a malformed maklerEmail
+      const msg = e instanceof Error ? e.message : String(e);
+      // Surface the actual backend message so save failures don't disappear
+      // behind a generic toast — helps users (and us) diagnose which field
+      // or which validation is rejecting the write.
+      console.error(`[MaklerBlock] save ${field} failed:`, e);
       if (msg.includes('INVALID_MAKLER_EMAIL') || /email/i.test(msg)) {
         setError(t('errorEmail'));
+      } else if (msg) {
+        setError(`${t('errorSave')} (${msg})`);
       } else {
         setError(t('errorSave'));
       }
+      // Re-throw so EditableField stays in edit mode and the user can retry.
+      throw e;
     }
   }
 
@@ -82,12 +89,12 @@ export default function MaklerBlock({ property, details, dealId, onDetailsChange
     trackInteraction(property.id, 'makler_contact').catch(() => undefined);
   }
 
-  // Empty state — small ghost button. ADR-003 §10 places this in the
-  // InfoStrip area; rendering it just below the strip achieves the same
-  // visual hierarchy without coupling the two components.
+  // Empty state — small inline ghost button. Rendered inside the parent
+  // InfoStrip card so the user sees a single unified property summary
+  // box instead of two stacked cards.
   if (allEmpty && !adding) {
     return (
-      <div className="px-6 pt-2">
+      <div className="border-t border-[#e2e6ed] pt-3 mt-3">
         <button
           onClick={() => setAdding(true)}
           className="text-xs font-medium text-[#6b7a99] hover:text-[#0F1F3D] border border-dashed border-[#e2e6ed] hover:border-[#0F1F3D] rounded-lg px-3 py-1.5 transition-colors"
@@ -99,26 +106,16 @@ export default function MaklerBlock({ property, details, dealId, onDetailsChange
   }
 
   return (
-    <div className="px-6 pt-3">
-      <div className="bg-white border border-[#e2e6ed] rounded-xl p-4">
-        <div className="flex items-start justify-between gap-4">
-          <span
-            className="text-[10px] font-semibold uppercase text-[#6b7a99]"
-            style={ROW_LABEL_STYLE}
-          >
-            {t('label')}
-          </span>
-          {!allEmpty && (
-            <button
-              onClick={() => setAdding(false)}
-              className="text-[10px] text-[#6b7a99] hover:text-[#0F1F3D]"
-              aria-hidden="true"
-            />
-          )}
-        </div>
+    <div className="border-t border-[#e2e6ed] pt-3 mt-3">
+      <span
+        className="text-[10px] font-semibold uppercase text-[#6b7a99] block mb-2"
+        style={ROW_LABEL_STYLE}
+      >
+        {t('label')}
+      </span>
 
-        {/* Row 1 — name + organisation */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 mt-2">
+      {/* Row 1 — name + organisation */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
           <div>
             <p className="text-[10px] uppercase text-[#6b7a99]" style={ROW_LABEL_STYLE}>
               {t('name')}
@@ -203,8 +200,7 @@ export default function MaklerBlock({ property, details, dealId, onDetailsChange
           </div>
         </div>
 
-        {error && <p className="text-xs text-rose-600 mt-2">{error}</p>}
-      </div>
+      {error && <p className="text-xs text-rose-600 mt-2">{error}</p>}
     </div>
   );
 }
