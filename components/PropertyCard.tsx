@@ -113,10 +113,10 @@ export default function PropertyCard({
   // (Finder) or drag (Funnel). Movement > 6px between pointerdown and click
   // is treated as gesture, not tap.
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
-  function handleImagePointerDown(e: React.PointerEvent<HTMLButtonElement>) {
+  function handleImagePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     pointerDownRef.current = { x: e.clientX, y: e.clientY };
   }
-  function handleImageClick(e: React.MouseEvent<HTMLButtonElement>) {
+  function handleImageClick(e: React.MouseEvent<HTMLDivElement>) {
     const start = pointerDownRef.current;
     pointerDownRef.current = null;
     if (start) {
@@ -126,6 +126,13 @@ export default function PropertyCard({
     }
     e.stopPropagation();
     actions.onAnalyse?.(item);
+  }
+  function handleImageKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      actions.onAnalyse?.(item);
+    }
   }
 
   // ADR-012 v1.1 PC6 — external-link button. When sourceUrl is null
@@ -183,13 +190,19 @@ export default function PropertyCard({
       {...draggableProps}
       className={`group relative bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col ${widthClass} hover:shadow-md transition-shadow ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
-      {/* Image — ADR-012 v1.1 PC5: tapping opens the modal (was: link to source). */}
-      <button
-        type="button"
+      {/* Image — ADR-012 v1.1 PC5: tapping opens the modal (was: link to source).
+          Rendered as a div+role="button" rather than a real <button> because the
+          heart icon below is itself a <button> and HTML forbids nested buttons —
+          browsers auto-close the outer button mid-tree, breaking the `group`
+          containment that the action-stack hover-visibility relies on. */}
+      <div
+        role="button"
+        tabIndex={0}
         onPointerDown={handleImagePointerDown}
         onClick={handleImageClick}
+        onKeyDown={handleImageKeyDown}
         aria-label={t('analyse')}
-        className={`block w-full text-left relative ${compact ? 'h-[7.7rem]' : 'h-[13.2rem]'} bg-gray-100 overflow-hidden flex-shrink-0 cursor-pointer`}
+        className={`block w-full text-left relative ${compact ? 'h-[7.7rem]' : 'h-[13.2rem]'} bg-gray-100 overflow-hidden flex-shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
       >
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -254,7 +267,7 @@ export default function PropertyCard({
           </svg>
         </button>
 
-      </button>
+      </div>
 
       {/* Right-side action stack: 🔍 / ⚠ / ✕.
           Lives OUTSIDE the <a> so clicks never accidentally navigate to
