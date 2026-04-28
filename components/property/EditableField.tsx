@@ -130,8 +130,18 @@ export default function EditableField({
     const cls = `text-left rounded -mx-1 px-1 py-0 transition-colors hover:bg-blue-50 hover:ring-1 hover:ring-blue-200 ${
       emptyAsPlaceholder && isEmpty ? 'text-gray-300 italic' : 'text-gray-900'
     }`;
+    // onFocus opens the input so Tab-traversing the modal flips each
+    // EditableField into edit mode automatically — the user types,
+    // Tabs to the next, types, Tabs again, without having to click
+    // each field. Click + onFocus both call startEditing; the function
+    // is idempotent so the doubled call on mouse-click is a no-op.
     return (
-      <button onClick={startEditing} title="Click to edit" className={cls}>
+      <button
+        onClick={startEditing}
+        onFocus={startEditing}
+        title="Click to edit"
+        className={cls}
+      >
         {display}
       </button>
     );
