@@ -269,18 +269,18 @@ export default function PropertyCard({
 
       </div>
 
-      {/* Right-side action stack: 🔍 / ⚠ / ✕.
-          Lives OUTSIDE the <a> so clicks never accidentally navigate to
-          the listing URL. Positioned over the image via the card root's
-          `relative` + `group` (hover triggers on card, not just image).
-          Full size centres vertically on the image. Compact anchors
-          below the heart so the three buttons can never overlap it on
-          the smaller Dashboard cards. */}
+      {/* Right-side action stack: external-link / ⚠ / ✕.
+          Sibling of the image div (NOT a child) so clicks never accidentally
+          navigate to the listing or fire the image-tap modal handler.
+          Positioned over the image via the card root's `relative`. Always
+          visible — the previous hover-reveal pattern was unreliable across
+          Tailwind v4's `(hover: hover)` media-query scoping and made the
+          discoverability poor on touch laptops. */}
       <div className={`absolute z-10 ${
         compact
           ? 'right-1.5 top-9 flex-col gap-1'
           : 'right-2 top-[6.6rem] -translate-y-1/2 flex-col gap-1.5'
-      } flex opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity`}>
+      } flex`}>
         {/* ADR-012 v1.1 PC6: external-link replaces the 🔍 view button —
             opens the source listing in a new tab; modal is now the image-tap
             target. Disabled state for manual properties without sourceUrl. */}
