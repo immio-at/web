@@ -42,6 +42,12 @@ interface Props {
    *  per-row copies of price / BK / purchaseDate that don't otherwise
    *  refresh until the user reloads the modal). */
   onPropertyApplied?: (field: PropertyDetailsApplyableField, value: unknown) => void;
+  /** Pre-fetched details from the parent modal — when provided, the
+   *  initial GET /properties/:id/details fetch is skipped to avoid the
+   *  duplicate roundtrip (the modal already fetched details for the
+   *  MRG banner and the Makler block). Documents are still fetched
+   *  here since the modal doesn't need them. */
+  initialDetails?: PropertyDetails | null;
 }
 
 const DOC_LABELS = [
@@ -195,14 +201,16 @@ function fieldOptions(field: FieldName): { value: string; label: string }[] {
   return cfg.options.map(v => ({ value: v, label: v }));
 }
 
-export default function DossierTab({ property, onPropertyApplied }: Props) {
+export default function DossierTab({ property, onPropertyApplied, initialDetails }: Props) {
   const t = useTranslations('dossier');
   const { tier } = useAuth();
   const { optimisticUpdate } = useProperties();
   const isPro = tier === 'pro';
 
-  const [details, setDetails] = useState<PropertyDetails | null>(null);
+  const [details, setDetails] = useState<PropertyDetails | null>(initialDetails ?? null);
   const [documents, setDocuments] = useState<PropertyDocument[]>([]);
+  // Skip the initial loading spinner when the parent modal already
+  // handed us pre-fetched details — only documents remain to fetch.
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -219,13 +227,19 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
   const [docError, setDocError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Initial load — details + documents in parallel
+  // Initial load. Documents always need a fetch. Details are fetched
+  // here only if the parent didn't already hand them in via
+  // `initialDetails` — the modal's MRG / Makler fetch covers the same
+  // endpoint, so passing the prop avoids a duplicate roundtrip.
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    const detailsPromise = initialDetails !== undefined
+      ? Promise.resolve({ details: initialDetails ?? null })
+      : getPropertyDetails(property.id).catch(() => ({ details: null }));
     Promise.all([
-      getPropertyDetails(property.id).catch(() => ({ details: null })),
+      detailsPromise,
       getDocuments(property.id).catch(() => []),
     ])
       .then(([detailsResp, docs]) => {
@@ -241,6 +255,9 @@ export default function DossierTab({ property, onPropertyApplied }: Props) {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
+    // initialDetails intentionally omitted from deps — captured at first
+    // mount only, subsequent prop changes don't re-trigger the fetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [property.id]);
 
   // ── Handlers ───────────────────────────────────────────────────────────

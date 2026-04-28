@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
@@ -9,7 +9,6 @@ import {
 import {
   Property,
   PropertyAnalysis,
-  PropertyDocument,
   PropertyDetailsApplyableField,
   RehabCostItem,
   UpdateAnalysisDto,
@@ -17,10 +16,6 @@ import {
   createAnalysis,
   updateAnalysis,
   deleteAnalysis,
-  getDocuments,
-  uploadDocument,
-  getDocumentDownloadUrl,
-  deleteDocument,
   getPropertyDetails,
 } from '@/lib/api';
 import DossierTab from '@/components/property/DossierTab';
@@ -275,22 +270,37 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
   const [details, setDetails] = useState<PropertyDetails | null>(null);
   const mrgRisk = details?.mrgRisk ?? null;
 
-  // Documents
-  const [documents, setDocuments] = useState<PropertyDocument[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [docLabel, setDocLabel] = useState(t('documents.types.0'));
-  const [docError, setDocError] = useState<string | null>(null);
-
   const sizeSqm = property.sizeSqm != null ? parseFloat(String(property.sizeSqm)) : null;
 
   // Active tab's draft
   const draft = tabs[activeTab]?.draft ?? blankAnalysis(property);
 
-  // ── Load all analyses on mount ────────────────────────────────────────────
+  // ── Initial load ────────────────────────────────────────────────────────
+  // getPropertyDetails fires immediately on mount — it feeds the MRG
+  // banner in the modal shell, the MaklerBlock, and (via initialDetails)
+  // the DossierTab. getAnalyses is lazy: fired only the first time the
+  // user lands on or switches to Analysen mode. The default first-time
+  // mode is Objektdaten (dossier), and most opens never visit Analysen,
+  // so deferring the fetch is a real win.
+  const analysesFetchedRef = useRef(false);
   useEffect(() => {
-    async function load() {
-      try {
-        const analyses = await getAnalyses(property.id);
+    let cancelled = false;
+    getPropertyDetails(property.id)
+      .then((resp) => { if (!cancelled) setDetails(resp.details); })
+      .catch(() => { if (!cancelled) setDetails(null); });
+    return () => { cancelled = true; };
+  }, [property.id]);
+
+  useEffect(() => {
+    if (viewMode !== 'analyses') return;
+    if (analysesFetchedRef.current) return;
+    analysesFetchedRef.current = true;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    getAnalyses(property.id)
+      .then((analyses) => {
+        if (cancelled) return;
         if (analyses.length > 0) {
           setTabs(analyses.map(a => ({
             id: a.id,
@@ -299,26 +309,19 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
             dirty: false,
           })));
         } else {
-          // No analyses yet — start with a blank tab
           setTabs([{ id: null, dealId: null, draft: blankAnalysis(property), dirty: false }]);
         }
-        const docs = await getDocuments(property.id);
-        setDocuments(docs);
-      } catch {
+      })
+      .catch(() => {
+        if (cancelled) return;
         setError(t('errorLoading'));
         setTabs([{ id: null, dealId: null, draft: blankAnalysis(property), dirty: false }]);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-    // ADR-009 DO6 + v1.1: fetch the full Dossier row in parallel — independent
-    // of the main load so a 4xx (no Dossier yet) doesn't block the analyses.
-    // The same fetch powers the MRG banner and the Makler block.
-    getPropertyDetails(property.id)
-      .then(resp => setDetails(resp.details))
-      .catch(() => setDetails(null));
-  }, [property.id, t, property]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [viewMode, property.id, t, property]);
 
   // ── Sync + auto-save open analysis drafts when → Apply is clicked ──────
   // Analyses keep per-row copies of price / BK / purchaseDate that don't
@@ -455,46 +458,11 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
     }
   }
 
-  // ── Document handlers ────────────────────────────────────────────────────
-  async function handleDocUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setDocError(null);
-    try {
-      const doc = await uploadDocument(property.id, file, docLabel);
-      setDocuments(prev => [doc, ...prev]);
-    } catch (err) {
-      setDocError(err instanceof Error ? err.message : t('documents.errorUpload'));
-    } finally {
-      setUploading(false);
-      e.target.value = ''; // reset file input
-    }
-  }
-
-  async function handleDocDownload(doc: PropertyDocument) {
-    try {
-      const url = await getDocumentDownloadUrl(property.id, doc.id);
-      window.open(url, '_blank');
-    } catch {
-      setDocError(t('documents.errorDownload'));
-    }
-  }
-
-  async function handleDocDelete(doc: PropertyDocument) {
-    try {
-      await deleteDocument(property.id, doc.id);
-      setDocuments(prev => prev.filter(d => d.id !== doc.id));
-    } catch {
-      setDocError(t('documents.errorDelete'));
-    }
-  }
-
-  function formatFileSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
+  // Document upload/download/delete handlers used to live here when the
+  // Documents UI was rendered inside the modal. The Documents section
+  // moved to DossierTab (Session 32) and these handlers haven't been
+  // referenced since — removed in Session 44 to drop the dead
+  // `getDocuments` fetch from the modal load path.
 
   // ── Build a full PropertyAnalysis shape for calculators ───────────────────
   const currentTab = tabs[activeTab];
@@ -534,9 +502,6 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
   const liebhabereiWarning = rentalResults ? calcLiebhabereiWarning(rentalResults.yearlyData) : false;
   const yearlyTaxProjection = rentalResults
     ? calcYearlyRentalProjection(calc, rentalResults) : null;
-
-  // Document type options from translations
-  const docTypes = Array.from({ length: 10 }, (_, i) => t(`documents.types.${i}`));
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
@@ -702,12 +667,18 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
           </div>
         )}
 
-        {loading ? (
-          <div className="p-12 text-center text-[#6b7a99]">{t('loading')}</div>
-        ) : viewMode === 'dossier' ? (
+        {/* Dossier mode renders immediately — DossierTab manages its own
+            documents fetch and reuses the parent's pre-fetched details. */}
+        {viewMode === 'dossier' ? (
           <div className="p-6">
-            <DossierTab property={property} onPropertyApplied={handleDossierApplied} />
+            <DossierTab
+              property={property}
+              onPropertyApplied={handleDossierApplied}
+              initialDetails={details}
+            />
           </div>
+        ) : loading ? (
+          <div className="p-12 text-center text-[#6b7a99]">{t('loading')}</div>
         ) : (
           <div className="p-6 space-y-8">
 
