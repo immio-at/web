@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { setTokenGetter } from '@/lib/api';
+import { setTokenGetter, clearAnalysesCache } from '@/lib/api';
 import { prefetchProperties, clearPropertiesCache } from '@/hooks/useProperties';
 import { prefetchSavedFilters, clearSavedFiltersCache } from '@/hooks/useSavedFilters';
 import { clearAnalyticsCache } from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
@@ -21,6 +21,7 @@ function clearAllUserCaches(): void {
   clearSavedFiltersCache();
   clearAnalyticsCache();
   clearRecommendedCache();
+  clearAnalysesCache();
 }
 
 // ─── App-specific fields Supabase doesn't know about ─────────────────────────

@@ -428,13 +428,40 @@ export async function saveScrapedListing(id: string): Promise<{ message: string;
 
 // ─── Analysis API ─────────────────────────────────────────────────────────────
 
+// Per-property in-memory cache for getAnalyses. The analyses-tab fetch is
+// the slowest part of opening the modal in Analysen mode (the only fetch
+// the modal still does for that mode after Session 44). Caching across
+// modal opens means a close+reopen within the TTL skips the roundtrip
+// entirely. Mutations invalidate the entry for that property.
+const analysesCache = new Map<string, { data: PropertyAnalysis[]; at: number }>();
+const ANALYSES_CACHE_TTL_MS = 60_000;
+
+function readAnalysesCache(propertyId: string): PropertyAnalysis[] | null {
+  const hit = analysesCache.get(propertyId);
+  if (!hit) return null;
+  if (Date.now() - hit.at > ANALYSES_CACHE_TTL_MS) {
+    analysesCache.delete(propertyId);
+    return null;
+  }
+  return hit.data;
+}
+
+export function clearAnalysesCache(propertyId?: string): void {
+  if (propertyId) analysesCache.delete(propertyId);
+  else analysesCache.clear();
+}
+
 export async function getAnalyses(propertyId: string): Promise<PropertyAnalysis[]> {
+  const cached = readAnalysesCache(propertyId);
+  if (cached) return cached;
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/${propertyId}/analyses`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
-  return handleResponse(response);
+  const data = await handleResponse(response) as PropertyAnalysis[];
+  analysesCache.set(propertyId, { data, at: Date.now() });
+  return data;
 }
 
 export async function createAnalysis(
@@ -450,7 +477,9 @@ export async function createAnalysis(
     },
     body: JSON.stringify(dto),
   });
-  return handleResponse(response);
+  const created = await handleResponse(response) as PropertyAnalysis;
+  analysesCache.delete(propertyId);
+  return created;
 }
 
 export async function updateAnalysis(
@@ -467,7 +496,9 @@ export async function updateAnalysis(
     },
     body: JSON.stringify(dto),
   });
-  return handleResponse(response);
+  const updated = await handleResponse(response) as PropertyAnalysis;
+  analysesCache.delete(propertyId);
+  return updated;
 }
 
 export async function deleteAnalysis(propertyId: string, analysisId: string): Promise<void> {
@@ -476,7 +507,8 @@ export async function deleteAnalysis(propertyId: string, analysisId: string): Pr
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
-  return handleResponse(response);
+  await handleResponse(response);
+  analysesCache.delete(propertyId);
 }
 
 // ─── Property Documents ─────────────────────────────────────────────────────
