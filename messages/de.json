@@ -604,6 +604,12 @@
       "cancel": "Abbrechen",
       "delete": "Löschen"
     },
+    "closeConfirm": {
+      "title": "Ungespeicherte Änderungen verwerfen?",
+      "message": "Du hast nicht gespeicherte Änderungen in einer oder mehreren Analyse-Tabs. Beim Schließen gehen diese verloren.",
+      "cancel": "Abbrechen",
+      "discard": "Verwerfen und schließen"
+    },
     "viewMode": {
       "analyses": "Analysen",
       "dossier": "Objektdaten"

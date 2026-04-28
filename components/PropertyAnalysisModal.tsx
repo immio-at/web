@@ -22,6 +22,11 @@ import DossierTab from '@/components/property/DossierTab';
 import MrgWarningBanner from '@/components/property/MrgWarningBanner';
 import MaklerBlock from '@/components/property/MaklerBlock';
 import { useModalMode } from '@/hooks/useModalMode';
+import {
+  useAnalysisDraft,
+  isAnalysisDraftDirty,
+  clearAnalysisDraft,
+} from '@/hooks/useAnalysisDraft';
 import { PropertyDetails } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
@@ -224,8 +229,21 @@ function analysisToDraft(a: PropertyAnalysis): Draft {
 interface Tab {
   id: string | null;    // null = unsaved new analysis
   dealId: string | null;
+  /** Stable per-tab key for localStorage draft persistence (ADR-003 v2.2 / DR1).
+   *  - Saved tab: tabKey === id (UUID)
+   *  - Unsaved tab: tabKey === 'new-' + a fresh UUID, generated on tab create.
+   *    Stable across remounts so the draft survives mode-switch / accidental close. */
+  tabKey: string;
+  /** Server-side snapshot of the analysis values (the dbValues passed to
+   *  useAnalysisDraft). User edits live in the active tab's hook state +
+   *  localStorage; this field is the comparison baseline for isDirty. */
   draft: Draft;
-  dirty: boolean;       // has unsaved changes
+}
+
+function makeNewTabKey(): string {
+  return 'new-' + (typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2));
 }
 
 function tabLabel(tab: Tab): string {
@@ -252,6 +270,9 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  // ADR-003 v2.2 / DR9 — close-guard prompt. Shown when handleClose fires
+  // while any analysis tab has unsaved changes.
+  const [closeConfirm, setCloseConfirm] = useState<boolean>(false);
   const [currentStage, setCurrentStage] = useState(property.status);
   // ADR-009 DO4 + ADR-012 v1.1 PC7: top-level toggle between Analysen
   // (multi-tab calculator) and Objektdaten/Dossier (companion data).
@@ -272,8 +293,20 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
 
   const sizeSqm = property.sizeSqm != null ? parseFloat(String(property.sizeSqm)) : null;
 
-  // Active tab's draft
-  const draft = tabs[activeTab]?.draft ?? blankAnalysis(property);
+  // Active tab's draft (ADR-003 v2.2 / DR1+DR3) — values + setValues come
+  // from useAnalysisDraft, which reads/writes localStorage per
+  // (propertyId, tabKey). dbValues is the active tab's server-side snapshot;
+  // the hook's `values` reflect the user's typing AND survive a mode-switch
+  // or accidental close.
+  const activeTabKey = tabs[activeTab]?.tabKey ?? '__none__';
+  const activeDbValues = tabs[activeTab]?.draft ?? null;
+  const {
+    values: activeValues,
+    setValues: setActiveValues,
+    clear: clearActiveDraft,
+    isDirty: activeIsDirty,
+  } = useAnalysisDraft<Draft>(property.id, activeTabKey, activeDbValues);
+  const draft: Draft = activeValues ?? blankAnalysis(property);
 
   // ── Initial load ────────────────────────────────────────────────────────
   // getPropertyDetails fires immediately on mount — it feeds the MRG
@@ -305,17 +338,17 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
           setTabs(analyses.map(a => ({
             id: a.id,
             dealId: a.dealId,
+            tabKey: a.id,
             draft: analysisToDraft(a),
-            dirty: false,
           })));
         } else {
-          setTabs([{ id: null, dealId: null, draft: blankAnalysis(property), dirty: false }]);
+          setTabs([{ id: null, dealId: null, tabKey: makeNewTabKey(), draft: blankAnalysis(property) }]);
         }
       })
       .catch(() => {
         if (cancelled) return;
         setError(t('errorLoading'));
-        setTabs([{ id: null, dealId: null, draft: blankAnalysis(property), dirty: false }]);
+        setTabs([{ id: null, dealId: null, tabKey: makeNewTabKey(), draft: blankAnalysis(property) }]);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -344,47 +377,78 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
         null;
       if (!draftField) return; // sizeSqmVerified / roomsVerified are read from property prop
 
+      // Patch every tab's dbValues snapshot. Saved tabs auto-save below
+      // (DB then matches); unsaved tabs would otherwise lose the apply on
+      // their next reload, so we also write the patched value through to
+      // localStorage so it survives.
       const patched = tabs.map(tab => ({
         ...tab,
         draft: { ...tab.draft, [draftField]: value as never },
-        // Saved tabs are auto-saved below — show as clean. Unsaved
-        // tabs stay dirty so the user knows there's pending state.
-        dirty: tab.id === null,
       }));
       setTabs(patched);
 
-      // Fire background saves for every tab that already exists.
+      // Update the active tab's editing state so the new value appears in
+      // the form immediately. Mirrors the v1 behaviour where Dossier apply
+      // visibly populated the form.
+      if (activeValues) {
+        setActiveValues({ ...activeValues, [draftField]: value as never } as Draft);
+      }
+
+      // For unsaved tabs that aren't currently active, persist the patched
+      // values to localStorage so they survive a tab switch / modal close.
+      patched.forEach((tab, i) => {
+        if (tab.id) return;
+        if (i === activeTab) return;
+        try {
+          localStorage.setItem(
+            `immio.analysisDraft.${property.id}.${tab.tabKey}`,
+            JSON.stringify(tab.draft),
+          );
+        } catch { /* ignore */ }
+      });
+
+      // Fire background saves for every tab that already exists. On
+      // success the localStorage entry (if any) is cleaned up so the next
+      // open reads fresh DB state.
       patched.forEach((tab, i) => {
         if (!tab.id) return;
         const draftToSave = { ...tab.draft };
         if (!draftToSave.name) draftToSave.name = autoName(draftToSave, patched, i);
         const dto: UpdateAnalysisDto = { ...draftToSave };
-        updateAnalysis(property.id, tab.id, dto).catch((e) => {
-          console.error('Auto-save failed for tab', tab.id, e);
-          setTabs(p => p.map(t => t.id === tab.id ? { ...t, dirty: true } : t));
-          setError(t('errorSaving'));
-        });
+        updateAnalysis(property.id, tab.id, dto)
+          .then(() => clearAnalysisDraft(property.id, tab.tabKey))
+          .catch((e) => {
+            console.error('Auto-save failed for tab', tab.id, e);
+            setError(t('errorSaving'));
+          });
       });
     },
-    [tabs, property.id, t],
+    [tabs, activeTab, activeValues, setActiveValues, property.id, t],
   );
 
-  // ── Field updater (updates active tab's draft) ────────────────────────────
+  // ── Field updater (updates active tab's draft via the hook) ────────────────
+  // setActiveValues writes synchronously to React state and queues a debounced
+  // localStorage write. Replaces the previous setTabs-based draft mutation.
   function set<K extends keyof Draft>(key: K, value: Draft[K]) {
-    setTabs(prev => prev.map((tab, i) =>
-      i === activeTab ? { ...tab, draft: { ...tab.draft, [key]: value }, dirty: true } : tab
-    ));
+    setActiveValues({ ...draft, [key]: value });
   }
 
   // ── Tab management ────────────────────────────────────────────────────────
   function addTab() {
-    const newTab: Tab = { id: null, dealId: null, draft: blankAnalysis(property), dirty: false };
+    const newTab: Tab = {
+      id: null,
+      dealId: null,
+      tabKey: makeNewTabKey(),
+      draft: blankAnalysis(property),
+    };
     setTabs(prev => [...prev, newTab]);
     setActiveTab(tabs.length);
   }
 
   async function deleteTab(index: number) {
     const tab = tabs[index];
+    // Clear the draft entry — the user is throwing away whatever was typed.
+    clearAnalysisDraft(property.id, tab.tabKey);
     if (tab.id) {
       try {
         await deleteAnalysis(property.id, tab.id);
@@ -395,7 +459,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
     setDeleteConfirm(null);
     // If no tabs left, add a blank one
     if (tabs.length <= 1) {
-      setTabs([{ id: null, dealId: null, draft: blankAnalysis(property), dirty: false }]);
+      setTabs([{ id: null, dealId: null, tabKey: makeNewTabKey(), draft: blankAnalysis(property) }]);
       setActiveTab(0);
     }
   }
@@ -425,7 +489,9 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
     setError(null);
     try {
       const tab = tabs[activeTab];
-      const draftToSave = { ...tab.draft };
+      // The active tab's editing values live in the hook; tab.draft is the
+      // dbValues snapshot. Save what the user actually typed.
+      const draftToSave = { ...draft };
       // Auto-name if no name set
       if (!draftToSave.name) {
         draftToSave.name = autoName(draftToSave, tabs, activeTab);
@@ -434,21 +500,28 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
       const dto: UpdateAnalysisDto = { ...draftToSave };
 
       if (tab.id) {
-        // Update existing
+        // Update existing — tabKey is unchanged (UUID).
         await updateAnalysis(property.id, tab.id, dto);
         setTabs(prev => prev.map((t, i) =>
-          i === activeTab ? { ...t, draft: draftToSave, dirty: false } : t
+          i === activeTab ? { ...t, draft: draftToSave } : t
         ));
+        clearAnalysisDraft(property.id, tab.tabKey);
       } else {
-        // Create new
+        // Create new — tabKey transitions from `new-{UUID}` to the server's
+        // analysis UUID. Clear the old `new-` localStorage entry explicitly
+        // so the orphan-cleanup pass doesn't have to.
+        const oldTabKey = tab.tabKey;
         const created = await createAnalysis(property.id, {
           usageType: draftToSave.usageType,
           legalStructure: draftToSave.legalStructure,
           name: draftToSave.name ?? undefined,
         });
         await updateAnalysis(property.id, created.id, dto);
+        clearAnalysisDraft(property.id, oldTabKey);
         setTabs(prev => prev.map((t, i) =>
-          i === activeTab ? { ...t, id: created.id, dealId: created.dealId, draft: draftToSave, dirty: false } : t
+          i === activeTab
+            ? { ...t, id: created.id, dealId: created.dealId, tabKey: created.id, draft: draftToSave }
+            : t,
         ));
       }
     } catch {
@@ -463,6 +536,83 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
   // moved to DossierTab (Session 32) and these handlers haven't been
   // referenced since — removed in Session 44 to drop the dead
   // `getDocuments` fetch from the modal load path.
+
+  // ── Close guard (ADR-003 v2.2 / DR7+DR8+DR9) ───────────────────────────────
+  // Single entry point for the four close paths: ✕ button, footer Cancel,
+  // backdrop click, and Esc key. Reads dirty state from the active tab's
+  // hook and from each non-active tab's persisted draft so a stale typed
+  // value in any tab triggers the prompt.
+  function anyTabIsDirty(): boolean {
+    if (activeIsDirty) return true;
+    for (let i = 0; i < tabs.length; i++) {
+      if (i === activeTab) continue;
+      const t = tabs[i];
+      if (isAnalysisDraftDirty<Draft>(property.id, t.tabKey, t.draft)) return true;
+    }
+    return false;
+  }
+  function handleCloseRequested() {
+    if (anyTabIsDirty()) {
+      setCloseConfirm(true);
+    } else {
+      onClose();
+    }
+  }
+  function handleConfirmClose() {
+    // Discard semantics: throw away every tab's draft so reopening shows
+    // DB state. Open question in the ADR resolved to (a).
+    for (const t of tabs) clearAnalysisDraft(property.id, t.tabKey);
+    clearActiveDraft();
+    setCloseConfirm(false);
+    onClose();
+  }
+
+  // Backdrop click — only dismisses when pointerdown AND pointerup both
+  // landed on the backdrop with movement < 6px. Guards against accidental
+  // close during text selection (drag releases over backdrop) and Funnel
+  // drag (pointerup outside the modal panel).
+  const backdropDownRef = useRef<{ x: number; y: number } | null>(null);
+  function handleBackdropPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.target !== e.currentTarget) {
+      backdropDownRef.current = null;
+      return;
+    }
+    backdropDownRef.current = { x: e.clientX, y: e.clientY };
+  }
+  function handleBackdropPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    const start = backdropDownRef.current;
+    backdropDownRef.current = null;
+    if (!start) return;
+    if (e.target !== e.currentTarget) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (dx * dx + dy * dy > 36) return;
+    handleCloseRequested();
+  }
+
+  // Esc key — single mount-scoped listener. Skips when another dialog
+  // (delete-confirm, close-confirm) is already open so Esc dismisses it
+  // first instead of nuking everything in one keystroke.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      if (deleteConfirm !== null) {
+        setDeleteConfirm(null);
+        return;
+      }
+      if (closeConfirm) {
+        setCloseConfirm(false);
+        return;
+      }
+      handleCloseRequested();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // handleCloseRequested closes over many state slots — stable enough
+    // for tester-phase. Re-binding the listener on every change is wasteful
+    // but harmless.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deleteConfirm, closeConfirm, tabs, activeTab, activeIsDirty]);
 
   // ── Build a full PropertyAnalysis shape for calculators ───────────────────
   const currentTab = tabs[activeTab];
@@ -573,7 +723,11 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4 px-2">
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4 px-2"
+      onPointerDown={handleBackdropPointerDown}
+      onPointerUp={handleBackdropPointerUp}
+    >
       <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl my-auto">
 
         {/* ── Header — title + Deal ID inline pill (ADR-003 §10) ── */}
@@ -589,7 +743,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
               )}
             </div>
           </div>
-          <button onClick={onClose} className="text-[#6b7a99] hover:text-[#0F1F3D] transition-colors text-2xl leading-none flex-shrink-0">✕</button>
+          <button onClick={handleCloseRequested} className="text-[#6b7a99] hover:text-[#0F1F3D] transition-colors text-2xl leading-none flex-shrink-0">✕</button>
         </div>
 
         {/* ── PropertyInfoStrip + Makler block — unified card (ADR-003 §10 / ADR-009 v1.1) ── */}
@@ -622,9 +776,15 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
         {/* ── Tab Bar (analyses only) ── */}
         {viewMode === 'analyses' && !loading && tabs.length > 0 && (
           <div className="flex items-center gap-1 px-6 pt-3 pb-0 overflow-x-auto border-b border-[#e2e6ed]">
-            {tabs.map((tab, i) => (
+            {tabs.map((tab, i) => {
+              // Active tab's dirty state comes from the live hook;
+              // non-active tabs read their persisted draft from localStorage.
+              const tabIsDirty = i === activeTab
+                ? activeIsDirty
+                : isAnalysisDraftDirty<Draft>(property.id, tab.tabKey, tab.draft);
+              return (
               <div
-                key={tab.id ?? `new-${i}`}
+                key={tab.tabKey}
                 className={`group flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-lg cursor-pointer transition-colors ${
                   i === activeTab
                     ? 'bg-white border border-[#e2e6ed] border-b-white -mb-px text-[#0F1F3D]'
@@ -634,7 +794,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
               >
                 <span className="truncate max-w-[120px]">
                   {tabLabel(tab)}
-                  {tab.dirty && <span className="text-amber-500 ml-0.5">*</span>}
+                  {tabIsDirty && <span className="text-amber-500 ml-0.5">*</span>}
                 </span>
                 {tabs.length > 1 && (
                   <button
@@ -645,7 +805,8 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
                   </button>
                 )}
               </div>
-            ))}
+              );
+            })}
             <button
               onClick={addTab}
               className="px-2.5 py-2 text-[#6b7a99] hover:text-[#0F1F3D] hover:bg-[#f8f9fb] rounded-t-lg text-sm font-bold transition-colors"
@@ -664,6 +825,20 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
               <div className="flex gap-3 justify-end">
                 <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg">{t('tabs.cancel')}</button>
                 <button onClick={() => deleteTab(deleteConfirm)} className="px-4 py-2 text-sm bg-rose-600 text-white rounded-lg hover:bg-rose-700">{t('tabs.delete')}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Close confirmation (ADR-003 v2.2 / DR9) ── */}
+        {closeConfirm && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30">
+            <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 max-w-sm w-full mx-4">
+              <p className="text-sm font-semibold text-gray-900 mb-2">{t('closeConfirm.title')}</p>
+              <p className="text-sm text-gray-600 mb-4">{t('closeConfirm.message')}</p>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setCloseConfirm(false)} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg">{t('closeConfirm.cancel')}</button>
+                <button onClick={handleConfirmClose} className="px-4 py-2 text-sm bg-rose-600 text-white rounded-lg hover:bg-rose-700">{t('closeConfirm.discard')}</button>
               </div>
             </div>
           </div>
@@ -1227,7 +1402,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
             {/* ── Footer ── */}
             <div className="flex justify-between items-center pt-4 border-t border-[#e2e6ed]">
               <button
-                onClick={onClose}
+                onClick={handleCloseRequested}
                 className="py-2.5 px-6 rounded-xl text-sm font-medium text-[#6b7a99] hover:text-[#0F1F3D] transition-colors"
               >
                 {t('footer.cancel')}

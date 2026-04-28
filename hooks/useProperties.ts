@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getProperties, Property, updateProperty } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { pruneOrphanedModalModes } from '@/hooks/useModalMode';
+import { pruneOrphanedAnalysisDrafts } from '@/hooks/useAnalysisDraft';
 
 // ─── Module-level cache ───────────────────────────────────────────────────────
 // Stored outside the hook so it persists across page navigations.
@@ -22,6 +23,9 @@ const CACHE_TTL_MS = 120_000; // re-fetch from server after 2 minutes
 // first successful properties fetch, so a property the user dismissed in a
 // previous session doesn't leave a stale modal-mode entry behind.
 let modalModePruned = false;
+// ADR-003 v2.2 / DR6 — same one-shot pattern for analysis-draft entries.
+// Cheap, runs on the same fetch trigger.
+let analysisDraftsPruned = false;
 
 // Recent local-mutation guard — SSE 'properties' events fire at roughly the
 // same time as our own mutations land, and the triggered refetch can race the
@@ -53,11 +57,12 @@ function notifyListeners(properties: Property[]) {
 export function clearPropertiesCache(): void {
   cache = null;
   cacheTimestamp = 0;
-  // Re-arm the one-shot modal-mode prune so the next user's sign-in
-  // sweeps any entries the previous user left behind (UUID collisions
-  // can't happen, but the pruner removes anything not in the new
-  // user's cache so this keeps localStorage tidy).
+  // Re-arm the one-shot modal-mode + analysis-draft prunes so the next
+  // user's sign-in sweeps any entries the previous user left behind.
+  // UUID collisions can't happen, but the pruners remove anything not in
+  // the new user's cache so this keeps localStorage tidy.
   modalModePruned = false;
+  analysisDraftsPruned = false;
   notifyListeners([]);
 }
 
@@ -94,6 +99,17 @@ export function useProperties() {
       if (!modalModePruned) {
         modalModePruned = true;
         pruneOrphanedModalModes(new Set(data.map(p => p.id)));
+      }
+      // DR6 — same pass for analysis-draft entries. The empty
+      // validTabKeysByProperty argument means we only clean keys whose
+      // property is no longer in the cache (the dominant orphan case);
+      // UUID-keyed drafts for deleted analyses are kept and reaped later
+      // by the modal's own per-property validation. Tester-phase
+      // tradeoff: avoid an extra getAnalyses-per-property fan-out at
+      // boot time.
+      if (!analysisDraftsPruned) {
+        analysisDraftsPruned = true;
+        pruneOrphanedAnalysisDrafts(new Set(data.map(p => p.id)), new Map());
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load properties');

@@ -604,6 +604,12 @@
       "cancel": "Cancel",
       "delete": "Delete"
     },
+    "closeConfirm": {
+      "title": "Discard unsaved changes?",
+      "message": "You have unsaved changes in one or more analysis tabs. Closing will lose them.",
+      "cancel": "Cancel",
+      "discard": "Discard and close"
+    },
     "viewMode": {
       "analyses": "Analyses",
       "dossier": "Dossier"
