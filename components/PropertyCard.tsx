@@ -46,15 +46,6 @@ const STAGE_I18N_KEY: Record<string, string> = {
   parked: 'parked', won: 'won',
 };
 
-// ─── Platform labels ─────────────────────────────────────────────────────────
-
-const PLATFORM_LABELS: Record<string, string> = {
-  willhaben: 'Willhaben', immoscout24: 'ImmoScout24', immowelt: 'Immowelt',
-  bazar: 'Bazar.at', immmo: 'immmo.at', raiffeisen: 'Raiffeisen',
-  sreal: 's REAL', oerag: 'ÖRAG', remax: 'RE/MAX',
-  'exposé_upload': 'Exposé',
-};
-
 function formatPrice(price: number | null) {
   if (!price) return null;
   return '€ ' + Math.round(price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -216,22 +207,6 @@ export default function PropertyCard({
         ) : (
           <div className={`flex items-center justify-center h-full ${compact ? 'text-2xl' : 'text-4xl'} text-gray-300`}>🏠</div>
         )}
-
-        {/* Source badge — green for search agent, grey for scraped */}
-        {(() => {
-          const isSearchAgent = !!item.emailReceivedAt;
-          const platformName = PLATFORM_LABELS[item.platform] ?? item.platform;
-          const label = isSearchAgent ? `${platformName} Suchagent` : platformName;
-          return (
-            <span className={`absolute top-2 left-2 text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded-full border ${
-              isSearchAgent
-                ? 'bg-emerald-50/90 text-emerald-700 border-emerald-200'
-                : 'bg-white/90 text-gray-600 border-gray-200'
-            }`}>
-              {label}
-            </span>
-          );
-        })()}
 
         {/* Expired badge (bottom-left — heart owns top-right) */}
         {isExpired && (
