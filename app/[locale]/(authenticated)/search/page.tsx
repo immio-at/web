@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, deleteProperty, ScrapedListing, Property, SavedFilter } from '@/lib/api';
+import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, ScrapedListing, Property, SavedFilter } from '@/lib/api';
+import { TERMINAL_STAGES } from '@/lib/constants';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
 import { useProperties, invalidateCache } from '@/hooks/useProperties';
@@ -472,10 +473,15 @@ export default function EntdeckenPage() {
       )
       .map(propertyToUnified);
 
-    // Dedup against ALL the user's properties (not just visible ones) — a
-    // property at 'investigating' should still suppress its scraped twin.
-    const allOwnSourceUrls = new Set(cachedProperties.map(p => p.sourceUrl));
-    const dedupedScraped = scrapedListings.filter(s => !allOwnSourceUrls.has(s.sourceUrl));
+    // Dedup against ACTIVE own (status not in TERMINAL_STAGES) — a property
+    // the user explicitly moved to not_relevant / delisted shouldn't keep
+    // suppressing its scraped twin, otherwise an "undo save" leaves the
+    // listing permanently invisible on Discover with no path back.
+    const activeOwnByUrl = new Map<string, Property>();
+    for (const p of cachedProperties) {
+      if (!TERMINAL_STAGES.has(p.status)) activeOwnByUrl.set(p.sourceUrl, p);
+    }
+    const dedupedScraped = scrapedListings.filter(s => !activeOwnByUrl.has(s.sourceUrl));
 
     let merged = page === 1
       ? [...userUnified, ...dedupedScraped]
@@ -586,6 +592,15 @@ export default function EntdeckenPage() {
   const presetsActive = hasClientOnlyPresets || activeSavedFilterIds.size > 0;
   // ── Convert UnifiedListing to CardProperty ──
   function listingToCard(l: UnifiedListing): CardProperty {
+    // For scraped, derive savedByUser from current cache so an own-Property
+    // at not_relevant / delisted (e.g. after re-click-undo) doesn't keep
+    // forcing the heart filled. Backend's fetch-time savedByUser doesn't
+    // know about subsequent status changes.
+    let derivedSavedByUser = l.savedByUser;
+    if (l.source === 'scraped') {
+      const own = cachedProperties.find(p => p.sourceUrl === l.sourceUrl);
+      derivedSavedByUser = !!own && !TERMINAL_STAGES.has(own.status);
+    }
     return {
       id: l.source === 'email' ? l.id.replace('prop-', '') : l.id,
       title: l.title,
@@ -601,11 +616,11 @@ export default function EntdeckenPage() {
       source: l.source === 'email' ? 'own' : 'scraped',
       scrapedListingId: l.scrapedListingId,
       emailReceivedAt: l.emailReceivedAt,
-      savedByUser: l.savedByUser,
+      savedByUser: derivedSavedByUser,
     };
   }
 
-  const { update: updateProp, optimisticUpdate, optimisticInsert, optimisticRemove } = useProperties();
+  const { update: updateProp, optimisticUpdate, optimisticInsert } = useProperties();
 
   // Shared instant-hide helper for both ⚠ report-dead and ✕ dismiss.
   // Adds the card to dismissedIds (zero-lag local filter), snapshots
@@ -656,6 +671,25 @@ export default function EntdeckenPage() {
         return;
       }
       if (item.source !== 'scraped' || !item.scrapedListingId) return;
+      const scraped = scrapedListings.find(l => l.id === `scraped-${item.scrapedListingId}`);
+      // If the user already has a Property for this listing (from a prior
+      // save+undo cycle), re-promote it instead of POSTing a new save —
+      // the backend would 409 on the duplicate sourceUrl. Treat any
+      // existing match (even past 'investigating') as a re-promote: the
+      // user's intent is "put this back in the funnel".
+      const existing = scraped
+        ? cachedProperties.find(p => p.sourceUrl === scraped.sourceUrl)
+        : null;
+      if (existing) {
+        updateProp(existing.id, {
+          status: 'investigating',
+          movedToStageAt: new Date().toISOString(),
+        });
+        setScrapedListings(prev => prev.map(l =>
+          l.id === `scraped-${item.scrapedListingId}` ? { ...l, savedByUser: true } : l
+        ));
+        return;
+      }
       try {
         const { property } = await saveScrapedListing(item.scrapedListingId);
         optimisticInsert(property);
@@ -664,9 +698,12 @@ export default function EntdeckenPage() {
         ));
       } catch { /* 409 = already saved */ }
     },
-    // ADR-012 v1.2 — re-click filled house to undo. Own reverts status to
-    // 'new'; scraped hard-deletes the just-created Property so re-saving
-    // later isn't blocked by the sourceUrl dedup.
+    // ADR-012 v1.2 — re-click filled house to undo. Both paths are
+    // soft-only: own reverts to status 'new'; scraped sets the matching
+    // Property to 'not_relevant' so the row is out of the active funnel
+    // but the DB record (and any analyses/notes) survive — the user can
+    // recover via Funnel's not_relevant column or by re-clicking the
+    // heart on the same Discover tile (re-promotes to investigating).
     onUndoSave: async (item: CardProperty) => {
       if (item.source === 'own') {
         setLocallyPromotedIds(prev => {
@@ -680,28 +717,21 @@ export default function EntdeckenPage() {
         });
         return;
       }
-      // Scraped — find the Property row that the save just created (matched
-      // by sourceUrl), optimistically remove it, then DELETE on the backend.
-      // On error, rollback by re-inserting locally.
       if (!item.scrapedListingId) return;
       const scraped = scrapedListings.find(l => l.id === `scraped-${item.scrapedListingId}`);
       if (!scraped) return;
-      const justCreated = cachedProperties.find(p => p.sourceUrl === scraped.sourceUrl);
-      // Reset the local scraped flag immediately so the heart flips outline.
+      const matching = cachedProperties.find(p => p.sourceUrl === scraped.sourceUrl);
+      // Flip the local flag immediately so the heart goes outline; on next
+      // mount, listingToCard's derived savedByUser will reflect the
+      // not_relevant status.
       setScrapedListings(prev => prev.map(l =>
         l.id === `scraped-${item.scrapedListingId}` ? { ...l, savedByUser: false } : l
       ));
-      if (!justCreated) return;
-      optimisticRemove(justCreated.id);
-      try {
-        await deleteProperty(justCreated.id);
-      } catch {
-        // Rollback — put it back in cache + flag the scraped row saved.
-        optimisticInsert(justCreated);
-        setScrapedListings(prev => prev.map(l =>
-          l.id === `scraped-${item.scrapedListingId}` ? { ...l, savedByUser: true } : l
-        ));
-      }
+      if (!matching) return;
+      updateProp(matching.id, {
+        status: 'not_relevant',
+        movedToStageAt: new Date().toISOString(),
+      });
     },
     onAnalyse: (item: CardProperty) => {
       if (item.source === 'own') {
@@ -742,7 +772,7 @@ export default function EntdeckenPage() {
         trackScrapedInteraction(item.scrapedListingId, 'url_click');
       }
     },
-  }), [updateProp, optimisticUpdate, optimisticInsert, optimisticRemove, cachedProperties, scrapedListings]);
+  }), [updateProp, optimisticUpdate, optimisticInsert, cachedProperties, scrapedListings]);
 
   const handleUndoDismiss = useCallback((listingId: string) => {
     const snapshot = undoSnapshotsRef.current.get(listingId);
