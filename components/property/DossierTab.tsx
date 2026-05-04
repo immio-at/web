@@ -52,7 +52,7 @@ interface Props {
 
 const DOC_LABELS = [
   'Exposé', 'Energieausweis', 'Grundbuchauszug', 'Wohnungseigentumsvertrag', 'Grundriss',
-  'Provisionsvereinbarung', 'Widerrufsformular', 'Protokoll', 'Kaufanbot', 'Kaufvertrag',
+  'Provisionsvereinbarung', 'Widerrufsformular', 'WEG-Protokoll', 'Protokoll', 'Kaufanbot', 'Kaufvertrag',
   'Gutachten', 'Sonstiges',
 ];
 
@@ -77,6 +77,17 @@ const LABEL_KEYWORDS: { keyword: string; label: string }[] = [
   { keyword: 'provision', label: 'Provisionsvereinbarung' },
   { keyword: 'makler',    label: 'Provisionsvereinbarung' },
   { keyword: 'widerruf',  label: 'Widerrufsformular' },
+  // WEG-specific minutes — must precede the generic 'protokoll' match below
+  // so a `WEG_Protokoll_2024.pdf` lands on the dedicated label (and routes
+  // to MRG / Vorkaufsrecht / BK / Reparatur DD checks accordingly), not
+  // the catch-all "Protokoll".
+  { keyword: 'weg-protokoll', label: 'WEG-Protokoll' },
+  { keyword: 'weg_protokoll', label: 'WEG-Protokoll' },
+  { keyword: 'weg protokoll', label: 'WEG-Protokoll' },
+  { keyword: 'eigentümerversammlung', label: 'WEG-Protokoll' },
+  { keyword: 'eigentuemerversammlung', label: 'WEG-Protokoll' },
+  { keyword: 'etv-protokoll', label: 'WEG-Protokoll' },
+  { keyword: 'etv_protokoll', label: 'WEG-Protokoll' },
   { keyword: 'protokoll', label: 'Protokoll' },
   { keyword: 'jahresabrechnung', label: 'Protokoll' },
   { keyword: 'abrechnung', label: 'Protokoll' },
