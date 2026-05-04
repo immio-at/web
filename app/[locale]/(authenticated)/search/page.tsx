@@ -57,12 +57,14 @@ interface UnifiedListing {
 }
 
 function propertyToUnified(p: Property): UnifiedListing {
+  // Prisma serializes Decimal columns as strings even though the TS type
+  // says number — coerce here so sort/compare ops behave numerically.
   return {
     id: `prop-${p.id}`,
     title: p.title,
-    price: p.price,
-    sizeSqm: p.sizeSqm,
-    rooms: p.rooms,
+    price: p.price != null ? parseFloat(String(p.price)) : null,
+    sizeSqm: p.sizeSqm != null ? parseFloat(String(p.sizeSqm)) : null,
+    rooms: p.rooms != null ? parseFloat(String(p.rooms)) : null,
     location: p.location,
     zipCode: p.zipCode,
     imageUrl: p.imageUrl,
@@ -128,16 +130,29 @@ function formatPricePerSqm(price: number | null, size: number | null) {
 
 // ─── Client-side sort across the merged listing array ───────────────────────
 
+// Defensive numeric coercion — at runtime, fields can arrive as Prisma-serialized
+// strings ("199900") even when the TS type says `number`. `Number()` turns those
+// into real numbers and yields NaN for unparseable input, which we then null out
+// so the comparator's null-handling path catches them.
+function num(v: unknown): number | null {
+  if (v == null) return null;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 function sortKey(l: UnifiedListing, sortBy: string): number | null {
   switch (sortBy) {
     case 'price':
-      return l.price ?? null;
-    case 'pricePerSqm':
-      return l.price && l.sizeSqm && l.sizeSqm > 0 ? l.price / l.sizeSqm : null;
+      return num(l.price);
+    case 'pricePerSqm': {
+      const p = num(l.price);
+      const s = num(l.sizeSqm);
+      return p != null && s != null && s > 0 ? p / s : null;
+    }
     case 'size':
-      return l.sizeSqm ?? null;
+      return num(l.sizeSqm);
     case 'rooms':
-      return l.rooms ?? null;
+      return num(l.rooms);
     case 'listedDate': {
       const d = l.firstSeenAt ?? l.emailReceivedAt ?? l.createdAt ?? null;
       return d ? new Date(d).getTime() : null;
