@@ -126,6 +126,48 @@ function formatPricePerSqm(price: number | null, size: number | null) {
   return '€ ' + ppsm.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '/m²';
 }
 
+// ─── Client-side sort across the merged listing array ───────────────────────
+
+function sortKey(l: UnifiedListing, sortBy: string): number | null {
+  switch (sortBy) {
+    case 'price':
+      return l.price ?? null;
+    case 'pricePerSqm':
+      return l.price && l.sizeSqm && l.sizeSqm > 0 ? l.price / l.sizeSqm : null;
+    case 'size':
+      return l.sizeSqm ?? null;
+    case 'rooms':
+      return l.rooms ?? null;
+    case 'listedDate': {
+      const d = l.firstSeenAt ?? l.emailReceivedAt ?? l.createdAt ?? null;
+      return d ? new Date(d).getTime() : null;
+    }
+    default:
+      return null;
+  }
+}
+
+function sortMergedListings(
+  listings: UnifiedListing[],
+  sortBy: string,
+  sortOrder: string,
+): UnifiedListing[] {
+  const dir = sortOrder === 'asc' ? 1 : -1;
+  // Copy so we don't mutate the source arrays the useMemo depends on.
+  return [...listings].sort((a, b) => {
+    const av = sortKey(a, sortBy);
+    const bv = sortKey(b, sortBy);
+    // Nulls always last regardless of direction — more useful than nulls-first
+    // on desc, which would shove unpriced listings to the top.
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (av < bv) return -1 * dir;
+    if (av > bv) return 1 * dir;
+    return 0;
+  });
+}
+
 // ─── Build FilterValues from URL search params ──────────────────────────────
 
 function filterValuesFromParams(params: URLSearchParams): FilterValues {
@@ -505,12 +547,18 @@ export default function EntdeckenPage() {
       merged = merged.filter(l => !dismissedIds.has(l.id));
     }
 
+    // Client-side sort across the merged list. The backend already orders
+    // each source query, but the page-1 merge prepends own-properties (cache
+    // order) ahead of scraped listings, breaking a uniform sort. Re-sorting
+    // here makes "Sort by price" cover both groups.
+    merged = sortMergedListings(merged, applied.sortBy, applied.sortOrder);
+
     const userCount = page === 1
       ? merged.filter(l => l.source === 'email').length
       : 0;
 
     return { listings: merged, mergedUserCount: userCount };
-  }, [scrapedListings, filteredUserProps, page, activePresets, activeSavedFilterIds, savedFilters, dismissedIds]);
+  }, [scrapedListings, filteredUserProps, page, activePresets, activeSavedFilterIds, savedFilters, dismissedIds, applied.sortBy, applied.sortOrder]);
 
   const loading = scrapedLoading;
 
