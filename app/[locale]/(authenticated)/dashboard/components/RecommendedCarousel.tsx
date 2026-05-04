@@ -4,26 +4,29 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Property, getScrapedListings, ScrapedListing } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { deriveCriteria, getRecommendedOwn, scoreProperty, type DerivedCriteria } from '@/lib/recommendations';
+import { deriveCriteria, scoreProperty, type DerivedCriteria } from '@/lib/recommendations';
 import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
 import { useProperties } from '@/hooks/useProperties';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { useRef } from 'react';
 
 // ─── Module-level cache ──────────────────────────────────────────────────────
-let recommendedCache: CardProperty[] | null = null;
+type ScoredCard = { card: CardProperty; score: number; sourceUrl: string };
+let recommendedCache: ScoredCard[] | null = null;
 
 export function clearRecommendedCache(): void {
   recommendedCache = null;
 }
 
 function propertyToCard(p: Property): CardProperty {
+  // Prisma serializes Decimal columns as strings — coerce so any downstream
+  // sort/compare op behaves numerically.
   return {
     id: p.id,
     title: p.title,
-    price: p.price,
-    sizeSqm: p.sizeSqm,
-    rooms: p.rooms ? parseFloat(String(p.rooms)) : null,
+    price: p.price != null ? parseFloat(String(p.price)) : null,
+    sizeSqm: p.sizeSqm != null ? parseFloat(String(p.sizeSqm)) : null,
+    rooms: p.rooms != null ? parseFloat(String(p.rooms)) : null,
     location: p.location,
     zipCode: p.zipCode,
     imageUrl: p.imageUrl,
@@ -81,19 +84,24 @@ export default function RecommendedCarousel({
   // Derive criteria from funnel properties
   const criteria = useMemo(() => deriveCriteria(properties), [properties]);
 
-  // Own property recommendations (instant from cache)
-  const ownRecommended = useMemo(() => {
+  // Own property scores (instant from cache). Keep scores so we can rank
+  // own + scraped together below — the user wants a single ranked list,
+  // not own-first-then-scraped.
+  const ownScored = useMemo<ScoredCard[]>(() => {
     if (!criteria) return [];
-    return getRecommendedOwn(properties, criteria, 10);
+    return properties
+      .filter(p => p.status === 'new')
+      .map(p => ({ card: propertyToCard(p), score: scoreProperty(p, criteria), sourceUrl: p.sourceUrl }))
+      .filter(r => r.score > 0);
   }, [properties, criteria]);
 
-  // Scraped recommendations (secondary async load)
-  const [scrapedRecommended, setScrapedRecommended] = useState<CardProperty[]>([]);
+  // Scraped recommendations (secondary async load) — also kept with scores.
+  const [scrapedScored, setScrapedScored] = useState<ScoredCard[]>([]);
   const fetchedRef = useRef(false);
 
   useEffect(() => {
     if (!criteria || authLoading || !session || fetchedRef.current) return;
-    if (recommendedCache) { setScrapedRecommended(recommendedCache); return; }
+    if (recommendedCache) { setScrapedScored(recommendedCache); return; }
     fetchedRef.current = true;
 
     // Build query from criteria — use postcodes + price range
@@ -108,26 +116,29 @@ export default function RecommendedCarousel({
 
     getScrapedListings(params as any)
       .then(data => {
-        // Score and sort
         const scored = data.data
-          .map(s => ({ card: scrapedToCard(s), score: scoreScraped(s, criteria) }))
-          .filter(r => r.score > 0)
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 15)
-          .map(r => r.card);
+          .map(s => ({ card: scrapedToCard(s), score: scoreScraped(s, criteria), sourceUrl: s.sourceUrl }))
+          .filter(r => r.score > 0);
         recommendedCache = scored;
-        setScrapedRecommended(scored);
+        setScrapedScored(scored);
       })
       .catch(() => {});
   }, [criteria, authLoading, session]);
 
-  // Merge own + scraped, deduplicate by sourceUrl, limit 20
+  // Mix own + scraped, rank by score, dedupe by sourceUrl (own wins ties since
+  // it's already in the funnel — keeps the existing record in view).
   const recommended = useMemo(() => {
-    const ownCards = ownRecommended.map(propertyToCard);
-    const ownUrls = new Set(ownCards.map(c => c.sourceUrl));
-    const dedupedScraped = scrapedRecommended.filter(c => !ownUrls.has(c.sourceUrl));
-    return [...ownCards, ...dedupedScraped].slice(0, 20);
-  }, [ownRecommended, scrapedRecommended]);
+    const seen = new Set<string>();
+    return [...ownScored, ...scrapedScored]
+      .sort((a, b) => b.score - a.score)
+      .filter(r => {
+        if (seen.has(r.sourceUrl)) return false;
+        seen.add(r.sourceUrl);
+        return true;
+      })
+      .slice(0, 20)
+      .map(r => r.card);
+  }, [ownScored, scrapedScored]);
 
   function scroll(direction: 'left' | 'right') {
     if (!scrollRef.current) return;

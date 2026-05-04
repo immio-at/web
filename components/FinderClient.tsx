@@ -45,12 +45,14 @@ interface FinderCard {
 }
 
 function propertyToCard(p: Property): FinderCard {
+  // Prisma serializes Decimal columns as strings even though the TS type
+  // says number — coerce here so sort/compare ops behave numerically.
   return {
     id: `prop-${p.id}`,
     title: p.title,
-    price: p.price,
-    sizeSqm: p.sizeSqm,
-    rooms: p.rooms ? parseFloat(String(p.rooms)) : null,
+    price: p.price != null ? parseFloat(String(p.price)) : null,
+    sizeSqm: p.sizeSqm != null ? parseFloat(String(p.sizeSqm)) : null,
+    rooms: p.rooms != null ? parseFloat(String(p.rooms)) : null,
     location: p.location,
     zipCode: p.zipCode,
     imageUrl: p.imageUrl,
@@ -61,6 +63,51 @@ function propertyToCard(p: Property): FinderCard {
     emailReceivedAt: p.emailReceivedAt,
     createdAt: p.createdAt,
   };
+}
+
+// Source-agnostic deck ordering. The user can opt into source-only views via
+// the searchAgents preset filter; when no source preset is active the deck
+// must mix own + scraped by the active sort criterion.
+function num(v: unknown): number | null {
+  if (v == null) return null;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function finderSortKey(c: FinderCard, sortBy: string): number | null {
+  switch (sortBy) {
+    case 'price':
+      return num(c.price);
+    case 'pricePerSqm': {
+      const p = num(c.price);
+      const s = num(c.sizeSqm);
+      return p != null && s != null && s > 0 ? p / s : null;
+    }
+    case 'size':
+      return num(c.sizeSqm);
+    case 'rooms':
+      return num(c.rooms);
+    case 'listedDate': {
+      const d = c.firstSeenAt ?? c.emailReceivedAt ?? c.createdAt ?? null;
+      return d ? new Date(d).getTime() : null;
+    }
+    default:
+      return null;
+  }
+}
+
+function sortFinderCards(cards: FinderCard[], sortBy: string, sortOrder: string): FinderCard[] {
+  const dir = sortOrder === 'asc' ? 1 : -1;
+  return [...cards].sort((a, b) => {
+    const av = finderSortKey(a, sortBy);
+    const bv = finderSortKey(b, sortBy);
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (av < bv) return -1 * dir;
+    if (av > bv) return 1 * dir;
+    return 0;
+  });
 }
 
 function scrapedToCard(s: ScrapedListing): FinderCard {
@@ -180,7 +227,9 @@ export default function FinderClient({
       s => !ownSourceUrls.has(s.sourceUrl) && !dismissedIds.has(s.id)
     );
 
-    // Own cards first, then scraped
+    // Source-agnostic merge — let the sort criterion decide order across both
+    // sources. The searchAgents preset is how the user opts into a one-source
+    // view if they want it.
     let merged = [...ownCards, ...filteredScraped];
 
     // Apply preset filters (client-side: searchAgents, time)
@@ -193,8 +242,8 @@ export default function FinderClient({
       merged = merged.filter(c => passesSavedFilters(c, savedFilters, activeSavedFilterIds));
     }
 
-    return merged;
-  }, [allOwn, scrapedCards, dismissedIds, activePresets, activeSavedFilterIds, savedFilters]);
+    return sortFinderCards(merged, sortBy, sortOrder);
+  }, [allOwn, scrapedCards, dismissedIds, activePresets, activeSavedFilterIds, savedFilters, sortBy, sortOrder]);
 
   const [current, setCurrent] = useState(0);
   const [dragX, setDragX] = useState(0);
