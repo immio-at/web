@@ -209,6 +209,19 @@ export function useProperties() {
     markLocalMutation();
   }, []);
 
+  // ── Optimistic remove ─────────────────────────────────────────────────────
+  // Drop a property from the cache + notify all listeners. Used by the
+  // Discover heart re-click-undo path on a just-saved scraped listing —
+  // the caller still fires DELETE /properties/:id; this just keeps the UI
+  // in sync without waiting for the round-trip.
+  const optimisticRemove = useCallback((id: string) => {
+    if (cache) {
+      cache = cache.filter(p => p.id !== id);
+      notifyListeners(cache);
+    }
+    markLocalMutation();
+  }, []);
+
   // ── Optimistic insert (ADR-010 I6) ────────────────────────────────────────
   // Prepend a brand-new property to the cache and notify all listeners,
   // so a card created via the Add Property modal appears in the Funnel /
@@ -233,6 +246,7 @@ export function useProperties() {
     update,
     optimisticUpdate,
     optimisticInsert,
+    optimisticRemove,
   };
 }
 

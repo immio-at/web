@@ -239,6 +239,18 @@ export async function delistProperty(id: string): Promise<void> {
   return handleResponse(response);
 }
 
+// Hard-delete a property. Used by the Discover heart re-click-undo when the
+// user has just saved a scraped listing and changes their mind. Backend
+// cascades children (analyses, dossier, documents, interactions, DD runs).
+export async function deleteProperty(id: string): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  return handleResponse(response);
+}
+
 // ─── OAuth Callback ──────────────────────────────────────────────────────────
 
 export async function oauthCallback(accessToken: string): Promise<{

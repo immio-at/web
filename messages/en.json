@@ -1013,6 +1013,7 @@
   "propertyCard": {
     "saveToFunnel": "Save to funnel",
     "moveToInvestigating": "Move to Investigating",
+    "undoSave": "Undo",
     "alreadyInFunnel": "Already in funnel",
     "alreadyInFunnelWithStage": "In funnel · {stage}",
     "changeStage": "Change stage",

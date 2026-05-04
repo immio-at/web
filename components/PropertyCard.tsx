@@ -27,6 +27,14 @@ export interface CardProperty {
 export interface CardActions {
   onSaveToFunnel?: (item: CardProperty) => void | Promise<void>;
   /**
+   * Re-click-undo on a filled heart. ADR-012 v1.2 — when provided AND
+   * onMoveStage is not, clicking the filled house reverses the recent save:
+   *   - own → revert status to 'new' (stays visible until next mount)
+   *   - scraped → DELETE the just-created Property and clear savedByUser
+   * Used by Discover only. Funnel takes onMoveStage and ignores this.
+   */
+  onUndoSave?: (item: CardProperty) => void | Promise<void>;
+  /**
    * Own-card override. When provided, clicking the heart on an own
    * property fires this callback instead of being a no-op. Used by the
    * Funnel to open a stage-picker dropdown anchored to the heart.
@@ -136,7 +144,8 @@ export default function PropertyCard({
   // clickable, identical to an unsaved scraped listing. Clicking promotes
   // own-at-new to `investigating`, or saves a scraped listing to the
   // funnel at `investigating`. Status `investigating` and beyond renders
-  // filled.
+  // filled. Re-clicking a filled heart fires onUndoSave when provided
+  // (Discover-only) for symmetry — toggle.
   const isOwn = item.source === 'own';
   const isOwnAtNew = isOwn && item.status === 'new';
   const heartFilled = (isOwn && !isOwnAtNew) || scrapedSaved;
@@ -144,11 +153,13 @@ export default function PropertyCard({
   // exactly like own-past-new (filled + actionable).
   const ownCanMoveStage = isOwn && !!actions.onMoveStage;
   // Discover/Dashboard surfaces don't pass onMoveStage. There the gray
-  // house's click promotes via onSaveToFunnel.
+  // house's click promotes via onSaveToFunnel; the filled house's click
+  // (when onUndoSave is provided) reverses that save.
   const isPromotePath = isOwnAtNew && !ownCanMoveStage;
   const isScrapedSavePath = !isOwn && !scrapedSaved;
+  const isUndoPath = heartFilled && !ownCanMoveStage && !!actions.onUndoSave;
   const heartActionable =
-    ownCanMoveStage || isPromotePath || isScrapedSavePath;
+    ownCanMoveStage || isPromotePath || isScrapedSavePath || isUndoPath;
 
   const heartTooltip = ownCanMoveStage
     ? (currentStageLabel ? t('changeStageFrom', { stage: currentStageLabel }) : t('changeStage'))
@@ -156,9 +167,11 @@ export default function PropertyCard({
       ? t('moveToInvestigating')
       : isScrapedSavePath
         ? t('saveToFunnel')
-        : (currentStageLabel
-            ? t('alreadyInFunnelWithStage', { stage: currentStageLabel })
-            : t('alreadyInFunnel'));
+        : isUndoPath
+          ? t('undoSave')
+          : (currentStageLabel
+              ? t('alreadyInFunnelWithStage', { stage: currentStageLabel })
+              : t('alreadyInFunnel'));
 
   async function handleHeart(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
@@ -172,6 +185,18 @@ export default function PropertyCard({
       // which makes heartFilled re-evaluate to true on the next render.
       // No need to flip scrapedSaved.
       try { await actions.onSaveToFunnel?.(item); } catch {}
+      return;
+    }
+    if (isUndoPath) {
+      // Filled scraped → call undo (parent deletes Property + flips
+      // savedByUser). Filled own → call undo (parent reverts status `new`).
+      // Local scrapedSaved snaps back so the UI flips outline immediately.
+      if (!isOwn) setScrapedSaved(false);
+      try {
+        await actions.onUndoSave!(item);
+      } catch {
+        if (!isOwn) setScrapedSaved(true);
+      }
       return;
     }
     if (!isScrapedSavePath) return;

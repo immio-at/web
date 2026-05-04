@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, ScrapedListing, Property, SavedFilter } from '@/lib/api';
+import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, deleteProperty, ScrapedListing, Property, SavedFilter } from '@/lib/api';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
 import { useProperties, invalidateCache } from '@/hooks/useProperties';
@@ -605,7 +605,7 @@ export default function EntdeckenPage() {
     };
   }
 
-  const { update: updateProp, optimisticUpdate, optimisticInsert } = useProperties();
+  const { update: updateProp, optimisticUpdate, optimisticInsert, optimisticRemove } = useProperties();
 
   // Shared instant-hide helper for both ⚠ report-dead and ✕ dismiss.
   // Adds the card to dismissedIds (zero-lag local filter), snapshots
@@ -664,6 +664,45 @@ export default function EntdeckenPage() {
         ));
       } catch { /* 409 = already saved */ }
     },
+    // ADR-012 v1.2 — re-click filled house to undo. Own reverts status to
+    // 'new'; scraped hard-deletes the just-created Property so re-saving
+    // later isn't blocked by the sourceUrl dedup.
+    onUndoSave: async (item: CardProperty) => {
+      if (item.source === 'own') {
+        setLocallyPromotedIds(prev => {
+          const next = new Set(prev);
+          next.delete(item.id);
+          return next;
+        });
+        updateProp(item.id, {
+          status: 'new',
+          movedToStageAt: new Date().toISOString(),
+        });
+        return;
+      }
+      // Scraped — find the Property row that the save just created (matched
+      // by sourceUrl), optimistically remove it, then DELETE on the backend.
+      // On error, rollback by re-inserting locally.
+      if (!item.scrapedListingId) return;
+      const scraped = scrapedListings.find(l => l.id === `scraped-${item.scrapedListingId}`);
+      if (!scraped) return;
+      const justCreated = cachedProperties.find(p => p.sourceUrl === scraped.sourceUrl);
+      // Reset the local scraped flag immediately so the heart flips outline.
+      setScrapedListings(prev => prev.map(l =>
+        l.id === `scraped-${item.scrapedListingId}` ? { ...l, savedByUser: false } : l
+      ));
+      if (!justCreated) return;
+      optimisticRemove(justCreated.id);
+      try {
+        await deleteProperty(justCreated.id);
+      } catch {
+        // Rollback — put it back in cache + flag the scraped row saved.
+        optimisticInsert(justCreated);
+        setScrapedListings(prev => prev.map(l =>
+          l.id === `scraped-${item.scrapedListingId}` ? { ...l, savedByUser: true } : l
+        ));
+      }
+    },
     onAnalyse: (item: CardProperty) => {
       if (item.source === 'own') {
         trackInteraction(item.id, 'analysis');
@@ -703,7 +742,7 @@ export default function EntdeckenPage() {
         trackScrapedInteraction(item.scrapedListingId, 'url_click');
       }
     },
-  }), [updateProp, optimisticUpdate, optimisticInsert, cachedProperties, scrapedListings]);
+  }), [updateProp, optimisticUpdate, optimisticInsert, optimisticRemove, cachedProperties, scrapedListings]);
 
   const handleUndoDismiss = useCallback((listingId: string) => {
     const snapshot = undoSnapshotsRef.current.get(listingId);
