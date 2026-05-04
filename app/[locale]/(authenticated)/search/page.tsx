@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, ScrapedListing, Property, SavedFilter } from '@/lib/api';
-import { trackInteraction } from '@/hooks/useInteractionTracker';
+import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
 import { useProperties, invalidateCache } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
@@ -214,104 +214,18 @@ function hasAnyParam(params: URLSearchParams): boolean {
 
 type ViewMode = 'grid' | 'table';
 
-// ─── Source badge ────────────────────────────────────────────────────────────
-
-// Track URL clicks for user's own properties
+// Fires url_click on the listing the user clicked through to, regardless of
+// source. Own properties hit /properties/:id/interactions; scraped listings
+// hit /scraped-listings/:id/interactions. Both feed Recently Viewed.
 function trackListingClick(listing: UnifiedListing) {
   if (listing.source === 'email') {
     const propertyId = listing.id.replace('prop-', '');
     trackInteraction(propertyId, 'url_click');
+    return;
   }
-}
-
-function SourceBadge({ source, platform }: { source: 'email' | 'scraped'; platform: string }) {
-  return (
-    <span className={`absolute top-2 left-2 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-      source === 'email'
-        ? 'bg-teal-50/90 text-teal-700 border-teal-200'
-        : 'bg-white/90 text-gray-700 border-gray-200'
-    }`}>
-      {platformLabel(platform)}
-    </span>
-  );
-}
-
-// ─── Listing card ─────────────────────────────────────────────────────────────
-
-function ListingCard({
-  listing,
-  onSave,
-  saving,
-}: {
-  listing: UnifiedListing;
-  onSave: (listing: UnifiedListing) => void;
-  saving: boolean;
-}) {
-  const t = useTranslations('search');
-  const priceText = formatPrice(listing.price);
-  const ppsmText = formatPricePerSqm(listing.price, listing.sizeSqm);
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
-      {/* Image */}
-      <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackListingClick(listing)} className="block relative h-48 bg-gray-100 overflow-hidden flex-shrink-0">
-        {listing.imageUrl ? (
-          <Image
-            src={listing.imageUrl}
-            alt={listing.title ?? ''}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-cover hover:scale-105 transition-transform duration-300"
-            loading="lazy"
-            unoptimized
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full text-4xl text-gray-300">🏠</div>
-        )}
-        <SourceBadge source={listing.source} platform={listing.platform} />
-      </a>
-
-      {/* Details */}
-      <div className="p-4 flex flex-col flex-grow">
-        <a href={listing.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackListingClick(listing)}>
-          <h3 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600 transition-colors leading-snug">
-            {listing.title ?? '—'}
-          </h3>
-        </a>
-
-        <div className="space-y-1 text-sm text-gray-600 flex-grow">
-          {priceText && (
-            <div className="text-lg font-semibold text-blue-600">{priceText}</div>
-          )}
-          {ppsmText && (
-            <div className="text-xs text-gray-400">{ppsmText}</div>
-          )}
-          {listing.location && <div className="text-xs">📍 {listing.location}</div>}
-          <div className="flex items-center gap-3 text-xs">
-            {listing.sizeSqm && <span>📏 {Math.round(listing.sizeSqm)} m²</span>}
-            {listing.rooms && <span>🏠 {listing.rooms} {t('rooms')}</span>}
-          </div>
-        </div>
-
-        {/* Save button */}
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          {listing.savedByUser ? (
-            <div className="w-full py-2 text-center text-sm font-medium text-green-600 bg-green-50 rounded-lg border border-green-200">
-              ✓ {listing.source === 'email' ? t('inFunnel') : t('saved')}
-            </div>
-          ) : (
-            <button
-              onClick={() => onSave(listing)}
-              disabled={saving}
-              className="w-full py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors"
-            >
-              {saving ? t('saving') : t('saveToProperties')}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  if (listing.scrapedListingId) {
+    trackScrapedInteraction(listing.scrapedListingId, 'url_click');
+  }
 }
 
 // ─── Table row ───────────────────────────────────────────────────────────────
@@ -355,18 +269,14 @@ function ListingTableRow({
       <td className="px-4 py-2 text-sm whitespace-nowrap">{listing.location || '—'}</td>
       <td className="px-4 py-2 text-sm whitespace-nowrap text-gray-500">{ppsmText}</td>
       <td className="px-4 py-2 whitespace-nowrap">
-        <span className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
-          listing.source === 'email'
-            ? 'bg-teal-50 text-teal-700'
-            : 'bg-gray-100 text-gray-500'
-        }`}>
+        <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
           {platformLabel(listing.platform)}
         </span>
       </td>
       <td className="px-4 py-2">
         {listing.savedByUser ? (
           <span className="text-green-600 text-xs font-medium">
-            ✓ {listing.source === 'email' ? t('inFunnel') : t('saved')}
+            ✓ {t('inFunnel')}
           </span>
         ) : (
           <button
@@ -719,6 +629,12 @@ export default function EntdeckenPage() {
         trackInteraction(item.id, 'analysis');
         const prop = cachedProperties.find(p => p.id === item.id);
         if (prop) setAnalyseProperty(prop);
+        return;
+      }
+      // Scraped — image-tap signals interest, log a view so it surfaces in
+      // Recently Viewed. No analysis modal opens (scraped has no analysis).
+      if (item.scrapedListingId) {
+        trackScrapedInteraction(item.scrapedListingId, 'view');
       }
     },
     onReportDead: (item: CardProperty) => {
@@ -741,7 +657,11 @@ export default function EntdeckenPage() {
       }
     },
     onUrlClick: (item: CardProperty) => {
-      if (item.source === 'own') trackInteraction(item.id, 'url_click');
+      if (item.source === 'own') {
+        trackInteraction(item.id, 'url_click');
+      } else if (item.scrapedListingId) {
+        trackScrapedInteraction(item.scrapedListingId, 'url_click');
+      }
     },
   }), [updateProp, optimisticUpdate, optimisticInsert, cachedProperties, scrapedListings]);
 

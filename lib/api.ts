@@ -23,7 +23,7 @@ async function getAuthToken(): Promise<string> {
 
 // ─── Response handler ─────────────────────────────────────────────────────────
 
-async function handleResponse(response: Response) {
+async function handleResponse(response: Response): Promise<any> {
   if (response.status === 401) {
     // Session expired — redirect to landing page with sign-in modal open
     window.location.href = '/?signin=true';
@@ -306,13 +306,37 @@ export async function trackInteractionBatch(
   await handleResponse(response);
 }
 
-export async function getRecentlyViewed(limit: number = 20): Promise<Property[]> {
+// Track an interaction on a scraped listing (the user has not necessarily
+// saved it to their funnel). Mirrors trackInteraction semantically — same
+// types, same Recently-Viewed target.
+export async function trackScrapedInteraction(
+  scrapedListingId: string,
+  type: InteractionType,
+): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/scraped-listings/${scrapedListingId}/interactions`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ type }),
+  });
+  await handleResponse(response);
+}
+
+export type RecentlyViewedItem =
+  | { kind: 'own'; lastAt: string; property: Property }
+  | { kind: 'scraped'; lastAt: string; listing: ScrapedListing };
+
+export async function getRecentlyViewed(limit: number = 20): Promise<RecentlyViewedItem[]> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/recently-viewed?limit=${limit}`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
-  return handleResponse(response);
+  const body: { items?: RecentlyViewedItem[] } = await handleResponse(response);
+  return body.items ?? [];
 }
 
 // ─── Analytics ───────────────────────────────────────────────────────────────

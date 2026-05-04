@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useProperties } from '@/hooks/useProperties';
-import { Property } from '@/lib/api';
+import { Property, RecentlyViewedItem } from '@/lib/api';
 import { useInteractionTracker } from '@/hooks/useInteractionTracker';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { useAuth } from '@/context/AuthContext';
@@ -16,11 +16,11 @@ export default function DashboardPage() {
   const { filters } = useSavedFilters();
   const { immioEmail, session, loading: authLoading } = useAuth();
 
-  // Recently viewed properties from backend
-  const [recentlyViewed, setRecentlyViewed] = useState<Property[]>([]);
+  // Recently viewed listings — mixed feed of own + scraped, keyed off the
+  // backend's GROUP BY MAX(createdAt) over property_interactions.
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedItem[]>([]);
   const recentlyViewedFetched = useRef(false);
 
-  // Fetch recently viewed once after auth is ready
   useEffect(() => {
     if (authLoading || !session) return;
     if (recentlyViewedFetched.current) return;

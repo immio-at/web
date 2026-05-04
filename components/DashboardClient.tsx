@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Property, SavedFilter, reportUnavailable, delistProperty, saveScrapedListing } from '@/lib/api';
+import { Property, ScrapedListing, SavedFilter, RecentlyViewedItem, reportUnavailable, saveScrapedListing, getScrapedListings } from '@/lib/api';
 import { useProperties } from '@/hooks/useProperties';
-import { trackInteraction } from '@/hooks/useInteractionTracker';
+import { useAuth } from '@/context/AuthContext';
+import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import DiscoverTile from '@/app/[locale]/(authenticated)/dashboard/components/DiscoverTile';
 import FunnelSummaryTile from '@/app/[locale]/(authenticated)/dashboard/components/FunnelSummaryTile';
 import SourcesSetupTile from '@/app/[locale]/(authenticated)/dashboard/components/SourcesSetupTile';
@@ -13,6 +14,44 @@ import PropertyCarousel from '@/app/[locale]/(authenticated)/dashboard/component
 import RecommendedCarousel from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
 import { type CardProperty, type CardActions } from '@/components/PropertyCard';
 import { useTranslations } from 'next-intl';
+
+// Prisma serializes Decimal columns as strings — coerce numeric fields here.
+function ownPropertyToCard(p: Property): CardProperty {
+  return {
+    id: p.id,
+    title: p.title,
+    price: p.price != null ? parseFloat(String(p.price)) : null,
+    sizeSqm: p.sizeSqm != null ? parseFloat(String(p.sizeSqm)) : null,
+    rooms: p.rooms != null ? parseFloat(String(p.rooms)) : null,
+    location: p.location,
+    zipCode: p.zipCode,
+    imageUrl: p.imageUrl,
+    sourceUrl: p.sourceUrl,
+    platform: p.platform,
+    status: p.status,
+    listingStatus: p.listingStatus,
+    source: 'own',
+    emailReceivedAt: p.emailReceivedAt,
+  };
+}
+
+function scrapedListingToCard(s: ScrapedListing): CardProperty {
+  return {
+    id: `scraped-${s.id}`,
+    title: s.title,
+    price: s.price != null ? parseFloat(String(s.price)) : null,
+    sizeSqm: s.sizeSqm != null ? parseFloat(String(s.sizeSqm)) : null,
+    rooms: s.rooms != null ? parseFloat(String(s.rooms)) : null,
+    location: s.location,
+    zipCode: s.zipCode,
+    imageUrl: s.imageUrl,
+    sourceUrl: s.sourceUrl,
+    platform: s.platform,
+    source: 'scraped',
+    scrapedListingId: s.id,
+    savedByUser: s.savedByUser,
+  };
+}
 
 const PropertyAnalysisModal = dynamic(
   () => import('@/components/PropertyAnalysisModal'),
@@ -29,7 +68,7 @@ export default function DashboardClient({
   savedFilters,
 }: {
   properties: Property[];
-  recentlyViewed?: Property[];
+  recentlyViewed?: RecentlyViewedItem[];
   immioEmail: string | null;
   savedFilters: SavedFilter[];
 }) {
@@ -37,8 +76,9 @@ export default function DashboardClient({
   const { update, optimisticUpdate, optimisticInsert } = useProperties();
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
 
-  // Card actions — shared across all carousels. Recommended carousel may include
-  // scraped listings, so onSaveToFunnel is wired for them (own items never hit it).
+  // Card actions — shared across all carousels. Carousels can now mix own +
+  // scraped cards (Recommended scoring, New Arrivals fallback), so each
+  // handler branches on item.source.
   const cardActions: CardActions = useMemo(() => ({
     onSaveToFunnel: async (item: CardProperty) => {
       if (item.source !== 'scraped' || !item.scrapedListingId) return;
@@ -48,29 +88,91 @@ export default function DashboardClient({
       } catch { /* 409 = already saved */ }
     },
     onAnalyse: (item: CardProperty) => {
-      trackInteraction(item.id, 'analysis');
-      const prop = properties.find(p => p.id === item.id);
-      if (prop) setAnalyseProperty(prop);
+      if (item.source === 'own') {
+        trackInteraction(item.id, 'analysis');
+        const prop = properties.find(p => p.id === item.id);
+        if (prop) setAnalyseProperty(prop);
+        return;
+      }
+      // Scraped — image-tap signals interest. Track view so it surfaces in
+      // Recently Viewed; no analysis modal exists for scraped rows.
+      if (item.scrapedListingId) {
+        trackScrapedInteraction(item.scrapedListingId, 'view');
+      }
     },
     onReportDead: (item: CardProperty) => {
+      // Listing-expiry signal only applies to own properties — the scraper
+      // pipeline has its own soft-delete mechanism.
+      if (item.source !== 'own') return;
       optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
       reportUnavailable(item.id).catch(() => {});
     },
     onDismiss: (item: CardProperty) => {
+      // Own → mark not_relevant. Scraped dismissal isn't persisted from
+      // the dashboard for now (the search page has its own dismissedIds
+      // local-state pattern); leave as a soft no-op so the X is harmless.
+      if (item.source !== 'own') return;
       update(item.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() });
     },
     onUrlClick: (item: CardProperty) => {
-      trackInteraction(item.id, 'url_click');
+      if (item.source === 'own') {
+        trackInteraction(item.id, 'url_click');
+      } else if (item.scrapedListingId) {
+        trackScrapedInteraction(item.scrapedListingId, 'url_click');
+      }
     },
-  }), [properties, update, optimisticUpdate]);
+  }), [properties, update, optimisticUpdate, optimisticInsert]);
 
-  // New Arrivals — 20 most recent non-terminal, non-expired properties
-  const newArrivals = useMemo(() => {
+  // New Arrivals — defaults to search-agent-sourced properties (emailReceivedAt
+  // non-null), so users see the listings their portal subscriptions delivered.
+  // Falls back to the latest scraped listings only when the user has not yet
+  // configured / received any search-agent emails — that way the carousel
+  // never sits empty with an "set up your search agents" message dominating
+  // the dashboard.
+  const searchAgentArrivals = useMemo<CardProperty[]>(() => {
     return properties
-      .filter(p => !EXCLUDED_FROM_ARRIVALS.has(p.status) && p.listingStatus !== 'expired')
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 20);
+      .filter(p =>
+        p.emailReceivedAt != null &&
+        !EXCLUDED_FROM_ARRIVALS.has(p.status) &&
+        p.listingStatus !== 'expired'
+      )
+      .sort((a, b) => {
+        const ta = new Date(a.emailReceivedAt ?? a.createdAt).getTime();
+        const tb = new Date(b.emailReceivedAt ?? b.createdAt).getTime();
+        return tb - ta;
+      })
+      .slice(0, 20)
+      .map(ownPropertyToCard);
   }, [properties]);
+
+  const { session, loading: authLoading } = useAuth();
+  const [scrapedFallback, setScrapedFallback] = useState<CardProperty[] | null>(null);
+
+  useEffect(() => {
+    if (authLoading || !session) return;
+    if (searchAgentArrivals.length > 0) { setScrapedFallback(null); return; }
+    if (scrapedFallback !== null) return; // already fetched
+    getScrapedListings({
+      page: 1,
+      hideNullPrice: true,
+      sortBy: 'listedDate',
+      sortOrder: 'desc',
+    } as any)
+      .then(r => setScrapedFallback(r.data.slice(0, 20).map(scrapedListingToCard)))
+      .catch(() => setScrapedFallback([]));
+  }, [authLoading, session, searchAgentArrivals.length, scrapedFallback]);
+
+  const newArrivalCards = searchAgentArrivals.length > 0
+    ? searchAgentArrivals
+    : (scrapedFallback ?? []);
+
+  const recentlyViewedCards = useMemo<CardProperty[]>(() => {
+    return (recentlyViewed ?? []).map(item =>
+      item.kind === 'own'
+        ? ownPropertyToCard(item.property)
+        : scrapedListingToCard(item.listing),
+    );
+  }, [recentlyViewed]);
 
   return (
     <div>
@@ -88,14 +190,14 @@ export default function DashboardClient({
 
       <PropertyCarousel
         title={t('recentlyViewed')}
-        properties={recentlyViewed ?? []}
+        cards={recentlyViewedCards}
         emptyMessage={t('recentlyViewedEmpty')}
         actions={cardActions}
       />
 
       <PropertyCarousel
         title={t('newArrivals')}
-        properties={newArrivals}
+        cards={newArrivalCards}
         emptyMessage={t('newArrivalsEmpty')}
         actions={cardActions}
       />

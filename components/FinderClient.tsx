@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useProperties, invalidateCache } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { Property, getScrapedListings, saveScrapedListing, ScrapedListing, reportUnavailable } from '@/lib/api';
-import { trackInteraction } from '@/hooks/useInteractionTracker';
+import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
 import PresetFilters from '@/components/PresetFilters';
 import SortControl from '@/components/SortControl';
@@ -264,6 +264,7 @@ export default function FinderClient({
 
     if (action === 'open') {
       if (card.propertyId) trackInteraction(card.propertyId, 'url_click');
+      else if (card.scrapedListingId) trackScrapedInteraction(card.scrapedListingId, 'url_click');
       window.open(card.sourceUrl, '_blank');
       setDragX(0);
       setDragY(0);
@@ -271,8 +272,14 @@ export default function FinderClient({
     }
 
     if (action === 'analyse') {
-      if (card.propertyId) trackInteraction(card.propertyId, 'analysis');
-      setShowAnalyseModal(true);
+      if (card.propertyId) {
+        trackInteraction(card.propertyId, 'analysis');
+        setShowAnalyseModal(true);
+      } else if (card.scrapedListingId) {
+        // Scraped has no analysis modal — track the view so it surfaces in
+        // Recently Viewed and skip opening anything.
+        trackScrapedInteraction(card.scrapedListingId, 'view');
+      }
       setDragX(0);
       setDragY(0);
       return;
@@ -389,8 +396,13 @@ export default function FinderClient({
       } catch { /* 409 */ }
     },
     onAnalyse: (item: CardProperty) => {
-      if (item.source === 'own') trackInteraction(item.id, 'analysis');
-      setShowAnalyseModal(true);
+      if (item.source === 'own') {
+        trackInteraction(item.id, 'analysis');
+        setShowAnalyseModal(true);
+      } else if (item.scrapedListingId) {
+        // Scraped — track view; no analysis modal exists for scraped rows.
+        trackScrapedInteraction(item.scrapedListingId, 'view');
+      }
       setDragX(0); setDragY(0);
     },
     onReportDead: (item: CardProperty) => {
@@ -416,7 +428,11 @@ export default function FinderClient({
       }
     },
     onUrlClick: (item: CardProperty) => {
-      if (item.source === 'own') trackInteraction(item.id, 'url_click');
+      if (item.source === 'own') {
+        trackInteraction(item.id, 'url_click');
+      } else if (item.scrapedListingId) {
+        trackScrapedInteraction(item.scrapedListingId, 'url_click');
+      }
     },
   }), [update, optimisticUpdate, optimisticInsert]);
 
