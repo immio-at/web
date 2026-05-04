@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { refreshPropertiesFromServer } from './useProperties';
 import { refreshSavedFiltersFromServer } from './useSavedFilters';
 import { clearAnalyticsCache } from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
@@ -22,6 +23,12 @@ const MAX_RECONNECT_DELAY = 30_000;
  * (backend not deployed yet, network error, etc.).
  *
  * Reconnects with exponential backoff on error (3s → 6s → 12s → 30s cap).
+ *
+ * The effect only re-runs on user identity change — Supabase rotates
+ * access_tokens silently every ~hour and on tab focus, but the SSE
+ * stream is authorized once at connect time, so we don't tear it down
+ * on each rotation. The reconnect path fetches a fresh token at the
+ * moment of reconnect via supabase.auth.getSession().
  */
 export function useSSEInvalidation(): void {
   const { session, loading: authLoading } = useAuth();
@@ -30,20 +37,23 @@ export function useSSEInvalidation(): void {
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    // Don't connect until auth is resolved and we have a token
-    if (authLoading || !session?.access_token) {
+    if (authLoading || !session?.user?.id) {
       cleanup();
       return;
     }
 
-    connect(session.access_token);
+    void connect();
 
     return () => cleanup();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.access_token, authLoading]);
+  }, [session?.user?.id, authLoading]);
 
-  function connect(token: string) {
+  async function connect() {
     cleanup();
+
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return;
 
     const url = `${API_URL}/cache-invalidation/subscribe?token=${encodeURIComponent(token)}`;
 
@@ -83,15 +93,15 @@ export function useSSEInvalidation(): void {
         // Close the broken connection and schedule a reconnect
         es.close();
         eventSourceRef.current = null;
-        scheduleReconnect(token);
+        scheduleReconnect();
       };
     } catch {
       // EventSource constructor can throw on invalid URL — fall back to polling
-      scheduleReconnect(token);
+      scheduleReconnect();
     }
   }
 
-  function scheduleReconnect(token: string) {
+  function scheduleReconnect() {
     if (reconnectTimerRef.current) return; // Already scheduled
 
     reconnectTimerRef.current = setTimeout(() => {
@@ -101,7 +111,7 @@ export function useSSEInvalidation(): void {
         reconnectDelayRef.current * 2,
         MAX_RECONNECT_DELAY,
       );
-      connect(token);
+      void connect();
     }, reconnectDelayRef.current);
   }
 

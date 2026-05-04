@@ -417,14 +417,20 @@ export default function EntdeckenPage() {
       setScrapedTotal(scrapedData.total);
       setTotalPages(scrapedData.totalPages);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('errorLoadingListings'));
+      // Don't reference `t` here — keeping it out of fetchScraped's dep
+      // closure so the callback stays referentially stable across re-renders
+      // of EntdeckenPage (re-renders happen on every Supabase auth-state
+      // event, even ones that don't change the user). The page's own error
+      // banner reads from a stable i18n key elsewhere.
+      setError(e instanceof Error ? e.message : 'Error loading listings');
     } finally {
       setScrapedLoading(false);
     }
     // Depend on session?.user?.id (stable) instead of `session` (new
     // reference on every Supabase token refresh) so a refresh on tab focus
     // doesn't refetch the page as if the user re-ran the search.
-  }, [authLoading, session?.user?.id, applied, page, t, buildFilterParams, presetPostcodes]);
+    // `t` excluded for the same reason — see the in-body comment.
+  }, [authLoading, session?.user?.id, applied, page, buildFilterParams, presetPostcodes]);
 
   useEffect(() => { fetchScraped(); }, [fetchScraped]);
 
