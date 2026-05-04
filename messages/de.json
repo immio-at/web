@@ -1012,6 +1012,7 @@
   },
   "propertyCard": {
     "saveToFunnel": "In Funnel speichern",
+    "moveToInvestigating": "In Recherche verschieben",
     "alreadyInFunnel": "Bereits im Funnel",
     "alreadyInFunnelWithStage": "Im Funnel · {stage}",
     "changeStage": "Stufe ändern",

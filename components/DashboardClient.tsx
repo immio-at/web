@@ -81,6 +81,16 @@ export default function DashboardClient({
   // handler branches on item.source.
   const cardActions: CardActions = useMemo(() => ({
     onSaveToFunnel: async (item: CardProperty) => {
+      // Own at status 'new' → promote to 'investigating' (the new house-icon
+      // semantic per ADR-012 v1.2: gray = pre-funnel, click moves into the
+      // active funnel).
+      if (item.source === 'own' && item.status === 'new') {
+        update(item.id, {
+          status: 'investigating',
+          movedToStageAt: new Date().toISOString(),
+        });
+        return;
+      }
       if (item.source !== 'scraped' || !item.scrapedListingId) return;
       try {
         const { property } = await saveScrapedListing(item.scrapedListingId);

@@ -386,6 +386,18 @@ export default function FinderClient({
   // Card actions for the PropertyCard component
   const cardActions: CardActions = useMemo(() => ({
     onSaveToFunnel: async (item: CardProperty) => {
+      // Own at 'new' → promote to investigating (ADR-012 v1.2). Finder's
+      // existing swipe-right behaviour already does this — this path is the
+      // heart-icon variant and uses the same update call. We DON'T advance
+      // `current` here: the card stays put under the user's pointer like a
+      // confirmation, mirroring Discover's "remove only on next page load".
+      if (item.source === 'own' && item.status === 'new') {
+        update(item.id, {
+          status: 'investigating',
+          movedToStageAt: new Date().toISOString(),
+        });
+        return;
+      }
       if (item.source !== 'scraped' || !item.scrapedListingId) return;
       setLastAction('investigating');
       setCurrent(c => c + 1);

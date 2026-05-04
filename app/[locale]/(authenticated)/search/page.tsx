@@ -452,14 +452,30 @@ export default function EntdeckenPage() {
     }
   }, [page, applied, cachedProperties, hasActiveFilter, authLoading, session?.user?.id, buildFilterParams]);
 
+  // Track ids the user has promoted out of `new` during this Discover
+  // session. We keep these visible (heart fills green, card stays in
+  // place) until the next mount of /search — the user explicitly asked
+  // for "remove only on next page load". `locallyPromotedIds` resets on
+  // unmount via the natural lifecycle of useState.
+  const [locallyPromotedIds, setLocallyPromotedIds] = useState<Set<string>>(new Set());
+
   // ── Merge scraped + user properties into final listing ──
   const { listings, mergedUserCount } = useMemo(() => {
+    // Discover surface = "things not yet in the active funnel": own at
+    // status='new' (auto-imported, not yet considered) + unsaved scraped.
+    // Properties promoted out of 'new' during this session stay visible
+    // until next mount via locallyPromotedIds.
     const userUnified = filteredUserProps
-      .filter(p => p.status !== 'not_relevant' && p.status !== 'delisted')
+      .filter(p =>
+        (p.status === 'new' || locallyPromotedIds.has(p.id)) &&
+        p.listingStatus !== 'expired'
+      )
       .map(propertyToUnified);
 
-    const userSourceUrls = new Set(userUnified.map(u => u.sourceUrl));
-    const dedupedScraped = scrapedListings.filter(s => !userSourceUrls.has(s.sourceUrl));
+    // Dedup against ALL the user's properties (not just visible ones) — a
+    // property at 'investigating' should still suppress its scraped twin.
+    const allOwnSourceUrls = new Set(cachedProperties.map(p => p.sourceUrl));
+    const dedupedScraped = scrapedListings.filter(s => !allOwnSourceUrls.has(s.sourceUrl));
 
     let merged = page === 1
       ? [...userUnified, ...dedupedScraped]
@@ -492,7 +508,7 @@ export default function EntdeckenPage() {
       : 0;
 
     return { listings: merged, mergedUserCount: userCount };
-  }, [scrapedListings, filteredUserProps, page, activePresets, activeSavedFilterIds, savedFilters, dismissedIds, applied.sortBy, applied.sortOrder]);
+  }, [scrapedListings, filteredUserProps, cachedProperties, locallyPromotedIds, page, activePresets, activeSavedFilterIds, savedFilters, dismissedIds, applied.sortBy, applied.sortOrder]);
 
   const loading = scrapedLoading;
 
@@ -624,6 +640,21 @@ export default function EntdeckenPage() {
 
   const cardActions: CardActions = useMemo(() => ({
     onSaveToFunnel: async (item: CardProperty) => {
+      // Own at status 'new' → promote to 'investigating'. The card stays
+      // visible because the id gets added to locallyPromotedIds; next mount
+      // recomputes from current data and the now-investigating row drops.
+      if (item.source === 'own' && item.status === 'new') {
+        setLocallyPromotedIds(prev => {
+          const next = new Set(prev);
+          next.add(item.id);
+          return next;
+        });
+        updateProp(item.id, {
+          status: 'investigating',
+          movedToStageAt: new Date().toISOString(),
+        });
+        return;
+      }
       if (item.source !== 'scraped' || !item.scrapedListingId) return;
       try {
         const { property } = await saveScrapedListing(item.scrapedListingId);

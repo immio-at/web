@@ -130,17 +130,35 @@ export default function PropertyCard({
   // (manual properties), render disabled with a different tooltip.
   const hasSourceUrl = !!item.sourceUrl && item.sourceUrl.length > 0;
 
-  // Heart state + behaviour
+  // Heart state + behaviour (ADR-012 v1.2)
+  // The house icon represents "in active funnel" — i.e. status `new` (the
+  // auto-imported, not-yet-considered landing state) renders gray and is
+  // clickable, identical to an unsaved scraped listing. Clicking promotes
+  // own-at-new to `investigating`, or saves a scraped listing to the
+  // funnel at `investigating`. Status `investigating` and beyond renders
+  // filled.
   const isOwn = item.source === 'own';
-  const heartFilled = isOwn || scrapedSaved;
+  const isOwnAtNew = isOwn && item.status === 'new';
+  const heartFilled = (isOwn && !isOwnAtNew) || scrapedSaved;
+  // Funnel page passes onMoveStage; own-at-new opens it (gray + actionable)
+  // exactly like own-past-new (filled + actionable).
   const ownCanMoveStage = isOwn && !!actions.onMoveStage;
-  const heartTooltip = isOwn
-    ? (ownCanMoveStage
-        ? (currentStageLabel ? t('changeStageFrom', { stage: currentStageLabel }) : t('changeStage'))
+  // Discover/Dashboard surfaces don't pass onMoveStage. There the gray
+  // house's click promotes via onSaveToFunnel.
+  const isPromotePath = isOwnAtNew && !ownCanMoveStage;
+  const isScrapedSavePath = !isOwn && !scrapedSaved;
+  const heartActionable =
+    ownCanMoveStage || isPromotePath || isScrapedSavePath;
+
+  const heartTooltip = ownCanMoveStage
+    ? (currentStageLabel ? t('changeStageFrom', { stage: currentStageLabel }) : t('changeStage'))
+    : isPromotePath
+      ? t('moveToInvestigating')
+      : isScrapedSavePath
+        ? t('saveToFunnel')
         : (currentStageLabel
             ? t('alreadyInFunnelWithStage', { stage: currentStageLabel })
-            : t('alreadyInFunnel')))
-    : (scrapedSaved ? t('alreadyInFunnel') : t('saveToFunnel'));
+            : t('alreadyInFunnel'));
 
   async function handleHeart(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
@@ -149,7 +167,14 @@ export default function PropertyCard({
       actions.onMoveStage!(item, e.currentTarget.getBoundingClientRect());
       return;
     }
-    if (isOwn || scrapedSaved) return;
+    if (isPromotePath) {
+      // Cache update from the parent flips status `new` → `investigating`,
+      // which makes heartFilled re-evaluate to true on the next render.
+      // No need to flip scrapedSaved.
+      try { await actions.onSaveToFunnel?.(item); } catch {}
+      return;
+    }
+    if (!isScrapedSavePath) return;
     setScrapedSaved(true);
     try {
       await actions.onSaveToFunnel?.(item);
@@ -221,7 +246,7 @@ export default function PropertyCard({
           onClick={handleHeart}
           title={heartTooltip}
           aria-label={heartTooltip}
-          disabled={!ownCanMoveStage && (isOwn || scrapedSaved)}
+          disabled={!heartActionable}
           className={`absolute ${compact ? 'top-1.5 right-1.5 w-6 h-6' : 'top-2 right-2 w-8 h-8'} flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm transition-all ${
             heartFilled
               ? `text-teal-600${ownCanMoveStage ? ' hover:scale-110' : ''}`
