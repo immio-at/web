@@ -47,7 +47,8 @@ export default function AnalyticsSnapshotTile({ properties }: { properties: Prop
       analyticsCacheTimestamp = Date.now();
       setData(d);
     }).catch(() => {});
-  }, [authLoading, session]);
+    // session?.user?.id stable across token refresh.
+  }, [authLoading, session?.user?.id]);
 
   const totalSaved = properties.filter(
     p => p.status !== 'not_relevant' && p.status !== 'delisted'

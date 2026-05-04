@@ -160,7 +160,10 @@ export default function DashboardClient({
     } as any)
       .then(r => setScrapedFallback(r.data.slice(0, 20).map(scrapedListingToCard)))
       .catch(() => setScrapedFallback([]));
-  }, [authLoading, session, searchAgentArrivals.length, scrapedFallback]);
+    // session?.user?.id is stable across token refresh; the full `session`
+    // object reference changes on each refresh and would refetch the
+    // fallback every time the tab regained focus.
+  }, [authLoading, session?.user?.id, searchAgentArrivals.length, scrapedFallback]);
 
   const newArrivalCards = searchAgentArrivals.length > 0
     ? searchAgentArrivals

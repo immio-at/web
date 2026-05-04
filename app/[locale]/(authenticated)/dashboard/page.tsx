@@ -26,7 +26,8 @@ export default function DashboardPage() {
     if (recentlyViewedFetched.current) return;
     recentlyViewedFetched.current = true;
     getRecentlyViewed(20).then(setRecentlyViewed);
-  }, [authLoading, session, getRecentlyViewed]);
+    // session?.user?.id stable across token refresh.
+  }, [authLoading, session?.user?.id, getRecentlyViewed]);
 
   if (loading) {
     return (

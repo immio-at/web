@@ -123,7 +123,9 @@ export default function RecommendedCarousel({
         setScrapedScored(scored);
       })
       .catch(() => {});
-  }, [criteria, authLoading, session]);
+    // session?.user?.id is stable across token refresh — using `session`
+    // would re-evaluate (and re-fetch) on every focus-time refresh.
+  }, [criteria, authLoading, session?.user?.id]);
 
   // Mix own + scraped, rank by score, dedupe by sourceUrl (own wins ties since
   // it's already in the funnel — keeps the existing record in view).

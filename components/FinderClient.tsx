@@ -207,7 +207,8 @@ export default function FinderClient({
     } finally {
       setScrapedLoading(false);
     }
-  }, [authLoading, session, presetPostcodes, sortBy, sortOrder]);
+    // session?.user?.id (stable) — see search/page.tsx note.
+  }, [authLoading, session?.user?.id, presetPostcodes, sortBy, sortOrder]);
 
   useEffect(() => { fetchScraped(); }, [fetchScraped]);
 

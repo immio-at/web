@@ -104,7 +104,8 @@ export default function AnalyticsPage() {
       .then(setData)
       .catch(e => setError(e instanceof Error ? e.message : t('error')))
       .finally(() => setLoading(false));
-  }, [authLoading, session, t]);
+    // session?.user?.id stable across token refresh.
+  }, [authLoading, session?.user?.id, t]);
 
   if (loading) {
     return (

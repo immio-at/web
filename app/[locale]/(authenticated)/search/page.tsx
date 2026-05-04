@@ -421,7 +421,10 @@ export default function EntdeckenPage() {
     } finally {
       setScrapedLoading(false);
     }
-  }, [authLoading, session, applied, page, t, buildFilterParams, presetPostcodes]);
+    // Depend on session?.user?.id (stable) instead of `session` (new
+    // reference on every Supabase token refresh) so a refresh on tab focus
+    // doesn't refetch the page as if the user re-ran the search.
+  }, [authLoading, session?.user?.id, applied, page, t, buildFilterParams, presetPostcodes]);
 
   useEffect(() => { fetchScraped(); }, [fetchScraped]);
 
@@ -441,7 +444,7 @@ export default function EntdeckenPage() {
         .then(setFilteredUserProps)
         .catch(() => setFilteredUserProps([]));
     }
-  }, [page, applied, cachedProperties, hasActiveFilter, authLoading, session, buildFilterParams]);
+  }, [page, applied, cachedProperties, hasActiveFilter, authLoading, session?.user?.id, buildFilterParams]);
 
   // ── Merge scraped + user properties into final listing ──
   const { listings, mergedUserCount } = useMemo(() => {

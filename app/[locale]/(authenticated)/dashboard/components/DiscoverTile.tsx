@@ -46,7 +46,8 @@ export default function DiscoverTile({
         .then(data => setScrapedByState(prev => ({ ...prev, [abbr]: data.total })))
         .catch(() => {});
     }
-  }, [authLoading, session]);
+    // session?.user?.id stable across token refresh.
+  }, [authLoading, session?.user?.id]);
 
   // Compute scraped total from cache — instant on toggle
   const scrapedTotal = useMemo(() => {

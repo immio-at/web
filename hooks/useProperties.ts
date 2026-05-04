@@ -152,7 +152,10 @@ export function useProperties() {
       setProperties(cache);
       setLoading(false);
     }
-  }, [authLoading, session, fetchFromServer]);
+    // session?.user?.id is stable across token refresh — `session` itself
+    // gets a new object reference on every Supabase token rotation, which
+    // would re-run this effect on tab focus and reset cached UI state.
+  }, [authLoading, session?.user?.id, fetchFromServer]);
 
   // ── Optimistic update (status / notes / movedToStageAt) ────────────────────
   // Updates cache and all listeners immediately, then persists to the DB.

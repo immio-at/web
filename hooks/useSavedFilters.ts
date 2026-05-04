@@ -69,7 +69,7 @@ export function useSavedFilters() {
     } finally {
       setLoading(false);
     }
-  }, [authLoading, session]);
+  }, [authLoading, session?.user?.id]);
 
   useEffect(() => {
     filterListeners.add(setFilters);
@@ -87,7 +87,8 @@ export function useSavedFilters() {
       return;
     }
     fetch();
-  }, [authLoading, session, fetch]);
+    // session?.user?.id stable across token refresh — see useProperties.
+  }, [authLoading, session?.user?.id, fetch]);
 
   const create = useCallback(async (dto: CreateSavedFilterDto) => {
     const created = await createSavedFilter(dto);
