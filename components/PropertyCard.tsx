@@ -88,13 +88,18 @@ export default function PropertyCard({
   const t = useTranslations('propertyCard');
   const tStages = useTranslations('funnel.stages');
 
-  // Scraped heart optimistic fill. Reset when the rendered item changes so
+  // Scraped-only heart optimistic fill. Gated to source==='scraped' because
+  // `propertyToUnified` sets savedByUser=true for every own property — left
+  // ungated, ADR-012 v1.2's gray-house rule for own@'new' was being shadowed
+  // by a stale-state initializer. Reset when the rendered item changes so
   // Finder / Discover callers that reuse the component across swipes don't
   // inherit the previous card's filled state.
-  const [scrapedSaved, setScrapedSaved] = useState<boolean>(!!item.savedByUser);
+  const [scrapedSaved, setScrapedSaved] = useState<boolean>(
+    item.source === 'scraped' && !!item.savedByUser,
+  );
   useEffect(() => {
-    setScrapedSaved(!!item.savedByUser);
-  }, [item.id, item.savedByUser]);
+    setScrapedSaved(item.source === 'scraped' && !!item.savedByUser);
+  }, [item.id, item.source, item.savedByUser]);
 
   const priceText = formatPrice(item.price);
   const ppsmText = !compact ? formatPricePerSqm(item.price, item.sizeSqm) : null;
