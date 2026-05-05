@@ -1136,8 +1136,13 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <NumInput label={t('flip.duration')} value={draft.flipDurationMonths} onChange={v => set('flipDurationMonths', v ? Math.round(v) : null)} suffix={t('flip.durationSuffix')} />
                   <NumInput label={t('flip.resalePrice')} value={draft.flipResalePrice} onChange={v => set('flipResalePrice', v)} prefix={'\u20AC'} />
-                  <NumInput label={t('flip.bkUmlagefaehig')} value={draft.bkUmlagefaehig} onChange={v => set('bkUmlagefaehig', v)} prefix={'\u20AC'} hint={t('flip.bkHint')} />
-                  <NumInput label={t('flip.bkNichtUmlagefaehig')} value={draft.bkNichtUmlagefaehig} onChange={v => set('bkNichtUmlagefaehig', v)} prefix={'\u20AC'} hint={t('flip.bkHint')} />
+                  {/* ADR-003 v2.3 \u2014 single BK input on Flip (no tenant during a
+                       hold, so umlagef\u00E4hig/nicht-umlagef\u00E4hig split doesn't apply).
+                       Persisted column is still bkNichtUmlagefaehig \u2014 UI relabel
+                       only. bkUmlagefaehig isn't rendered here; existing rows
+                       that have a value retain it on disk but the calculator
+                       ignores it. */}
+                  <NumInput label={t('flip.holdingBkLabel')} value={draft.bkNichtUmlagefaehig} onChange={v => set('bkNichtUmlagefaehig', v)} prefix={'\u20AC'} hint={t('flip.holdingBkHint')} />
                 </div>
               </div>
             )}
@@ -1361,6 +1366,9 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
             )}
 
             {/* Flip results — Private */}
+            {/* ADR-003 v2.3 §5.6 — three blocks: cost waterfall, tax block,
+                 Rendite block. AfA-not-on-flips note rendered as a small
+                 footnote under the tax block. */}
             {draft.usageType === 'flip' && flipResults && draft.legalStructure === 'private' && (
               <div>
                 <SectionTitle>{t('flip.resultsTitle')} ({t('tax.private')})</SectionTitle>
@@ -1372,13 +1380,50 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
                   <ResultRow label={t('flip.totalCost')} value={formatEuro(flipResults.totalCost)} highlight />
                   <ResultRow label={t('flip.resalePriceResult')} value={formatEuro(draft.flipResalePrice ?? 0)} />
                   <ResultRow label={t('flip.grossProfit')} value={formatEuro(flipResults.grossProfit)} highlight />
-                  <ResultRow label={t('flip.taxableProfit')} value={formatEuro(flipResults.taxableGain)} />
-                  <ResultRow label={t('flip.immoest')} value={formatEuro(flipResults.immoest)} indent />
+                </div>
+
+                {/* Tax block */}
+                <div className="mt-4 bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl divide-y divide-[#e2e6ed] px-4">
+                  <ResultRow label={t('flip.grossProfit')} value={formatEuro(flipResults.grossProfit)} />
+                  <ResultRow
+                    label={`${t('flip.deductibleRehab')} ${t('flip.deductibleRehabRatio', { deductible: formatEuro(flipResults.totalAbzugsfaehig), total: formatEuro(flipResults.totalRehab) })}`}
+                    value={formatEuro(-flipResults.totalAbzugsfaehig)}
+                    indent
+                  />
+                  <ResultRow label={t('flip.deductibleKaufnebenkosten')} value={formatEuro(-flipResults.kaufnebenkosten)} indent />
+                  <ResultRow label={t('flip.taxableGain')} value={formatEuro(flipResults.taxableGain)} highlight />
+                  <ResultRow label={t('flip.immoest')} value={formatEuro(-flipResults.immoest)} indent />
+                  <ResultRow
+                    label={`${t('flip.savingFromRehab')} ${t('flip.savingFromRehabHint', { rate: 30 })}`}
+                    value={formatEuro(flipResults.taxSavingFromRehab)}
+                    indent
+                  />
                   <ResultRow label={t('flip.netProfit')} value={formatEuro(flipResults.netProfit)} highlight />
                 </div>
+                <p className="text-xs text-[#6b7a99] mt-2">ℹ {t('flip.afaNote')}</p>
                 {flipResults.hauptwohnsitzApplied && (
-                  <p className="text-xs text-emerald-700 mt-2">✓ {t('flip.hauptwohnsitzApplied')}</p>
+                  <p className="text-xs text-emerald-700 mt-1">✓ {t('flip.hauptwohnsitzApplied')}</p>
                 )}
+
+                {/* Rendite block */}
+                <div className="mt-4 bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl divide-y divide-[#e2e6ed] px-4">
+                  <p className="text-[10px] font-semibold text-[#6b7a99] uppercase tracking-wide pt-3">{t('flip.renditeTitle')}</p>
+                  <ResultRow label={t('flip.roiTotalInvestment')} value={formatPct(flipResults.roiTotalInvestment)} />
+                  <ResultRow label={t('flip.roiEquity')} value={formatPct(flipResults.roiEquity)} />
+                  <ResultRow
+                    label={t('flip.annualisedSimple')}
+                    value={flipResults.roiAnnualisedSimple === null ? '—' : `${formatPct(flipResults.roiAnnualisedSimple)} ${t('flip.annualisedSimpleSuffix')}`}
+                  />
+                  <ResultRow
+                    label={t('flip.annualisedCompound')}
+                    value={flipResults.roiAnnualisedCompound === null ? '—' : `${formatPct(flipResults.roiAnnualisedCompound)} ${t('flip.annualisedSimpleSuffix')}`}
+                  />
+                  <ResultRow
+                    label={flipResults.holdingMonths > 0 ? t('flip.holdingDuration', { months: flipResults.holdingMonths }) : t('flip.holdingRequired')}
+                    value=""
+                    indent
+                  />
+                </div>
               </div>
             )}
 
@@ -1387,22 +1432,87 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
               <div>
                 <SectionTitle>{t('flip.resultsTitle')} ({t('tax.gmbh')})</SectionTitle>
                 <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl divide-y divide-[#e2e6ed] px-4">
+                  <ResultRow label={t('flip.purchasePrice')} value={formatEuro(draft.desiredPrice ?? 0)} />
+                  <ResultRow label={t('flip.purchaseCosts')} value={formatEuro(flipGmbHResults.kaufnebenkosten)} indent />
+                  <ResultRow label={t('flip.rehabCosts')} value={formatEuro(flipGmbHResults.totalRehab)} indent />
+                  <ResultRow label={t('flip.holdingCosts')} value={formatEuro(flipGmbHResults.holdingCosts)} indent />
                   <ResultRow label={t('flip.totalCost')} value={formatEuro(flipGmbHResults.totalCost)} highlight />
+                  <ResultRow label={t('flip.resalePriceResult')} value={formatEuro(draft.flipResalePrice ?? 0)} />
                   <ResultRow label={t('flip.grossProfit')} value={formatEuro(flipGmbHResults.grossProfit)} highlight />
                 </div>
+
+                {/* Pre-tax block (full width) */}
+                <div className="mt-4 bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl divide-y divide-[#e2e6ed] px-4">
+                  <ResultRow label={t('flip.grossProfit')} value={formatEuro(flipGmbHResults.grossProfit)} />
+                  <ResultRow
+                    label={`${t('flip.deductibleRehab')} ${t('flip.deductibleRehabRatio', { deductible: formatEuro(flipGmbHResults.totalAbzugsfaehig), total: formatEuro(flipGmbHResults.totalRehab) })}`}
+                    value={formatEuro(-flipGmbHResults.totalAbzugsfaehig)}
+                    indent
+                  />
+                  <ResultRow label={t('flip.deductibleKaufnebenkosten')} value={formatEuro(-flipGmbHResults.kaufnebenkosten)} indent />
+                  <ResultRow label={t('flip.taxableGain')} value={formatEuro(flipGmbHResults.taxableGain)} highlight />
+                </div>
+                <p className="text-xs text-[#6b7a99] mt-2">ℹ {t('flip.afaNote')}</p>
+
+                {/* Per-side split: KÖSt/KESt + tax saving + net profit */}
                 <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-4">
-                    <p className="text-[10px] font-semibold text-violet-700 uppercase mb-2">{t('rental.gmbhRetained')}</p>
-                    <ResultRow label={t('flip.koest')} value={formatEuro(flipGmbHResults.koest)} />
+                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 divide-y divide-violet-200">
+                    <p className="text-[10px] font-semibold text-violet-700 uppercase pb-2">{t('rental.gmbhRetained')}</p>
+                    <ResultRow label={t('flip.koest')} value={formatEuro(-flipGmbHResults.koest)} />
+                    <ResultRow
+                      label={`${t('flip.savingFromRehab')} ${t('flip.savingFromRehabHint', { rate: 23 })}`}
+                      value={formatEuro(flipGmbHResults.taxSavingFromRehabRetained)}
+                      indent
+                    />
                     <ResultRow label={t('flip.netProfit')} value={formatEuro(flipGmbHResults.netProfitRetained)} highlight />
                   </div>
-                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-4">
-                    <p className="text-[10px] font-semibold text-violet-700 uppercase mb-2">{t('rental.gmbhDistributed')}</p>
-                    <ResultRow label={t('flip.koest')} value={formatEuro(flipGmbHResults.koest)} />
-                    <ResultRow label={t('flip.kest')} value={formatEuro(flipGmbHResults.kest)} />
+                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 divide-y divide-violet-200">
+                    <p className="text-[10px] font-semibold text-violet-700 uppercase pb-2">{t('rental.gmbhDistributed')}</p>
+                    <ResultRow label={t('flip.koest')} value={formatEuro(-flipGmbHResults.koest)} />
+                    <ResultRow label={t('flip.kest')} value={formatEuro(-flipGmbHResults.kest)} />
+                    <ResultRow
+                      label={`${t('flip.savingFromRehab')} ${t('flip.savingFromRehabHint', { rate: Math.round((1 - (1 - 0.23) * (1 - 0.275)) * 100) })}`}
+                      value={formatEuro(flipGmbHResults.taxSavingFromRehabDistributed)}
+                      indent
+                    />
                     <ResultRow label={t('flip.netProfit')} value={formatEuro(flipGmbHResults.netProfitDistributed)} highlight />
                   </div>
                 </div>
+
+                {/* Per-side Rendite split */}
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4 divide-y divide-[#e2e6ed]">
+                    <p className="text-[10px] font-semibold text-[#6b7a99] uppercase pb-2">{t('flip.renditeTitle')} — {t('rental.gmbhRetained')}</p>
+                    <ResultRow label={t('flip.roiTotalInvestment')} value={formatPct(flipGmbHResults.roiTotalInvestmentRetained)} />
+                    <ResultRow label={t('flip.roiEquity')} value={formatPct(flipGmbHResults.roiEquityRetained)} />
+                    <ResultRow
+                      label={t('flip.annualisedSimple')}
+                      value={flipGmbHResults.roiAnnualisedSimpleRetained === null ? '—' : `${formatPct(flipGmbHResults.roiAnnualisedSimpleRetained)} ${t('flip.annualisedSimpleSuffix')}`}
+                    />
+                    <ResultRow
+                      label={t('flip.annualisedCompound')}
+                      value={flipGmbHResults.roiAnnualisedCompoundRetained === null ? '—' : `${formatPct(flipGmbHResults.roiAnnualisedCompoundRetained)} ${t('flip.annualisedSimpleSuffix')}`}
+                    />
+                  </div>
+                  <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4 divide-y divide-[#e2e6ed]">
+                    <p className="text-[10px] font-semibold text-[#6b7a99] uppercase pb-2">{t('flip.renditeTitle')} — {t('rental.gmbhDistributed')}</p>
+                    <ResultRow label={t('flip.roiTotalInvestment')} value={formatPct(flipGmbHResults.roiTotalInvestmentDistributed)} />
+                    <ResultRow label={t('flip.roiEquity')} value={formatPct(flipGmbHResults.roiEquityDistributed)} />
+                    <ResultRow
+                      label={t('flip.annualisedSimple')}
+                      value={flipGmbHResults.roiAnnualisedSimpleDistributed === null ? '—' : `${formatPct(flipGmbHResults.roiAnnualisedSimpleDistributed)} ${t('flip.annualisedSimpleSuffix')}`}
+                    />
+                    <ResultRow
+                      label={t('flip.annualisedCompound')}
+                      value={flipGmbHResults.roiAnnualisedCompoundDistributed === null ? '—' : `${formatPct(flipGmbHResults.roiAnnualisedCompoundDistributed)} ${t('flip.annualisedSimpleSuffix')}`}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-[#6b7a99] mt-2">
+                  {flipGmbHResults.holdingMonths > 0
+                    ? t('flip.holdingDuration', { months: flipGmbHResults.holdingMonths })
+                    : t('flip.holdingRequired')}
+                </p>
               </div>
             )}
 

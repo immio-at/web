@@ -478,15 +478,48 @@ export function calcRentalTaxGmbH(a: PropertyAnalysis, rentalResults: RentalResu
 export interface FlipResults {
   kaufnebenkosten: number;
   totalRehab: number;
+  totalAbzugsfaehig: number;
   holdingCosts: number;
+  holdingMonths: number;
   totalCost: number;
   grossProfit: number;
-  totalAbzugsfaehig: number;
   deductibleCosts: number;
   taxableGain: number;
   immoest: number;
   netProfit: number;
   hauptwohnsitzApplied: boolean;
+  // ADR-003 v2.3 — informational tax-block lines + ROI metrics
+  /** total_abzugsfaehig × 0.30 — what the deductible rehab portion is worth
+   *  in ImmoESt saved at the flat 30% private rate. Informational. */
+  taxSavingFromRehab: number;
+  /** total_abzugsfaehig / max(total_rehab, 1) — displayed as "€X von €Y". */
+  deductibleRehabRatio: number;
+  roiTotalInvestment: number;
+  /** When eigenkapital <= 0 (cash purchase or fully-financed edge case) we
+   *  collapse to roiTotalInvestment so the UI can footnote it as the
+   *  unlevered figure rather than rendering a divide-by-zero ∞. */
+  roiEquity: number;
+  /** null when holding_months is 0 (annualisation is meaningless). */
+  roiAnnualisedSimple: number | null;
+  roiAnnualisedCompound: number | null;
+}
+
+const IMMOEST_RATE = 0.30;
+const KOEST_RATE = 0.23;
+const KEST_RATE = 0.275;
+
+function annualiseSimple(roi: number, holdingMonths: number): number | null {
+  if (holdingMonths <= 0) return null;
+  return roi * (12 / holdingMonths);
+}
+
+function annualiseCompound(roi: number, holdingMonths: number): number | null {
+  if (holdingMonths <= 0) return null;
+  // 1 + roi can be < 0 on a deeply unprofitable deal; clamp at small positive
+  // to keep the geometric formula real-valued. The simple variant is the
+  // honest read in that case anyway.
+  const base = Math.max(1 + roi, 0);
+  return Math.pow(base, 12 / holdingMonths) - 1;
 }
 
 export function calcFlipPrivate(
@@ -501,12 +534,12 @@ export function calcFlipPrivate(
   const totalRehab = calcTotalRehab(a.rehabCosts);
   const totalAbzugsfaehig = calcTotalAbzugsfaehig(a.rehabCosts);
 
+  // ADR-003 v2.3 §2.8: monthly_holding_bk = bk_nicht_umlagefaehig only.
+  // No tenant during a flip — the umlagefähig/nicht-umlagefähig split does
+  // not apply, and reparaturrücklage is not modelled separately on flips.
   const monthlyLoan = calcTotalMonthlyLoan(a);
-  // Flip holding costs include loan + ALL BK (no tenant to cover recoverable portion)
-  const bkUmlagefaehig = a.bkUmlagefaehig ?? 0;
-  const bkNichtUmlagefaehig = a.bkNichtUmlagefaehig ?? 0;
-  const reparaturruecklage = a.reparaturruecklageMon ?? 0;
-  const monthlyHoldingCost = monthlyLoan + bkUmlagefaehig + bkNichtUmlagefaehig + reparaturruecklage;
+  const monthlyHoldingBk = a.bkNichtUmlagefaehig ?? 0;
+  const monthlyHoldingCost = monthlyLoan + monthlyHoldingBk;
   const holdingCosts = monthlyHoldingCost * holdingMonths;
 
   const totalCost = desiredPrice + kaufnebenkosten + totalRehab + holdingCosts;
@@ -515,21 +548,40 @@ export function calcFlipPrivate(
   // ImmoESt (§ 30 EStG — 30% flat rate for private individuals)
   const deductibleCosts = kaufnebenkosten + totalAbzugsfaehig;
   const taxableGain = flipResalePrice - desiredPrice - deductibleCosts;
-  const immoest = hauptwohnsitzBefreiung ? 0 : Math.max(taxableGain * 0.30, 0);
+  const immoest = hauptwohnsitzBefreiung ? 0 : Math.max(taxableGain * IMMOEST_RATE, 0);
   const netProfit = grossProfit - immoest;
+
+  // Tax-block informational lines (FX3)
+  const taxSavingFromRehab = totalAbzugsfaehig * IMMOEST_RATE;
+  const deductibleRehabRatio = totalAbzugsfaehig / Math.max(totalRehab, 1);
+
+  // Rendite (ROI). Equity-base collapse when EK <= 0 (cash buy or edge case)
+  // matches the §2.8 spec — render with a "unlevered" tooltip on the UI side.
+  const eigenkapital = calcEigenkapital(a);
+  const roiTotalInvestment = totalCost > 0 ? netProfit / totalCost : 0;
+  const roiEquity = eigenkapital > 0 ? netProfit / eigenkapital : roiTotalInvestment;
+  const roiAnnualisedSimple = annualiseSimple(roiEquity, holdingMonths);
+  const roiAnnualisedCompound = annualiseCompound(roiEquity, holdingMonths);
 
   return {
     kaufnebenkosten,
     totalRehab,
+    totalAbzugsfaehig,
     holdingCosts,
+    holdingMonths,
     totalCost,
     grossProfit,
-    totalAbzugsfaehig,
     deductibleCosts,
     taxableGain,
     immoest,
     netProfit,
     hauptwohnsitzApplied: hauptwohnsitzBefreiung,
+    taxSavingFromRehab,
+    deductibleRehabRatio,
+    roiTotalInvestment,
+    roiEquity,
+    roiAnnualisedSimple,
+    roiAnnualisedCompound,
   };
 }
 
@@ -538,7 +590,9 @@ export function calcFlipPrivate(
 export interface FlipGmbHResults {
   kaufnebenkosten: number;
   totalRehab: number;
+  totalAbzugsfaehig: number;
   holdingCosts: number;
+  holdingMonths: number;
   totalCost: number;
   grossProfit: number;
   deductibleCosts: number;
@@ -547,7 +601,24 @@ export interface FlipGmbHResults {
   netProfitRetained: number;
   kest: number;
   netProfitDistributed: number;
+  // ADR-003 v2.3 — informational tax saving + ROI per side
+  deductibleRehabRatio: number;
+  /** Saving on the deductible rehab portion at the 23% KÖSt rate. */
+  taxSavingFromRehabRetained: number;
+  /** Saving at the combined effective rate for distributed profit
+   *  ((1 - (1 - KÖSt)(1 - KESt)) ≈ 0.4418). */
+  taxSavingFromRehabDistributed: number;
+  roiTotalInvestmentRetained: number;
+  roiEquityRetained: number;
+  roiAnnualisedSimpleRetained: number | null;
+  roiAnnualisedCompoundRetained: number | null;
+  roiTotalInvestmentDistributed: number;
+  roiEquityDistributed: number;
+  roiAnnualisedSimpleDistributed: number | null;
+  roiAnnualisedCompoundDistributed: number | null;
 }
+
+const COMBINED_GMBH_RATE = 1 - (1 - KOEST_RATE) * (1 - KEST_RATE);
 
 export function calcFlipGmbH(a: PropertyAnalysis): FlipGmbHResults {
   const desiredPrice = a.desiredPrice ?? 0;
@@ -558,11 +629,10 @@ export function calcFlipGmbH(a: PropertyAnalysis): FlipGmbHResults {
   const totalRehab = calcTotalRehab(a.rehabCosts);
   const totalAbzugsfaehig = calcTotalAbzugsfaehig(a.rehabCosts);
 
+  // Same ADR-003 v2.3 §2.9 holding-cost rule as Private.
   const monthlyLoan = calcTotalMonthlyLoan(a);
-  const bkUmlagefaehig = a.bkUmlagefaehig ?? 0;
-  const bkNichtUmlagefaehig = a.bkNichtUmlagefaehig ?? 0;
-  const reparaturruecklage = a.reparaturruecklageMon ?? 0;
-  const monthlyHoldingCost = monthlyLoan + bkUmlagefaehig + bkNichtUmlagefaehig + reparaturruecklage;
+  const monthlyHoldingBk = a.bkNichtUmlagefaehig ?? 0;
+  const monthlyHoldingCost = monthlyLoan + monthlyHoldingBk;
   const holdingCosts = monthlyHoldingCost * holdingMonths;
 
   const totalCost = desiredPrice + kaufnebenkosten + totalRehab + holdingCosts;
@@ -572,17 +642,38 @@ export function calcFlipGmbH(a: PropertyAnalysis): FlipGmbHResults {
   const taxableGain = flipResalePrice - desiredPrice - deductibleCosts;
 
   // KÖSt 23% (no ImmoESt for GmbH)
-  const koest = Math.max(taxableGain * 0.23, 0);
+  const koest = Math.max(taxableGain * KOEST_RATE, 0);
   const netProfitRetained = grossProfit - koest;
 
-  // Distributed: additional KESt 27.5%
-  const kest = Math.max((taxableGain - koest) * 0.275, 0);
+  // Distributed: additional KESt 27.5% on profit-after-KÖSt
+  const kest = Math.max((taxableGain - koest) * KEST_RATE, 0);
   const netProfitDistributed = grossProfit - koest - kest;
+
+  const deductibleRehabRatio = totalAbzugsfaehig / Math.max(totalRehab, 1);
+  const taxSavingFromRehabRetained = totalAbzugsfaehig * KOEST_RATE;
+  const taxSavingFromRehabDistributed = totalAbzugsfaehig * COMBINED_GMBH_RATE;
+
+  const eigenkapital = calcEigenkapital(a);
+  const roiTotalInvestmentRetained = totalCost > 0 ? netProfitRetained / totalCost : 0;
+  const roiEquityRetained = eigenkapital > 0
+    ? netProfitRetained / eigenkapital
+    : roiTotalInvestmentRetained;
+  const roiAnnualisedSimpleRetained = annualiseSimple(roiEquityRetained, holdingMonths);
+  const roiAnnualisedCompoundRetained = annualiseCompound(roiEquityRetained, holdingMonths);
+
+  const roiTotalInvestmentDistributed = totalCost > 0 ? netProfitDistributed / totalCost : 0;
+  const roiEquityDistributed = eigenkapital > 0
+    ? netProfitDistributed / eigenkapital
+    : roiTotalInvestmentDistributed;
+  const roiAnnualisedSimpleDistributed = annualiseSimple(roiEquityDistributed, holdingMonths);
+  const roiAnnualisedCompoundDistributed = annualiseCompound(roiEquityDistributed, holdingMonths);
 
   return {
     kaufnebenkosten,
     totalRehab,
+    totalAbzugsfaehig,
     holdingCosts,
+    holdingMonths,
     totalCost,
     grossProfit,
     deductibleCosts,
@@ -591,6 +682,17 @@ export function calcFlipGmbH(a: PropertyAnalysis): FlipGmbHResults {
     netProfitRetained,
     kest,
     netProfitDistributed,
+    deductibleRehabRatio,
+    taxSavingFromRehabRetained,
+    taxSavingFromRehabDistributed,
+    roiTotalInvestmentRetained,
+    roiEquityRetained,
+    roiAnnualisedSimpleRetained,
+    roiAnnualisedCompoundRetained,
+    roiTotalInvestmentDistributed,
+    roiEquityDistributed,
+    roiAnnualisedSimpleDistributed,
+    roiAnnualisedCompoundDistributed,
   };
 }
 
