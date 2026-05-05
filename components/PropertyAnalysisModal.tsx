@@ -268,6 +268,10 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Epoch-ms of the most recent successful save. Drives the "Analyse
+  // gespeichert ✓" footer note that appears next to the Save button for
+  // 3 seconds after a successful PATCH/POST.
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   // ADR-003 v2.2 / DR9 — close-guard prompt. Shown when handleClose fires
@@ -524,12 +528,22 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
             : t,
         ));
       }
+      setSavedAt(Date.now());
     } catch {
       setError(t('errorSaving'));
     } finally {
       setSaving(false);
     }
   }
+
+  // Auto-clear the "Analyse gespeichert" footer note 3 seconds after the
+  // most recent successful save. Re-saving within the window resets the
+  // timer because savedAt changes.
+  useEffect(() => {
+    if (savedAt === null) return;
+    const handle = setTimeout(() => setSavedAt(null), 3000);
+    return () => clearTimeout(handle);
+  }, [savedAt]);
 
   // Document upload/download/delete handlers used to live here when the
   // Documents UI was rendered inside the modal. The Documents section
@@ -1407,13 +1421,24 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
               >
                 {t('footer.cancel')}
               </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="py-2.5 px-8 rounded-xl text-sm font-semibold bg-[#F5A623] text-white hover:bg-[#d4891a] disabled:opacity-50 transition-colors"
-              >
-                {saving ? t('footer.saving') : t('footer.save')}
-              </button>
+              <div className="flex items-center gap-3">
+                {savedAt !== null && !saving && (
+                  <span
+                    role="status"
+                    aria-live="polite"
+                    className="text-sm font-medium text-emerald-600 whitespace-nowrap"
+                  >
+                    ✓ {t('footer.saved')}
+                  </span>
+                )}
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="py-2.5 px-8 rounded-xl text-sm font-semibold bg-[#F5A623] text-white hover:bg-[#d4891a] disabled:opacity-50 transition-colors"
+                >
+                  {saving ? t('footer.saving') : t('footer.save')}
+                </button>
+              </div>
             </div>
 
           </div>

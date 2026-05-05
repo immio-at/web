@@ -794,7 +794,8 @@
     "footer": {
       "cancel": "Cancel",
       "saving": "Saving…",
-      "save": "Save"
+      "save": "Save",
+      "saved": "Analysis saved"
     }
   },
   "legal": {
