@@ -30,7 +30,7 @@ import {
   deleteDocument,
 } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { useProperties } from '@/hooks/useProperties';
+import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import MrgWarningBanner from './MrgWarningBanner';
 import EditableField, { type FieldKind } from './EditableField';
 import DueDiligencePanel from '@/components/due-diligence/DueDiligencePanel';
@@ -324,14 +324,20 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
     onPropertyApplied?.(field, value);
 
     // Fire the backend write in the background. Roll back the optimistic
-    // confirmation if it fails.
+    // confirmation if it fails. Bracketed by markMutationStart/End so an
+    // SSE-driven properties refresh can't clobber the optimistic patch
+    // mid-write — see useProperties shouldSkipRefresh.
     setApplyingField(field);
+    markMutationStart();
     applyPropertyDetailField(property.id, field)
       .catch((e) => {
         console.error('Apply failed', e);
         setAppliedField(null);
       })
-      .finally(() => setApplyingField(null));
+      .finally(() => {
+        setApplyingField(null);
+        markMutationEnd();
+      });
   }
 
   // ── Manual inline edit (DO7) ─────────────────────────────────────────────

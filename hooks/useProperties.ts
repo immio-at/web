@@ -27,17 +27,50 @@ let modalModePruned = false;
 // Cheap, runs on the same fetch trigger.
 let analysisDraftsPruned = false;
 
-// Recent local-mutation guard — SSE 'properties' events fire at roughly the
-// same time as our own mutations land, and the triggered refetch can race the
-// backend write on pgbouncer / transaction-pooled connections. While a local
-// mutation is in flight we already have authoritative state (optimistic patch
-// + PATCH response), so we skip the SSE-driven refresh for a short window to
-// avoid a stale GET overwriting the optimistic state.
-let lastLocalMutationAt = 0;
-const LOCAL_MUTATION_GUARD_MS = 2000;
+// Mutation guard — counter + post-mutation cooldown. Prevents an SSE-triggered
+// refetch from overwriting an in-flight optimistic patch. The previous
+// timestamp-only guard had two real failure modes:
+//
+//   1. Slow PATCH (>2s on a busy Railway dyno): optimistic patch armed at
+//      T=0, guard expires at T=2, an SSE event from any source between
+//      T=2 and PATCH-completes lets a refetch through that hasn't yet seen
+//      the user's update — the cache gets clobbered with stale data and
+//      the funnel card hops back.
+//   2. "optimisticUpdate + side-API" callers (handleReportUnavailable,
+//      handleDelist, dossier apply field) only marked the optimistic
+//      moment, not the duration of their async API call.
+//
+// Counter pattern handles arbitrary mutation durations. Cooldown bridges the
+// micro-gap between the in-flight count dropping to zero and the SSE event
+// that the just-completed PATCH triggered.
+let inFlightMutations = 0;
+let lastMutationCompletedAt = 0;
+const POST_MUTATION_COOLDOWN_MS = 5000;
 
+function shouldSkipRefresh(): boolean {
+  if (inFlightMutations > 0) return true;
+  return Date.now() - lastMutationCompletedAt < POST_MUTATION_COOLDOWN_MS;
+}
+
+/** Caller is starting an async mutation. Pair with markMutationEnd in a
+ *  finally block. Used for "optimisticUpdate + separate fire-and-forget API
+ *  call" patterns where the hook can't wrap the API itself. */
+export function markMutationStart() {
+  inFlightMutations++;
+  lastMutationCompletedAt = Date.now();
+}
+
+/** Decrements the in-flight count and arms the post-mutation cooldown so the
+ *  next SSE-triggered refresh waits for the backend to settle. */
+export function markMutationEnd() {
+  inFlightMutations = Math.max(0, inFlightMutations - 1);
+  lastMutationCompletedAt = Date.now();
+}
+
+/** Optimistic-only mutation (no separate API call to bracket). Just arms the
+ *  cooldown — used by `optimisticUpdate` / `optimisticInsert` / `optimisticRemove`. */
 function markLocalMutation() {
-  lastLocalMutationAt = Date.now();
+  lastMutationCompletedAt = Date.now();
 }
 
 // Listeners allow multiple mounted components to receive cache updates
@@ -183,13 +216,14 @@ export function useProperties() {
       notifyListeners(cache);
     }
 
-    // Persist to DB. Mark the mutation both before and after so any SSE
-    // refresh racing our own PATCH is suppressed on this tab.
-    markLocalMutation();
+    // Persist to DB. Counter-bracketed so any SSE refresh racing our own
+    // PATCH is suppressed for the full duration of the mutation, regardless
+    // of how long Railway takes to respond.
+    markMutationStart();
     try {
       await updateProperty(id, data);
     } finally {
-      markLocalMutation();
+      markMutationEnd();
     }
   }, []);
 
@@ -271,14 +305,17 @@ export function invalidateCache() {
  * On fetch failure the cache stays null so the next mount retries.
  */
 export async function refreshPropertiesFromServer(): Promise<void> {
-  // If a local mutation landed within the guard window, skip — the cache
-  // already reflects authoritative state via the optimistic patch + PATCH
-  // response. Refetching here could overwrite it with a stale GET if the
-  // backend SSE emit runs concurrently with the write.
-  if (Date.now() - lastLocalMutationAt < LOCAL_MUTATION_GUARD_MS) return;
+  // If a mutation is in-flight or the post-mutation cooldown is active, skip.
+  // The cache already reflects authoritative optimistic state and a GET here
+  // could land before the backend has fully settled the user's change.
+  if (shouldSkipRefresh()) return;
   cacheTimestamp = 0;
   try {
     const data = await getProperties();
+    // Re-check after the GET resolves — a mutation may have started while
+    // we were waiting on the network. Replacing cache now would clobber
+    // that fresh optimistic patch and the user would see a hop.
+    if (shouldSkipRefresh()) return;
     cache = data;
     cacheTimestamp = Date.now();
     notifyListeners(data);

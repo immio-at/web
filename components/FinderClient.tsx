@@ -3,7 +3,7 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { useProperties, invalidateCache } from '@/hooks/useProperties';
+import { useProperties, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { Property, getScrapedListings, saveScrapedListing, ScrapedListing, reportUnavailable } from '@/lib/api';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
@@ -421,7 +421,10 @@ export default function FinderClient({
     onReportDead: (item: CardProperty) => {
       if (item.source === 'own') {
         optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
-        reportUnavailable(item.id).catch(() => {});
+        markMutationStart();
+        reportUnavailable(item.id)
+          .catch(() => {})
+          .finally(() => markMutationEnd());
       } else {
         setCurrent(c => c + 1);
         setDragX(0); setDragY(0);

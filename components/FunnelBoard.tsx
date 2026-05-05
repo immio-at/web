@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { Property, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
-import { useProperties } from '@/hooks/useProperties';
+import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
@@ -236,24 +236,32 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
   }
 
   // Optimistic: update local state immediately, fire API call in background.
-  // If the API call fails, the next refresh will correct the state.
+  // Bracketed by markMutationStart/End so an SSE refresh racing the PATCH
+  // can't overwrite the optimistic patch with stale data — see
+  // useProperties.ts shouldSkipRefresh.
   async function handleReportUnavailable(propertyId: string) {
     optimisticUpdate(propertyId, { listingStatus: 'expired' });
+    markMutationStart();
     try {
       await reportUnavailable(propertyId);
     } catch (e) {
       console.error('Failed to report unavailable', e);
+    } finally {
+      markMutationEnd();
     }
   }
 
   // Optimistic: hide the card immediately by marking as delisted locally,
-  // then confirm with the backend in the background.
+  // then confirm with the backend in the background. Same bracketing.
   async function handleDelist(propertyId: string) {
     optimisticUpdate(propertyId, { status: 'delisted' });
+    markMutationStart();
     try {
       await delistProperty(propertyId);
     } catch (e) {
       console.error('Failed to delist property', e);
+    } finally {
+      markMutationEnd();
     }
   }
 

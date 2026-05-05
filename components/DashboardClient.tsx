@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Property, ScrapedListing, SavedFilter, RecentlyViewedItem, reportUnavailable, saveScrapedListing, getScrapedListings } from '@/lib/api';
-import { useProperties } from '@/hooks/useProperties';
+import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { useAuth } from '@/context/AuthContext';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import DiscoverTile from '@/app/[locale]/(authenticated)/dashboard/components/DiscoverTile';
@@ -115,7 +115,10 @@ export default function DashboardClient({
       // pipeline has its own soft-delete mechanism.
       if (item.source !== 'own') return;
       optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
-      reportUnavailable(item.id).catch(() => {});
+      markMutationStart();
+      reportUnavailable(item.id)
+        .catch(() => {})
+        .finally(() => markMutationEnd());
     },
     onDismiss: (item: CardProperty) => {
       // Own → mark not_relevant. Scraped dismissal isn't persisted from

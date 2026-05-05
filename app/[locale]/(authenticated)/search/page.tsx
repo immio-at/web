@@ -8,7 +8,7 @@ import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, ScrapedL
 import { TERMINAL_STAGES } from '@/lib/constants';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
-import { useProperties, invalidateCache } from '@/hooks/useProperties';
+import { useProperties, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import FilterBar, {
   FilterValues,
@@ -753,7 +753,10 @@ export default function EntdeckenPage() {
       hideCard(listingId, item);
       if (item.source === 'own') {
         optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
-        reportUnavailable(item.id).catch(() => {});
+        markMutationStart();
+        reportUnavailable(item.id)
+          .catch(() => {})
+          .finally(() => markMutationEnd());
       }
     },
     onDismiss: (item: CardProperty) => {
