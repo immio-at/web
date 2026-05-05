@@ -293,6 +293,31 @@ function ListingTableRow({
   );
 }
 
+// ─── State persistence across navigation ────────────────────────────────────
+// Module-level cache so /search → /funnel → /search keeps the user's filters,
+// sort, page, view mode, dismissed/promoted sets, and scroll position. Lost
+// only on full page reload or sign-out (cleared via clearAllUserCaches in
+// AuthContext to avoid leaking selections between users on the same tab).
+
+interface DiscoverStateCache {
+  filterValues: FilterValues;
+  applied: FilterValues;
+  activeFilterId: string | null;
+  page: number;
+  activePresets: PresetFilterKey[];
+  activeSavedFilterIds: string[];
+  view: ViewMode;
+  dismissedIds: string[];
+  locallyPromotedIds: string[];
+  scrollY: number;
+}
+
+let discoverStateCache: DiscoverStateCache | null = null;
+
+export function clearDiscoverStateCache(): void {
+  discoverStateCache = null;
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function EntdeckenPage() {
@@ -303,26 +328,36 @@ export default function EntdeckenPage() {
   // Use cached properties from useProperties — avoids a redundant API call on page 1
   const { properties: cachedProperties, loading: propertiesLoading } = useProperties();
 
-  // Read initial view mode from URL
-  const [view, setView] = useState<ViewMode>(
-    searchParams.get('view') === 'table' ? 'table' : 'grid',
+  // Lazy initializers — restore from the module-level cache first, fall back
+  // to URL params, then defaults. Cache wins so users hopping between Discover
+  // and Funnel land back exactly where they were. URL params still drive
+  // first-time sessions and deep-link navigation from the dashboard tile.
+  const cached = discoverStateCache;
+
+  const [view, setView] = useState<ViewMode>(() =>
+    cached?.view ?? (searchParams.get('view') === 'table' ? 'table' : 'grid')
   );
 
-  // Build initial filter values from URL params
   const initialFromUrl = filterValuesFromParams(searchParams);
 
-  // Filter state
-  const [filterValues, setFilterValues] = useState<FilterValues>(initialFromUrl);
-  const [applied, setApplied] = useState<FilterValues>(initialFromUrl);
-  const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
+  const [filterValues, setFilterValues] = useState<FilterValues>(
+    () => cached?.filterValues ?? initialFromUrl,
+  );
+  const [applied, setApplied] = useState<FilterValues>(
+    () => cached?.applied ?? initialFromUrl,
+  );
+  const [activeFilterId, setActiveFilterId] = useState<string | null>(
+    () => cached?.activeFilterId ?? null,
+  );
+  const [page, setPage] = useState(() => cached?.page ?? 1);
 
-  // Preset + saved filter pill state — initialise from URL params if present
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(() => {
+    if (cached) return new Set(cached.activePresets);
     const raw = searchParams.get('presets');
     return raw ? new Set(raw.split(',') as PresetFilterKey[]) : new Set();
   });
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(() => {
+    if (cached) return new Set(cached.activeSavedFilterIds);
     const raw = searchParams.get('savedFilterIds');
     return raw ? new Set(raw.split(',')) : new Set();
   });
@@ -349,7 +384,9 @@ export default function EntdeckenPage() {
   // instantly even when a filter-active refetch is in flight. `undoSnapshots`
   // stores enough state to restore each entry — own properties remember their
   // prior status; scraped listings remember the UnifiedListing itself.
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(
+    () => cached ? new Set(cached.dismissedIds) : new Set(),
+  );
   const [undoEntries, setUndoEntries] = useState<UndoToastEntry[]>([]);
   const undoSnapshotsRef = useRef<Map<string, {
     source: 'own' | 'scraped';
@@ -360,6 +397,32 @@ export default function EntdeckenPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveFilterError, setSaveFilterError] = useState<string | null>(null);
   const [saveFilterSuccess, setSaveFilterSuccess] = useState<string | null>(null);
+
+  // Capture scrollY on unmount so a remount can restore it. Save on every
+  // navigation away — don't bother throttling scroll events; window.scrollY
+  // is cheap to read and we only read it once.
+  useEffect(() => {
+    return () => {
+      if (discoverStateCache) {
+        discoverStateCache.scrollY = window.scrollY;
+      }
+    };
+  }, []);
+
+  // Restore scroll position once, after the first non-loading render so the
+  // page actually has the height to scroll into. Subsequent renders (cache
+  // hits, filter changes, etc.) don't re-fire this.
+  const scrollRestoredRef = useRef(false);
+  useEffect(() => {
+    if (scrollRestoredRef.current) return;
+    if (scrapedLoading) return;
+    const savedY = discoverStateCache?.scrollY ?? 0;
+    if (savedY > 0) {
+      // Defer one frame so the layout pass completes before scrollTo.
+      requestAnimationFrame(() => window.scrollTo(0, savedY));
+    }
+    scrollRestoredRef.current = true;
+  }, [scrapedLoading]);
 
   // Check if any filter beyond defaults is active (needs server-side filtering)
   const hasActiveFilter = useCallback((f: FilterValues) => {
@@ -455,10 +518,38 @@ export default function EntdeckenPage() {
 
   // Track ids the user has promoted out of `new` during this Discover
   // session. We keep these visible (heart fills green, card stays in
-  // place) until the next mount of /search — the user explicitly asked
-  // for "remove only on next page load". `locallyPromotedIds` resets on
-  // unmount via the natural lifecycle of useState.
-  const [locallyPromotedIds, setLocallyPromotedIds] = useState<Set<string>>(new Set());
+  // place) until the next mount of /search. The module-level cache means
+  // "next mount" is now actually "next time the user hops away and back
+  // *after* navigating somewhere that resets the cache" — i.e., a sign-out
+  // or full reload. Mid-session navigations (Funnel → Discover) preserve
+  // the set so the user can keep clicking through their queue without
+  // promoted cards re-appearing.
+  const [locallyPromotedIds, setLocallyPromotedIds] = useState<Set<string>>(
+    () => cached ? new Set(cached.locallyPromotedIds) : new Set(),
+  );
+
+  // ── Persist Discover state across navigation ───────────────────────────────
+  // Save the current selection on every relevant change so a Funnel-and-back
+  // hop restores exactly what the user had. Scroll position is captured
+  // separately by an unmount-cleanup effect above.
+  useEffect(() => {
+    discoverStateCache = {
+      filterValues,
+      applied,
+      activeFilterId,
+      page,
+      activePresets: [...activePresets],
+      activeSavedFilterIds: [...activeSavedFilterIds],
+      view,
+      dismissedIds: [...dismissedIds],
+      locallyPromotedIds: [...locallyPromotedIds],
+      scrollY: discoverStateCache?.scrollY ?? 0,
+    };
+  }, [
+    filterValues, applied, activeFilterId, page,
+    activePresets, activeSavedFilterIds, view,
+    dismissedIds, locallyPromotedIds,
+  ]);
 
   // ── Merge scraped + user properties into final listing ──
   const { listings, mergedUserCount } = useMemo(() => {
