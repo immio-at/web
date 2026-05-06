@@ -1027,6 +1027,74 @@
     "roomsShort": "Zi.",
     "perSqm": "/m²"
   },
+  "portfolio": {
+    "title": "Analysen-Übersicht",
+    "subtitle": "{total} gespeicherte Analysen über alle Immobilien",
+    "backToFunnel": "Zurück zum Funnel",
+    "loading": "Wird geladen…",
+    "untitled": "(ohne Titel)",
+    "unnamedAnalysis": "(unbenannte Analyse)",
+    "today": "heute",
+    "yesterday": "gestern",
+    "rowCount": "{count} von {total} Zeilen",
+    "emptyActiveButDecided": "Keine aktiven Analysen. Entschiedene anzeigen ({count})?",
+    "button": {
+      "label": "Analysen-Übersicht"
+    },
+    "tab": {
+      "rental": {
+        "label": "Vermietung",
+        "empty": "Noch keine Vermietungs-Analysen. Öffne eine Immobilie und lege eine an."
+      },
+      "flip": {
+        "label": "Flip",
+        "empty": "Noch keine Flip-Analysen. Öffne eine Immobilie und lege eine an."
+      },
+      "owner": {
+        "label": "Eigennutzung",
+        "empty": "Noch keine Eigennutzungs-Analysen. Öffne eine Immobilie und lege eine an."
+      }
+    },
+    "column": {
+      "property": "Immobilie",
+      "stage": "Stufe",
+      "price": "Preis",
+      "sizeSqm": "m²",
+      "pricePerSqm": "€/m²",
+      "cashflowRendite": "Cashflow-Rendite",
+      "gesamtrenditeEk": "Gesamtrendite EK",
+      "monthlyCashflow": "Cashflow/Mon.",
+      "holdingMonths": "Haltedauer (Mon.)",
+      "resalePrice": "Verkaufspreis",
+      "netProfit": "Nettogewinn",
+      "roiEquity": "Rendite EK",
+      "annualisedCompound": "Annual. Rendite",
+      "monthlyCost": "Kosten/Mon.",
+      "annualCost": "Kosten/Jahr",
+      "totalCostOverTerm": "Gesamtkosten",
+      "lastCalculated": "Berechnet",
+      "flags": "Markierungen"
+    },
+    "flag": {
+      "priceChanged": "Preis geändert",
+      "gmbh": "GmbH",
+      "gmbhRetained": "Thes.",
+      "gmbhDistributed": "Aussch.",
+      "cash": "Bar"
+    },
+    "toggle": {
+      "showDecided": "Entschiedene anzeigen ({count})"
+    },
+    "tile": {
+      "title": "Analysen-Übersicht",
+      "savedCount": "{count} gespeichert",
+      "viewAll": "Alle anzeigen",
+      "empty": "Noch keine Analysen"
+    },
+    "export": {
+      "csv": "CSV exportieren"
+    }
+  },
   "propertyCard": {
     "saveToFunnel": "In Funnel speichern",
     "moveToInvestigating": "In Recherche verschieben",

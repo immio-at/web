@@ -1027,6 +1027,74 @@
     "roomsShort": "rm.",
     "perSqm": "/m²"
   },
+  "portfolio": {
+    "title": "Analyses overview",
+    "subtitle": "{total} saved analyses across your properties",
+    "backToFunnel": "Back to funnel",
+    "loading": "Loading…",
+    "untitled": "(untitled)",
+    "unnamedAnalysis": "(unnamed analysis)",
+    "today": "today",
+    "yesterday": "yesterday",
+    "rowCount": "{count} of {total} rows",
+    "emptyActiveButDecided": "No active analyses. Show decided ({count})?",
+    "button": {
+      "label": "Analyses overview"
+    },
+    "tab": {
+      "rental": {
+        "label": "Rental",
+        "empty": "No rental analyses yet. Open a property and create one."
+      },
+      "flip": {
+        "label": "Flip",
+        "empty": "No flip analyses yet. Open a property and create one."
+      },
+      "owner": {
+        "label": "Owner Occupied",
+        "empty": "No owner-occupied analyses yet. Open a property and create one."
+      }
+    },
+    "column": {
+      "property": "Property",
+      "stage": "Stage",
+      "price": "Price",
+      "sizeSqm": "m²",
+      "pricePerSqm": "€/m²",
+      "cashflowRendite": "Cashflow yield",
+      "gesamtrenditeEk": "Total return on equity",
+      "monthlyCashflow": "Cashflow/mo",
+      "holdingMonths": "Holding (months)",
+      "resalePrice": "Resale price",
+      "netProfit": "Net profit",
+      "roiEquity": "ROI on equity",
+      "annualisedCompound": "Annualised return",
+      "monthlyCost": "Cost/mo",
+      "annualCost": "Cost/yr",
+      "totalCostOverTerm": "Total cost",
+      "lastCalculated": "Updated",
+      "flags": "Flags"
+    },
+    "flag": {
+      "priceChanged": "Price changed",
+      "gmbh": "GmbH",
+      "gmbhRetained": "Ret.",
+      "gmbhDistributed": "Dist.",
+      "cash": "Cash"
+    },
+    "toggle": {
+      "showDecided": "Show decided ({count})"
+    },
+    "tile": {
+      "title": "Analyses overview",
+      "savedCount": "{count} saved",
+      "viewAll": "View all",
+      "empty": "No analyses yet"
+    },
+    "export": {
+      "csv": "Export CSV"
+    }
+  },
   "propertyCard": {
     "saveToFunnel": "Save to funnel",
     "moveToInvestigating": "Move to Investigating",

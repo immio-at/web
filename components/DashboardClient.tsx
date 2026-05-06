@@ -10,6 +10,7 @@ import DiscoverTile from '@/app/[locale]/(authenticated)/dashboard/components/Di
 import FunnelSummaryTile from '@/app/[locale]/(authenticated)/dashboard/components/FunnelSummaryTile';
 import SourcesSetupTile from '@/app/[locale]/(authenticated)/dashboard/components/SourcesSetupTile';
 import AnalyticsSnapshotTile from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
+import DashboardAnalysisTile from '@/app/[locale]/(authenticated)/dashboard/components/DashboardAnalysisTile';
 import PropertyCarousel from '@/app/[locale]/(authenticated)/dashboard/components/PropertyCarousel';
 import RecommendedCarousel from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
 import { type CardProperty, type CardActions } from '@/components/PropertyCard';
@@ -199,6 +200,11 @@ export default function DashboardClient({
         <FunnelSummaryTile properties={properties} />
         <SourcesSetupTile properties={properties} immioEmail={immioEmail} />
         <AnalyticsSnapshotTile properties={properties} />
+      </div>
+
+      {/* ADR-016 — portfolio analyses tile, full-width below the 2×2 summary grid */}
+      <div className="mb-8">
+        <DashboardAnalysisTile />
       </div>
 
       {/* Carousels */}

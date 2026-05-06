@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { setTokenGetter, clearAnalysesCache } from '@/lib/api';
+import { setTokenGetter, clearAnalysesCache, clearPortfolioAnalysesCache } from '@/lib/api';
 import { prefetchProperties, clearPropertiesCache } from '@/hooks/useProperties';
 import { prefetchSavedFilters, clearSavedFiltersCache } from '@/hooks/useSavedFilters';
 import { clearAnalyticsCache } from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
@@ -23,6 +23,7 @@ function clearAllUserCaches(): void {
   clearAnalyticsCache();
   clearRecommendedCache();
   clearAnalysesCache();
+  clearPortfolioAnalysesCache();
   clearDiscoverStateCache();
 }
 

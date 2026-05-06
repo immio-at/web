@@ -566,6 +566,40 @@ export async function getAnalyses(propertyId: string): Promise<PropertyAnalysis[
   return data;
 }
 
+// ─── ADR-016 — Portfolio analyses (cross-property) ───────────────────────────
+
+export interface PortfolioAnalysis extends PropertyAnalysis {
+  property: {
+    id: string;
+    title: string | null;
+    imageUrl: string | null;
+    price: number | null;
+    sizeSqm: number | null;
+    status: string;
+  };
+}
+
+let portfolioAnalysesCache: { data: PortfolioAnalysis[]; at: number } | null = null;
+const PORTFOLIO_CACHE_TTL_MS = 60_000;
+
+export function clearPortfolioAnalysesCache(): void {
+  portfolioAnalysesCache = null;
+}
+
+export async function getPortfolioAnalyses(): Promise<PortfolioAnalysis[]> {
+  if (portfolioAnalysesCache && Date.now() - portfolioAnalysesCache.at < PORTFOLIO_CACHE_TTL_MS) {
+    return portfolioAnalysesCache.data;
+  }
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/property-analyses`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const data = await handleResponse(response) as PortfolioAnalysis[];
+  portfolioAnalysesCache = { data, at: Date.now() };
+  return data;
+}
+
 export async function createAnalysis(
   propertyId: string,
   dto: CreateAnalysisDto,
@@ -581,6 +615,7 @@ export async function createAnalysis(
   });
   const created = await handleResponse(response) as PropertyAnalysis;
   analysesCache.delete(propertyId);
+  portfolioAnalysesCache = null;
   return created;
 }
 
@@ -600,6 +635,7 @@ export async function updateAnalysis(
   });
   const updated = await handleResponse(response) as PropertyAnalysis;
   analysesCache.delete(propertyId);
+  portfolioAnalysesCache = null;
   return updated;
 }
 
@@ -611,6 +647,7 @@ export async function deleteAnalysis(propertyId: string, analysisId: string): Pr
   });
   await handleResponse(response);
   analysesCache.delete(propertyId);
+  portfolioAnalysesCache = null;
 }
 
 // ─── Property Documents ─────────────────────────────────────────────────────

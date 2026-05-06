@@ -8,6 +8,7 @@ import { useProperties } from '@/hooks/useProperties';
 import FunnelBoard from '@/components/FunnelBoard';
 import PresetFilters from '@/components/PresetFilters';
 import AddPropertyButton from '@/components/ingestion/AddPropertyButton';
+import { Link } from '@/i18n/navigation';
 import { type PresetFilterKey } from '@/lib/preset-filters';
 import { type Property } from '@/lib/api';
 
@@ -18,6 +19,7 @@ const PropertyAnalysisModal = dynamic(
 
 export default function FunnelPage() {
   const t = useTranslations('funnel');
+  const tPortfolio = useTranslations('portfolio');
   const { filters: savedFilters, remove: removeFilter } = useSavedFilters();
   const { properties } = useProperties();
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
@@ -64,7 +66,32 @@ export default function FunnelPage() {
         activePresets={activePresets}
         activeSavedFilterIds={activeSavedFilterIds}
         savedFilters={savedFilters}
-        headerAction={<AddPropertyButton size="lg" />}
+        headerAction={
+          <div className="flex items-center gap-2">
+            <Link
+              href="/funnel/analyses/rental"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 text-sm font-medium"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M3 3h18v18H3z" />
+                <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+              </svg>
+              {tPortfolio('button.label')}
+            </Link>
+            <AddPropertyButton size="lg" />
+          </div>
+        }
       />
 
       {analyseProperty && (
