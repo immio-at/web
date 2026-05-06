@@ -7,7 +7,6 @@ import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/usePr
 import { useAuth } from '@/context/AuthContext';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import DiscoverTile from '@/app/[locale]/(authenticated)/dashboard/components/DiscoverTile';
-import FunnelSummaryTile from '@/app/[locale]/(authenticated)/dashboard/components/FunnelSummaryTile';
 import SourcesSetupTile from '@/app/[locale]/(authenticated)/dashboard/components/SourcesSetupTile';
 import AnalyticsSnapshotTile from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
 import DashboardAnalysisTile from '@/app/[locale]/(authenticated)/dashboard/components/DashboardAnalysisTile';
@@ -193,21 +192,7 @@ export default function DashboardClient({
 
   return (
     <div>
-      {/* Summary Tiles — 2×2 grid, equal row heights.
-          Add Property entry point now lives in the DiscoverTile header. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 lg:auto-rows-fr gap-4 mb-8">
-        <DiscoverTile savedFilters={savedFilters} properties={properties} />
-        <FunnelSummaryTile properties={properties} />
-        <SourcesSetupTile properties={properties} immioEmail={immioEmail} />
-        <AnalyticsSnapshotTile properties={properties} />
-      </div>
-
-      {/* ADR-016 — portfolio analyses tile, full-width below the 2×2 summary grid */}
-      <div className="mb-8">
-        <DashboardAnalysisTile />
-      </div>
-
-      {/* Carousels */}
+      {/* Carousels — top of the page. Recommended → Recently Viewed → New Arrivals. */}
       <RecommendedCarousel properties={properties} actions={cardActions} />
 
       <PropertyCarousel
@@ -223,6 +208,14 @@ export default function DashboardClient({
         emptyMessage={t('newArrivalsEmpty')}
         actions={cardActions}
       />
+
+      {/* Summary tiles — 2×2 grid below the carousels. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 lg:auto-rows-fr gap-4 mt-8 mb-8">
+        <DiscoverTile savedFilters={savedFilters} properties={properties} />
+        <DashboardAnalysisTile />
+        <SourcesSetupTile properties={properties} immioEmail={immioEmail} />
+        <AnalyticsSnapshotTile properties={properties} />
+      </div>
 
       {analyseProperty && (
         <PropertyAnalysisModal
