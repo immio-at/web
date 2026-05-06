@@ -70,6 +70,14 @@ export interface Property {
   purchaseDate: string | null;
   bkUmlagefaehig: number | null;
   bkNichtUmlagefaehig: number | null;
+  // ADR-015: dedup flags. suspectedDuplicateOf points at a scraped_listings
+  // row when Mechanism B suspects this property is the same as a scraped
+  // listing the user is also seeing on Discover. relistBadgeDismissedAt
+  // records when the user last acknowledged the "Relisted N×" pill.
+  suspectedDuplicateOf?: string | null;
+  suspectedDuplicateAt?: string | null;
+  relistBadgeDismissedAt?: string | null;
+  lastSeenAt?: string | null;
 }
 
 // ─── Property Analysis ────────────────────────────────────────────────────────
@@ -270,7 +278,20 @@ export async function oauthCallback(accessToken: string): Promise<{
 
 // ─── Import from URL ─────────────────────────────────────────────────────────
 
-export async function importFromUrl(url: string, status?: string): Promise<{ message: string; property: Property }> {
+// ADR-015 — backend now returns an `action` discriminator distinguishing a
+// fresh create from an update-in-place (relisting, Mechanism C) and a
+// soft-suspect (Mechanism B match against an active scraped listing).
+export type IngestAction =
+  | 'created'
+  | 'updated_existing'
+  | 'inserted_with_soft_suspicion';
+
+export async function importFromUrl(url: string, status?: string): Promise<{
+  message: string;
+  property: Property;
+  action: IngestAction;
+  suspectedDuplicateOf: string | null;
+}> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/from-url`, {
     method: 'POST',
@@ -279,6 +300,51 @@ export async function importFromUrl(url: string, status?: string): Promise<{ mes
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ url, status }),
+  });
+  return handleResponse(response);
+}
+
+// ─── ADR-015 dedup endpoints ─────────────────────────────────────────────────
+
+export interface ListingHistoryEvent {
+  id: string;
+  observedAt: string;
+  source: string;
+  sourceUrl: string | null;
+  platform: string | null;
+  price: number | null;
+  priceDelta: number | null;
+}
+
+export async function getListingHistory(propertyId: string): Promise<ListingHistoryEvent[]> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${propertyId}/listing-history`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  return handleResponse(response);
+}
+
+export async function applyDuplicateDecision(
+  propertyId: string,
+  decision: 'keep_both' | 'hide_this',
+): Promise<Property> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${propertyId}/duplicate-decision`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ decision }),
+  });
+  return handleResponse(response);
+}
+
+export async function dismissRelistBadge(propertyId: string): Promise<Property> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_URL}/properties/${propertyId}/dismiss-relist-badge`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${token}` },
   });
   return handleResponse(response);
 }
@@ -796,7 +862,15 @@ export async function createManualProperty(dto: CreateManualPropertyDto): Promis
   return handleResponse(response);
 }
 
-export async function createPropertyFromUrl(url: string, status?: string): Promise<Property> {
+// Returns the full ingest envelope (action discriminator + property + suspect ref)
+// so callers can render different toasts for new vs relisted vs soft-suspect
+// per ADR-015 §7.2. Older callers reading just the Property still work because
+// `result.property` carries the same shape.
+export async function createPropertyFromUrl(url: string, status?: string): Promise<{
+  property: Property;
+  action: IngestAction;
+  suspectedDuplicateOf: string | null;
+}> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/from-url`, {
     method: 'POST',
@@ -806,7 +880,16 @@ export async function createPropertyFromUrl(url: string, status?: string): Promi
     },
     body: JSON.stringify({ url, status }),
   });
-  return handleResponse(response);
+  const data = await handleResponse(response) as {
+    property: Property;
+    action?: IngestAction;
+    suspectedDuplicateOf?: string | null;
+  };
+  return {
+    property: data.property,
+    action: data.action ?? 'created',
+    suspectedDuplicateOf: data.suspectedDuplicateOf ?? null,
+  };
 }
 
 export async function applyPropertyDetailField(

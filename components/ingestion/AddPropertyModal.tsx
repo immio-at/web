@@ -36,7 +36,15 @@ type TabKey = 'url' | 'expose' | 'manual';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onCreated: (property: Property) => void;
+  // ADR-015 — `action` distinguishes a fresh create from a relisting
+  // update-in-place ('updated_existing') and a soft-suspect ('inserted_with_soft_suspicion').
+  // Callers that want to render a different toast / banner can branch on it.
+  // Defaults to 'created' for the Exposé and Manual paths which don't go
+  // through the unified ingest envelope yet.
+  onCreated: (
+    property: Property,
+    action?: 'created' | 'updated_existing' | 'inserted_with_soft_suspicion',
+  ) => void;
 }
 
 export default function AddPropertyModal({ open, onClose, onCreated }: Props) {
@@ -85,6 +93,7 @@ export default function AddPropertyModal({ open, onClose, onCreated }: Props) {
     setError(null);
 
     let property: Property | null = null;
+    let createAction: 'created' | 'updated_existing' | 'inserted_with_soft_suspicion' = 'created';
     setSubmitting(true);
     try {
       if (tab === 'url') {
@@ -93,7 +102,9 @@ export default function AddPropertyModal({ open, onClose, onCreated }: Props) {
           setSubmitting(false);
           return;
         }
-        property = await createPropertyFromUrl(url.trim(), stage);
+        const urlResult = await createPropertyFromUrl(url.trim(), stage);
+        property = urlResult.property;
+        createAction = urlResult.action;
       } else if (tab === 'expose') {
         if (!exposeFile) {
           setError(t('errors.fileRequired'));
@@ -147,7 +158,7 @@ export default function AddPropertyModal({ open, onClose, onCreated }: Props) {
       // (e.g. pricePerSqm generated column, createdAt server timestamp).
       optimisticInsert(property);
       refresh().catch(() => undefined);
-      onCreated(property);
+      onCreated(property, createAction);
       onClose();
     }
     setSubmitting(false);
