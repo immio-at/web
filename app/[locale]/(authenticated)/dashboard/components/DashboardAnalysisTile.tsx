@@ -72,21 +72,13 @@ export default function DashboardAnalysisTile() {
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-slate-900">{t('tile.title')}</h3>
-          <span className="text-xs text-slate-500">{t('tile.savedCount', { count: totalCount })}</span>
-        </div>
-        <Link
-          href={`/funnel/analyses/${activeTab}`}
-          className="text-xs text-slate-600 hover:text-slate-900"
-        >
-          {t('tile.viewAll')} →
-        </Link>
+    <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
+      <div className="flex items-center gap-2 mb-3">
+        <h3 className="text-base font-semibold text-gray-900">{t('tile.title')}</h3>
+        <span className="text-xs text-slate-500">{t('tile.savedCount', { count: totalCount })}</span>
       </div>
 
-      <div className="flex border-b border-slate-100">
+      <div className="flex border-b border-slate-100 -mx-5">
         {(['rental', 'flip', 'owner'] as const).map((tab) => {
           const active = tab === activeTab;
           const count = countsByUsageType[tab];
@@ -107,25 +99,34 @@ export default function DashboardAnalysisTile() {
         })}
       </div>
 
-      <PortfolioAnalysisTable
-        usageType={activeTab}
-        rows={rows}
-        loading={loading}
-        error={error}
-        totalCount={totalCount}
-        decidedCount={decidedCount}
-        includeDecided={false}
-        onToggleDecided={() => {
-          /* tile is glance-only — toggle lives on the full table */
-        }}
-        sort={sort}
-        onSortChange={() => {
-          /* sort fixed to default on the tile */
-        }}
-        compact={true}
-        locale={locale}
-        onOpen={handleOpen}
-      />
+      <div className="flex-1 -mx-5">
+        <PortfolioAnalysisTable
+          usageType={activeTab}
+          rows={rows}
+          loading={loading}
+          error={error}
+          totalCount={totalCount}
+          decidedCount={decidedCount}
+          includeDecided={false}
+          onToggleDecided={() => {
+            /* tile is glance-only — toggle lives on the full table */
+          }}
+          sort={sort}
+          onSortChange={() => {
+            /* sort fixed to default on the tile */
+          }}
+          compact={true}
+          locale={locale}
+          onOpen={handleOpen}
+        />
+      </div>
+
+      <Link
+        href={`/funnel/analyses/${activeTab}`}
+        className="mt-3 block w-full text-center text-sm font-medium text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-lg py-2.5 transition-colors"
+      >
+        {t('tile.viewAll')}
+      </Link>
 
       {modalProperty && (
         <PropertyAnalysisModal
