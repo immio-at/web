@@ -1397,16 +1397,42 @@
     "no": "No",
     "documents": {
       "title": "Documents",
-      "upload": "Upload PDF",
       "choose": "Choose files",
       "uploading": "Uploading…",
       "delete": "Delete",
       "empty": "No documents yet. Upload an Exposé to enable AI extraction.",
-      "dropHint": "Drop PDFs here or choose files — the type is detected automatically",
+      "dropHint": "Drop PDF or ZIP here or choose files — the type is detected automatically",
       "errorUpload": "Upload failed",
       "errorPdfOnly": "Only PDF files are supported.",
-      "maxReached": "Max 10 documents",
-      "confirmDelete": "Delete document \"{name}\"?"
+      "errorPdfOrZipOnly": "Only PDF or ZIP files are supported.",
+      "maxReached": "Max 12 documents",
+      "confirmDelete": "Delete document \"{name}\"?",
+      "upload": {
+        "toast": {
+          "imported": "Imported {imported} of {total} documents",
+          "skipped": "Skipped:",
+          "failed": "Failed:",
+          "allSkipped": "No new documents imported. All files were skipped."
+        },
+        "skipReason": {
+          "duplicate": "already exists",
+          "non_pdf": "image files are not supported",
+          "cap_reached": "reached the 12-document limit",
+          "too_large": "file too large"
+        },
+        "failReason": {
+          "pdf_parse_failed": "couldn't read PDF",
+          "storage_failed": "storage error",
+          "unknown": "processing error"
+        },
+        "error": {
+          "zipTooLarge": "ZIP file too large (max 50 MB)",
+          "zipCorrupt": "Couldn't read the ZIP file",
+          "zipEncrypted": "Password-protected ZIPs are not supported",
+          "zipBomb": "ZIP expands to too much data",
+          "zipTooManyEntries": "ZIP has too many entries (max 100)"
+        }
+      }
     },
     "extraction": {
       "title": "AI Extraction",

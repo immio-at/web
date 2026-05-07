@@ -1397,16 +1397,42 @@
     "no": "Nein",
     "documents": {
       "title": "Dokumente",
-      "upload": "PDF hochladen",
       "choose": "Dateien auswählen",
       "uploading": "Wird hochgeladen…",
       "delete": "Löschen",
       "empty": "Noch keine Dokumente. Lade ein Exposé hoch, um die KI-Extraktion zu nutzen.",
-      "dropHint": "PDFs hierher ziehen oder auswählen — der Typ wird automatisch erkannt",
+      "dropHint": "PDF oder ZIP hierher ziehen oder auswählen — der Typ wird automatisch erkannt",
       "errorUpload": "Upload fehlgeschlagen",
       "errorPdfOnly": "Nur PDF-Dateien werden unterstützt.",
-      "maxReached": "Max. 10 Dokumente",
-      "confirmDelete": "Dokument \"{name}\" löschen?"
+      "errorPdfOrZipOnly": "Nur PDF- oder ZIP-Dateien werden unterstützt.",
+      "maxReached": "Max. 12 Dokumente",
+      "confirmDelete": "Dokument \"{name}\" löschen?",
+      "upload": {
+        "toast": {
+          "imported": "{imported} von {total} Dokumenten importiert",
+          "skipped": "Übersprungen:",
+          "failed": "Fehlgeschlagen:",
+          "allSkipped": "Keine neuen Dokumente importiert. Alle Dateien wurden übersprungen."
+        },
+        "skipReason": {
+          "duplicate": "bereits vorhanden",
+          "non_pdf": "Bilddateien werden nicht unterstützt",
+          "cap_reached": "Maximum von 12 Dokumenten erreicht",
+          "too_large": "Datei zu groß"
+        },
+        "failReason": {
+          "pdf_parse_failed": "PDF konnte nicht gelesen werden",
+          "storage_failed": "Speicher-Fehler",
+          "unknown": "Fehler beim Verarbeiten"
+        },
+        "error": {
+          "zipTooLarge": "ZIP-Datei zu groß (max. 50 MB)",
+          "zipCorrupt": "ZIP-Datei konnte nicht gelesen werden",
+          "zipEncrypted": "Passwortgeschützte ZIPs werden nicht unterstützt",
+          "zipBomb": "ZIP-Datei zu groß nach Entpacken",
+          "zipTooManyEntries": "ZIP enthält zu viele Dateien (max. 100)"
+        }
+      }
     },
     "extraction": {
       "title": "KI-Extraktion",

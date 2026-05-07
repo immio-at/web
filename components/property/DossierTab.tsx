@@ -25,9 +25,11 @@ import {
   applyPropertyDetailField,
   getDocuments,
   uploadDocument,
+  uploadDocumentZip,
   getDocumentDownloadUrl,
   updateDocumentLabel,
   deleteDocument,
+  type ZipUploadResult,
 } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
@@ -103,6 +105,10 @@ const LABEL_KEYWORDS: { keyword: string; label: string }[] = [
   { keyword: 'nutzwert',  label: 'Gutachten' },
   { keyword: 'bewertung', label: 'Gutachten' },
 ];
+
+// ADR-019 ZD1 — kept in sync with backend DOCUMENTS_PER_PROPERTY_CAP.
+// One-line change point if the cap moves again.
+const DOCUMENT_CAP = 12;
 
 function inferLabelFromFilename(filename: string): string {
   const stem = filename.replace(/\.[^.]+$/, '').toLowerCase();
@@ -235,6 +241,9 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
 
   // Document upload state
   const [uploading, setUploading] = useState(false);
+  // ADR-019 — last upload's per-file outcome envelope for the toast.
+  const [uploadReport, setUploadReport] = useState<ZipUploadResult | null>(null);
+  const [reportExpanded, setReportExpanded] = useState(false);
   const [docError, setDocError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -371,31 +380,87 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
 
   async function handleFiles(fileList: FileList | File[] | null) {
     if (!fileList) return;
-    const files = Array.from(fileList).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
-    if (files.length === 0) {
-      setDocError(t('documents.errorPdfOnly'));
+    const all = Array.from(fileList);
+    const pdfs = all.filter(
+      f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'),
+    );
+    const zips = all.filter(
+      f =>
+        f.type === 'application/zip' ||
+        f.type === 'application/x-zip-compressed' ||
+        f.type === 'application/x-zip' ||
+        f.name.toLowerCase().endsWith('.zip'),
+    );
+    if (pdfs.length === 0 && zips.length === 0) {
+      setDocError(t('documents.errorPdfOrZipOnly'));
       return;
     }
-    const slotsLeft = 10 - documents.length;
-    const toUpload = files.slice(0, slotsLeft);
-    const overflow = files.length > slotsLeft;
 
     setUploading(true);
     setDocError(null);
+    setUploadReport(null);
     try {
-      const results = await Promise.allSettled(
-        toUpload.map(f => uploadDocument(property.id, f, inferLabelFromFilename(f.name))),
+      // PDF path — existing behaviour, preserves slot-counting.
+      const slotsLeft = DOCUMENT_CAP - documents.length;
+      const pdfsToUpload = pdfs.slice(0, slotsLeft);
+      const pdfOverflow = pdfs.length > slotsLeft;
+
+      const pdfResults = await Promise.allSettled(
+        pdfsToUpload.map(f => uploadDocument(property.id, f, inferLabelFromFilename(f.name))),
       );
       const newDocs: PropertyDocument[] = [];
-      const failures: string[] = [];
-      for (let i = 0; i < results.length; i++) {
-        const r = results[i];
+      const pdfFailures: string[] = [];
+      for (let i = 0; i < pdfResults.length; i++) {
+        const r = pdfResults[i];
         if (r.status === 'fulfilled') newDocs.push(r.value);
-        else failures.push(`${toUpload[i].name}: ${r.reason instanceof Error ? r.reason.message : 'failed'}`);
+        else pdfFailures.push(`${pdfsToUpload[i].name}: ${r.reason instanceof Error ? r.reason.message : 'failed'}`);
       }
-      if (newDocs.length > 0) setDocuments(prev => [...newDocs, ...prev]);
-      if (failures.length > 0) setDocError(failures.join('\n'));
-      else if (overflow) setDocError(t('documents.maxReached'));
+
+      // ZIP path — backend returns per-file outcome envelope. We
+      // merge across multiple ZIPs in a single drop into one report
+      // so the toast surfaces the full picture.
+      const aggregate: ZipUploadResult = { imported: [], skipped: [], failed: [] };
+      for (const zip of zips) {
+        try {
+          const result = await uploadDocumentZip(property.id, zip);
+          aggregate.imported.push(...result.imported);
+          aggregate.skipped.push(...result.skipped);
+          aggregate.failed.push(...result.failed);
+        } catch (err) {
+          // Whole-ZIP errors (zip_too_large, zip_corrupt, etc.) come
+          // back from the backend as BadRequestException with an
+          // `error` discriminator the toast can map to a friendlier
+          // string.
+          const msg = err instanceof Error ? err.message : String(err);
+          aggregate.failed.push({ fileName: zip.name, reason: 'unknown', detail: msg });
+        }
+      }
+
+      // Refresh document list — ZIP imports flow back through a
+      // GET to surface every new row with its proper id (the
+      // imported envelope only carries id+name+label+size; an
+      // existing-doc refresh is the simplest path to a clean state).
+      const inserted = newDocs;
+      if (aggregate.imported.length > 0) {
+        // Refetch so the new ZIP-imported docs show in the list with
+        // full metadata and proper ordering.
+        const fresh = await getDocuments(property.id);
+        setDocuments(fresh);
+      } else if (inserted.length > 0) {
+        setDocuments(prev => [...inserted, ...prev]);
+      }
+
+      // Surface the aggregate when there's anything noteworthy.
+      const hasAnyZipDetail =
+        aggregate.imported.length + aggregate.skipped.length + aggregate.failed.length > 0;
+      if (hasAnyZipDetail) {
+        setUploadReport(aggregate);
+      }
+      if (pdfFailures.length > 0) {
+        setDocError(pdfFailures.join('\n'));
+      } else if (pdfOverflow && aggregate.imported.length === 0) {
+        setDocError(t('documents.maxReached'));
+      }
     } finally {
       setUploading(false);
     }
@@ -610,29 +675,37 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
             {t('documents.title')} <span className="text-gray-400 font-normal">({documents.length})</span>
           </h3>
           <label className={`text-xs font-medium px-3 py-1.5 rounded border cursor-pointer transition-colors ${
-            uploading || documents.length >= 10
+            uploading || documents.length >= DOCUMENT_CAP
               ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
               : 'bg-teal-600 text-white border-teal-600 hover:bg-teal-700'
           }`}>
             {uploading ? t('documents.uploading') : t('documents.choose')}
             <input
               type="file"
-              accept=".pdf,application/pdf"
+              accept=".pdf,application/pdf,.zip,application/zip,application/x-zip-compressed"
               multiple
               onChange={handleUploadInput}
-              disabled={uploading || documents.length >= 10}
+              disabled={uploading || documents.length >= DOCUMENT_CAP}
               className="hidden"
             />
           </label>
         </div>
 
-        {documents.length >= 10 && (
+        {documents.length >= DOCUMENT_CAP && (
           <p className="text-xs text-amber-600 mb-2">{t('documents.maxReached')}</p>
         )}
 
         {docError && (
           <div className="bg-red-50 border border-red-200 rounded p-2 mb-2 text-xs text-red-700 whitespace-pre-line">{docError}</div>
         )}
+
+        {/* ADR-019 ZD7 — per-file outcome toast for ZIP uploads */}
+        {uploadReport && <ZipUploadToast
+          report={uploadReport}
+          expanded={reportExpanded}
+          onToggle={() => setReportExpanded(v => !v)}
+          onDismiss={() => { setUploadReport(null); setReportExpanded(false); }}
+        />}
 
         {documents.length === 0 ? (
           <div className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
@@ -785,6 +858,83 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+// ── ZipUploadToast (ADR-019 §4.3) ──────────────────────────────────────────
+// Headline + collapsible per-file detail. Auto-dismisses after 8s
+// (longer than the standard 4s so the user can read the skipped list).
+// Uses a warning variant when 0 files were imported.
+
+interface ZipUploadToastProps {
+  report: ZipUploadResult;
+  expanded: boolean;
+  onToggle: () => void;
+  onDismiss: () => void;
+}
+
+function ZipUploadToast({ report, expanded, onToggle, onDismiss }: ZipUploadToastProps) {
+  const t = useTranslations('dossier');
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, 8000);
+    return () => clearTimeout(timer);
+  }, [report, onDismiss]);
+
+  const total = report.imported.length + report.skipped.length + report.failed.length;
+  const allSkipped = report.imported.length === 0 && total > 0;
+  const hasDetail = report.skipped.length > 0 || report.failed.length > 0;
+
+  const headline = allSkipped
+    ? t('documents.upload.toast.allSkipped')
+    : t('documents.upload.toast.imported', { imported: report.imported.length, total });
+
+  const tone = allSkipped
+    ? 'bg-amber-50 border-amber-200 text-amber-900'
+    : 'bg-green-50 border-green-200 text-green-900';
+
+  return (
+    <div className={`border rounded p-2 mb-2 text-xs ${tone}`}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium">{allSkipped ? '⚠ ' : '✓ '}{headline}</span>
+        <div className="flex items-center gap-2">
+          {hasDetail && (
+            <button type="button" onClick={onToggle} className="text-xs underline">
+              {expanded ? '▴' : '▾'}
+            </button>
+          )}
+          <button type="button" onClick={onDismiss} className="text-xs text-slate-500 hover:text-slate-900" aria-label="dismiss">✕</button>
+        </div>
+      </div>
+      {expanded && hasDetail && (
+        <div className="mt-2 text-[11px] space-y-1">
+          {report.skipped.length > 0 && (
+            <div>
+              <p className="font-semibold uppercase tracking-wide text-[10px] mb-0.5">{t('documents.upload.toast.skipped')}</p>
+              <ul className="space-y-0.5">
+                {report.skipped.map((s, i) => (
+                  <li key={`s${i}`} className="break-words">
+                    • {s.fileName} — {t(`documents.upload.skipReason.${s.reason}`)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {report.failed.length > 0 && (
+            <div>
+              <p className="font-semibold uppercase tracking-wide text-[10px] mb-0.5">{t('documents.upload.toast.failed')}</p>
+              <ul className="space-y-0.5">
+                {report.failed.map((f, i) => (
+                  <li key={`f${i}`} className="break-words">
+                    • {f.fileName} — {t(`documents.upload.failReason.${f.reason}`)}
+                    {f.detail && <span className="text-slate-500"> ({f.detail})</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

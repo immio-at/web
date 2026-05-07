@@ -684,6 +684,40 @@ export async function uploadDocument(propertyId: string, file: File, label: stri
   return handleResponse(response);
 }
 
+// ─── ADR-019 — ZIP bundle upload ────────────────────────────────────────────
+
+export type ZipSkipReason = 'duplicate' | 'non_pdf' | 'cap_reached' | 'too_large';
+export type ZipFailReason = 'pdf_parse_failed' | 'storage_failed' | 'unknown';
+
+export interface ZipUploadResult {
+  imported: { documentId: string; fileName: string; label: string; size: number }[];
+  skipped: { fileName: string; reason: ZipSkipReason }[];
+  failed: { fileName: string; reason: ZipFailReason; detail?: string }[];
+}
+
+/**
+ * Same endpoint as uploadDocument — the backend sniffs MIME / magic
+ * bytes and routes to the ZIP path. Returns the per-file result envelope
+ * so callers can surface skipped/failed detail in the UI.
+ */
+export async function uploadDocumentZip(
+  propertyId: string,
+  file: File,
+): Promise<ZipUploadResult> {
+  const token = await getAuthToken();
+  const formData = new FormData();
+  formData.append('file', file);
+  // Label is ignored on the ZIP path — labels are inferred per file
+  // server-side. Pass a dummy so the multipart form has the field.
+  formData.append('label', 'Sonstiges');
+  const response = await fetch(`${API_URL}/properties/${propertyId}/documents`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData,
+  });
+  return handleResponse(response);
+}
+
 export async function getDocumentDownloadUrl(propertyId: string, documentId: string): Promise<string> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/${propertyId}/documents/${documentId}/download`, {
