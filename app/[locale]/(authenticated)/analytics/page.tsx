@@ -163,14 +163,19 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Funnel distribution */}
+        {/* Funnel distribution. The user-visible funnel runs from
+            `investigating` onward — `new` is the auto-import landing
+            stage and `won` / `not_relevant` / `delisted` are terminal
+            states that don't belong in the per-stage distribution. */}
         <div className="bg-white border border-gray-200 rounded-xl p-5">
           <h3 className="text-base font-semibold text-gray-900 mb-4">{t('funnel.title')}</h3>
           <BarChart
-            items={data.funnelDistribution.map(s => ({
-              label: tStages(STAGE_I18N_KEY[s.stage] ?? s.stage),
-              value: s.count,
-            }))}
+            items={data.funnelDistribution
+              .filter(s => ['investigating', 'interested', 'due_diligence', 'offer_made', 'parked'].includes(s.stage))
+              .map(s => ({
+                label: tStages(STAGE_I18N_KEY[s.stage] ?? s.stage),
+                value: s.count,
+              }))}
             color="bg-teal-500"
           />
         </div>
