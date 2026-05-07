@@ -742,6 +742,9 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
       className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4 px-2"
       onPointerDown={handleBackdropPointerDown}
       onPointerUp={handleBackdropPointerUp}
+      data-property-modal-open=""
+      data-property-id={property.id}
+      data-property-title={property.title ?? ''}
     >
       <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl my-auto">
 

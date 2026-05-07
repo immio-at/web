@@ -1108,3 +1108,159 @@ export async function getDueDiligenceResults(
   if (!res.ok) throw new Error(`DD results fetch failed: ${res.status}`);
   return res.json();
 }
+
+// ─── ADR-018 — Tester feedback reporting ────────────────────────────────────
+
+export type FeedbackType = 'bug' | 'feature' | 'improvement';
+export type FeedbackStatus =
+  | 'open'
+  | 'in_progress'
+  | 'resolved'
+  | 'wont_fix'
+  | 'duplicate';
+
+export interface FeedbackAttachment {
+  id: string;
+  storageKey: string;
+  fileName: string;
+  fileSize: number;
+  contentType: string;
+  signedUrl: string | null;
+}
+
+export interface FeedbackReport {
+  id: string;
+  userId: string;
+  type: FeedbackType;
+  title: string;
+  description: string;
+  status: FeedbackStatus;
+  teamNote: string | null;
+  contextUrl: string | null;
+  userAgent: string | null;
+  viewportWidth: number | null;
+  viewportHeight: number | null;
+  propertyId: string | null;
+  propertyTitle: string | null;
+  acknowledgedAt: string | null;
+  statusUpdatedAt: string | null;
+  createdAt: string;
+  attachments: FeedbackAttachment[];
+  user?: { id: string; email: string };
+}
+
+export interface UploadAttachmentResponse {
+  storageKey: string;
+  fileName: string;
+  fileSize: number;
+  contentType: string;
+}
+
+export interface CreateFeedbackDto {
+  type: FeedbackType;
+  title: string;
+  description: string;
+  contextUrl?: string | null;
+  userAgent?: string | null;
+  viewportWidth?: number | null;
+  viewportHeight?: number | null;
+  propertyId?: string | null;
+  propertyTitle?: string | null;
+  attachmentKeys?: string[];
+}
+
+export async function uploadFeedbackAttachment(
+  file: File,
+): Promise<UploadAttachmentResponse> {
+  const token = await getAuthToken();
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(`${API_URL}/feedback/attachments`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  return handleResponse(res);
+}
+
+export async function createFeedbackReport(
+  dto: CreateFeedbackDto,
+): Promise<FeedbackReport> {
+  const token = await getAuthToken();
+  const res = await fetch(`${API_URL}/feedback`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(dto),
+  });
+  return handleResponse(res);
+}
+
+export async function getMyFeedbackReports(): Promise<FeedbackReport[]> {
+  const token = await getAuthToken();
+  const res = await fetch(`${API_URL}/feedback`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  return handleResponse(res);
+}
+
+export interface AdminFeedbackFilters {
+  status?: FeedbackStatus;
+  type?: FeedbackType;
+  userId?: string;
+  unacknowledged?: boolean;
+}
+
+export async function getAdminFeedbackReports(
+  filters: AdminFeedbackFilters = {},
+): Promise<FeedbackReport[]> {
+  const token = await getAuthToken();
+  const params = new URLSearchParams();
+  if (filters.status) params.set('status', filters.status);
+  if (filters.type) params.set('type', filters.type);
+  if (filters.userId) params.set('userId', filters.userId);
+  if (filters.unacknowledged) params.set('unacknowledged', 'true');
+  const qs = params.toString();
+  const res = await fetch(`${API_URL}/admin/feedback${qs ? `?${qs}` : ''}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  return handleResponse(res);
+}
+
+export async function updateAdminFeedback(
+  id: string,
+  dto: { status?: FeedbackStatus; teamNote?: string | null },
+): Promise<FeedbackReport> {
+  const token = await getAuthToken();
+  const res = await fetch(`${API_URL}/admin/feedback/${id}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(dto),
+  });
+  return handleResponse(res);
+}
+
+export async function acknowledgeAdminFeedback(id: string): Promise<FeedbackReport> {
+  const token = await getAuthToken();
+  const res = await fetch(`${API_URL}/admin/feedback/${id}/acknowledge`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleResponse(res);
+}
+
+export async function getUnacknowledgedFeedbackCount(): Promise<{ count: number }> {
+  const token = await getAuthToken();
+  const res = await fetch(`${API_URL}/admin/feedback/unacknowledged-count`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  return handleResponse(res);
+}

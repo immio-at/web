@@ -6,6 +6,9 @@ import { Link } from '@/i18n/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
+import dynamic from 'next/dynamic';
+
+const FeedbackDrawer = dynamic(() => import('@/components/feedback/FeedbackDrawer'), { ssr: false });
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -18,6 +21,23 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 // ─── Placeholder section ──────────────────────────────────────────────────────
+function FeedbackSection() {
+  const tFb = useTranslations('feedback');
+  const [open, setOpen] = useState(false);
+  return (
+    <Section title={tFb('button.label')}>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+      >
+        {tFb('button.label')}
+      </button>
+      {open && <FeedbackDrawer onClose={() => setOpen(false)} />}
+    </Section>
+  );
+}
+
 function PlaceholderSection({ title, description }: { title: string; description: string }) {
   return (
     <Section title={title}>
@@ -140,6 +160,9 @@ export default function SettingsPage() {
           </button>
         </div>
       </Section>
+
+      {/* ── Feedback (mobile fallback for the floating button) ──────────────── */}
+      <FeedbackSection />
 
       {/* ── Saved Filters link ──────────────────────────────────────────────── */}
       <Section title={t('filters.title')}>

@@ -1027,6 +1027,95 @@
     "roomsShort": "rm.",
     "perSqm": "/m²"
   },
+  "feedback": {
+    "button": { "label": "Send feedback" },
+    "drawer": {
+      "title": "Feedback",
+      "tab": { "new": "New report", "mine": "My reports" },
+      "close": "Close",
+      "discardConfirm": {
+        "title": "Discard report?",
+        "discard": "Discard",
+        "keep": "Keep editing"
+      }
+    },
+    "new": {
+      "type": {
+        "label": "Type",
+        "bug": "Bug",
+        "feature": "Feature",
+        "improvement": "Improvement"
+      },
+      "title": { "label": "Title", "placeholder": "Short summary" },
+      "description": {
+        "label": "Description",
+        "placeholder": "What happened? What did you expect? Steps to reproduce?"
+      },
+      "attachments": {
+        "label": "Screenshots (optional, max 3)",
+        "dropZone": "Drag & drop, click, or paste — PNG, JPG, GIF (max 5 MB)",
+        "error": {
+          "tooBig": "File too large (max 5 MB).",
+          "wrongType": "Only PNG, JPG or GIF allowed.",
+          "tooMany": "Up to 3 attachments."
+        }
+      },
+      "submit": "Send",
+      "cancel": "Cancel",
+      "success": {
+        "title": "Report received",
+        "body": "Thanks! Your report is now under \"My reports\".",
+        "close": "Close"
+      },
+      "error": {
+        "uploadFailed": "An attachment failed to upload.",
+        "submitFailed": "Couldn't send the report."
+      },
+      "validation": {
+        "titleRequired": "Title is required.",
+        "descriptionRequired": "Description is required.",
+        "titleTooLong": "Title too long (max 120 characters).",
+        "descriptionTooLong": "Description too long (max 4000 characters)."
+      }
+    },
+    "mine": {
+      "loading": "Loading…",
+      "empty": {
+        "title": "No reports yet",
+        "body": "Create your first report in the \"New report\" tab."
+      },
+      "status": {
+        "open": "Open",
+        "in_progress": "In progress",
+        "resolved": "Resolved",
+        "wont_fix": "Won't fix",
+        "duplicate": "Duplicate"
+      },
+      "teamNote": { "heading": "Team response" }
+    }
+  },
+  "admin": {
+    "feedback": {
+      "title": "Reports",
+      "unacknowledgedToast": "{count, plural, one {# unacknowledged report} other {# unacknowledged reports}} — review now",
+      "filters": {
+        "status": "Status",
+        "type": "Type",
+        "user": "User",
+        "all": "All",
+        "unacknowledgedOnly": "Unacknowledged only"
+      },
+      "row": {
+        "acknowledge": "✓ Acknowledge",
+        "acknowledged": "Acknowledged",
+        "context": "Context",
+        "teamNotePlaceholder": "Add team note…",
+        "teamNoteSaved": "Saved",
+        "statusUpdated": "Status updated"
+      },
+      "empty": "No reports found."
+    }
+  },
   "propertyFacts": {
     "section": { "title": "FACTS" },
     "add": {

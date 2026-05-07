@@ -1027,6 +1027,95 @@
     "roomsShort": "Zi.",
     "perSqm": "/m²"
   },
+  "feedback": {
+    "button": { "label": "Feedback senden" },
+    "drawer": {
+      "title": "Feedback",
+      "tab": { "new": "Neuer Bericht", "mine": "Meine Berichte" },
+      "close": "Schließen",
+      "discardConfirm": {
+        "title": "Bericht verwerfen?",
+        "discard": "Verwerfen",
+        "keep": "Weiter bearbeiten"
+      }
+    },
+    "new": {
+      "type": {
+        "label": "Art",
+        "bug": "Bug",
+        "feature": "Feature",
+        "improvement": "Verbesserung"
+      },
+      "title": { "label": "Titel", "placeholder": "Kurze Zusammenfassung" },
+      "description": {
+        "label": "Beschreibung",
+        "placeholder": "Was ist passiert? Was hast du erwartet? Schritte zum Reproduzieren?"
+      },
+      "attachments": {
+        "label": "Screenshots (optional, max. 3)",
+        "dropZone": "Per Drag & Drop, Klick oder Strg+V einfügen — PNG, JPG, GIF (max. 5 MB)",
+        "error": {
+          "tooBig": "Datei zu groß (max. 5 MB).",
+          "wrongType": "Nur PNG, JPG oder GIF erlaubt.",
+          "tooMany": "Maximal 3 Anhänge."
+        }
+      },
+      "submit": "Senden",
+      "cancel": "Abbrechen",
+      "success": {
+        "title": "Bericht erhalten",
+        "body": "Vielen Dank! Du findest deinen Bericht jetzt unter \"Meine Berichte\".",
+        "close": "Schließen"
+      },
+      "error": {
+        "uploadFailed": "Ein Anhang konnte nicht hochgeladen werden.",
+        "submitFailed": "Bericht konnte nicht gesendet werden."
+      },
+      "validation": {
+        "titleRequired": "Titel ist erforderlich.",
+        "descriptionRequired": "Beschreibung ist erforderlich.",
+        "titleTooLong": "Titel zu lang (max. 120 Zeichen).",
+        "descriptionTooLong": "Beschreibung zu lang (max. 4000 Zeichen)."
+      }
+    },
+    "mine": {
+      "loading": "Wird geladen…",
+      "empty": {
+        "title": "Noch keine Berichte",
+        "body": "Erstelle deinen ersten Bericht im Tab \"Neuer Bericht\"."
+      },
+      "status": {
+        "open": "Offen",
+        "in_progress": "In Arbeit",
+        "resolved": "Erledigt",
+        "wont_fix": "Wird nicht behoben",
+        "duplicate": "Duplikat"
+      },
+      "teamNote": { "heading": "Team-Antwort" }
+    }
+  },
+  "admin": {
+    "feedback": {
+      "title": "Berichte",
+      "unacknowledgedToast": "{count, plural, one {# unbestätigter Bericht} other {# unbestätigte Berichte}} — jetzt prüfen",
+      "filters": {
+        "status": "Status",
+        "type": "Art",
+        "user": "User",
+        "all": "Alle",
+        "unacknowledgedOnly": "Nur unbestätigte"
+      },
+      "row": {
+        "acknowledge": "✓ Bestätigen",
+        "acknowledged": "Bestätigt",
+        "context": "Kontext",
+        "teamNotePlaceholder": "Team-Notiz hinzufügen…",
+        "teamNoteSaved": "Gespeichert",
+        "statusUpdated": "Status aktualisiert"
+      },
+      "empty": "Keine Berichte gefunden."
+    }
+  },
   "propertyFacts": {
     "section": { "title": "FAKTEN" },
     "add": {

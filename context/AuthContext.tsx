@@ -9,6 +9,7 @@ import { prefetchSavedFilters, clearSavedFiltersCache } from '@/hooks/useSavedFi
 import { clearAnalyticsCache } from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
 import { clearRecommendedCache } from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
 import { clearDiscoverStateCache } from '@/app/[locale]/(authenticated)/search/page';
+import { clearFeedbackDrawerState } from '@/components/feedback/FeedbackDrawer';
 
 /**
  * Wipe every module-level cache that holds user-scoped data. Called on
@@ -25,6 +26,7 @@ function clearAllUserCaches(): void {
   clearAnalysesCache();
   clearPortfolioAnalysesCache();
   clearDiscoverStateCache();
+  clearFeedbackDrawerState();
 }
 
 // ─── App-specific fields Supabase doesn't know about ─────────────────────────
