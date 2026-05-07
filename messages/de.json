@@ -1027,6 +1027,113 @@
     "roomsShort": "Zi.",
     "perSqm": "/m²"
   },
+  "propertyFacts": {
+    "section": { "title": "FAKTEN" },
+    "add": {
+      "button": "+ hinzu",
+      "popover": { "title": "Feld auswählen" }
+    },
+    "edit": { "suffix": "(bearbeiten)" },
+    "save": "Speichern",
+    "delete": "Löschen",
+    "errorSave": "Fehler beim Speichern. Bitte erneut versuchen.",
+    "boolean": { "yes": "Ja", "no": "Nein" },
+    "source": {
+      "manual": "Manuell",
+      "aiExpose": "KI aus Exposé",
+      "aiListing": "Aus Inserat"
+    },
+    "label": {
+      "addressCombined": "Adresse",
+      "baujahr": "Baujahr",
+      "haustyp": "Bauart",
+      "zustand": "Zustand",
+      "etage": "Etage",
+      "aufzug": "Aufzug",
+      "keller": "Keller",
+      "aussenflaeche": "Außenfläche",
+      "parkplatz": "Parkplatz",
+      "heizung": "Heizung",
+      "boden": "Boden",
+      "fenster": "Fenster",
+      "bathrooms": "Bäder",
+      "separateWC": "Separates WC",
+      "widmung": "Widmung",
+      "grundflaeche": "Grundfläche",
+      "hwbClassValue": "Energieklasse",
+      "beziehbarAb": "Bezugstermin"
+    },
+    "format": {
+      "etage": { "ground": "EG", "numbered": "{n}.OG" },
+      "hwb": {
+        "classAndValue": "HWB {cls} ({val})",
+        "classOnly": "HWB {cls}",
+        "valueOnly": "HWB {val} kWh/m²a"
+      },
+      "bathrooms": { "one": "1 Bad", "many": "{n} Bäder" },
+      "beziehbarAb": "Beziehbar ab {date}",
+      "grundflaeche": "Grundfläche {n}m²"
+    },
+    "enum": {
+      "haustyp": {
+        "altbau": "Altbau",
+        "gruenderzeit": "Gründerzeit",
+        "neubau": "Neubau",
+        "dachausbau": "Dachausbau"
+      },
+      "zustand": {
+        "erstbezug": "Erstbezug",
+        "neuwertig": "Neuwertig",
+        "gepflegt": "Gepflegt",
+        "renovierungsbeduerftig": "Renovierungsbedürftig",
+        "sanierungsbeduerftig": "Sanierungsbedürftig"
+      },
+      "heizung": {
+        "fernwaerme": "Fernwärme",
+        "gas": "Gas",
+        "waermepumpe": "Wärmepumpe",
+        "pellets": "Pellets",
+        "nachtspeicher": "Nachtspeicher",
+        "sonstiges": "Sonstige"
+      },
+      "boden": {
+        "parkett": "Parkett",
+        "fliesen": "Fliesen",
+        "laminat": "Laminat",
+        "teppich": "Teppich",
+        "sonstiges": "Sonstiger Boden"
+      },
+      "fenster": {
+        "holz": "Holzfenster",
+        "holz_alu": "Holz-Alu",
+        "kunststoff": "Kunststofffenster",
+        "sonstiges": "Sonstige Fenster"
+      },
+      "aussenflaeche": {
+        "none": "—",
+        "balkon": "Balkon",
+        "terrasse": "Terrasse",
+        "loggia": "Loggia"
+      },
+      "parkplatz": {
+        "none": "—",
+        "tiefgarage": "Tiefgarage",
+        "carport": "Carport",
+        "freiplatz": "Freiplatz"
+      },
+      "widmung": {
+        "wohnung": "Wohnung",
+        "einfamilienhaus": "Einfamilienhaus",
+        "mehrfamilienhaus": "Mehrfamilienhaus",
+        "dachgeschoss": "Dachgeschoss",
+        "buero": "Büro",
+        "geschaeftslokal": "Geschäftslokal",
+        "anlagenobjekt": "Anlageobjekt",
+        "grundstueck": "Grundstück",
+        "sonstiges": "Sonstige"
+      }
+    }
+  },
   "portfolio": {
     "title": "Analysen-Übersicht",
     "subtitle": "{total} gespeicherte Analysen über alle Immobilien",

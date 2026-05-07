@@ -1027,6 +1027,113 @@
     "roomsShort": "rm.",
     "perSqm": "/m²"
   },
+  "propertyFacts": {
+    "section": { "title": "FACTS" },
+    "add": {
+      "button": "+ add",
+      "popover": { "title": "Choose field" }
+    },
+    "edit": { "suffix": "(edit)" },
+    "save": "Save",
+    "delete": "Delete",
+    "errorSave": "Save failed. Please try again.",
+    "boolean": { "yes": "Yes", "no": "No" },
+    "source": {
+      "manual": "Manual entry",
+      "aiExpose": "AI from Exposé",
+      "aiListing": "From listing"
+    },
+    "label": {
+      "addressCombined": "Address",
+      "baujahr": "Built year",
+      "haustyp": "Building type",
+      "zustand": "Condition",
+      "etage": "Floor",
+      "aufzug": "Lift",
+      "keller": "Cellar",
+      "aussenflaeche": "Outdoor space",
+      "parkplatz": "Parking",
+      "heizung": "Heating",
+      "boden": "Flooring",
+      "fenster": "Windows",
+      "bathrooms": "Bathrooms",
+      "separateWC": "Separate WC",
+      "widmung": "Zoning",
+      "grundflaeche": "Plot size",
+      "hwbClassValue": "Energy class",
+      "beziehbarAb": "Available from"
+    },
+    "format": {
+      "etage": { "ground": "Ground floor", "numbered": "Floor {n}" },
+      "hwb": {
+        "classAndValue": "HWB {cls} ({val})",
+        "classOnly": "HWB {cls}",
+        "valueOnly": "HWB {val} kWh/m²a"
+      },
+      "bathrooms": { "one": "1 bath", "many": "{n} baths" },
+      "beziehbarAb": "Available from {date}",
+      "grundflaeche": "Plot {n}m²"
+    },
+    "enum": {
+      "haustyp": {
+        "altbau": "Pre-war (Altbau)",
+        "gruenderzeit": "Gründerzeit",
+        "neubau": "New build",
+        "dachausbau": "Loft conversion"
+      },
+      "zustand": {
+        "erstbezug": "First occupancy",
+        "neuwertig": "Like new",
+        "gepflegt": "Well-kept",
+        "renovierungsbeduerftig": "Renovation needed",
+        "sanierungsbeduerftig": "Major refurbishment needed"
+      },
+      "heizung": {
+        "fernwaerme": "District heating",
+        "gas": "Gas",
+        "waermepumpe": "Heat pump",
+        "pellets": "Pellets",
+        "nachtspeicher": "Night-storage heater",
+        "sonstiges": "Other heating"
+      },
+      "boden": {
+        "parkett": "Parquet",
+        "fliesen": "Tiled",
+        "laminat": "Laminate",
+        "teppich": "Carpet",
+        "sonstiges": "Other flooring"
+      },
+      "fenster": {
+        "holz": "Wood windows",
+        "holz_alu": "Wood-aluminium",
+        "kunststoff": "uPVC windows",
+        "sonstiges": "Other windows"
+      },
+      "aussenflaeche": {
+        "none": "—",
+        "balkon": "Balcony",
+        "terrasse": "Terrace",
+        "loggia": "Loggia"
+      },
+      "parkplatz": {
+        "none": "—",
+        "tiefgarage": "Underground",
+        "carport": "Carport",
+        "freiplatz": "Open lot"
+      },
+      "widmung": {
+        "wohnung": "Apartment",
+        "einfamilienhaus": "Single-family house",
+        "mehrfamilienhaus": "Multi-family house",
+        "dachgeschoss": "Penthouse",
+        "buero": "Office",
+        "geschaeftslokal": "Retail",
+        "anlagenobjekt": "Investment property",
+        "grundstueck": "Plot",
+        "sonstiges": "Other"
+      }
+    }
+  },
   "portfolio": {
     "title": "Analyses overview",
     "subtitle": "{total} saved analyses across your properties",

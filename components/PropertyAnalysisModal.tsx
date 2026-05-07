@@ -21,6 +21,7 @@ import {
 import DossierTab from '@/components/property/DossierTab';
 import MrgWarningBanner from '@/components/property/MrgWarningBanner';
 import MaklerBlock from '@/components/property/MaklerBlock';
+import PropertyFactsHeader from '@/components/property/PropertyFactsHeader';
 import { useModalMode } from '@/hooks/useModalMode';
 import {
   useAnalysisDraft,
@@ -762,6 +763,13 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
 
         {/* ── PropertyInfoStrip + Makler block — unified card (ADR-003 §10 / ADR-009 v1.1) ── */}
         {propertyInfoStrip}
+
+        {/* ── Property facts (ADR-017) — chips below Makler, visible in both modes ── */}
+        <PropertyFactsHeader
+          propertyId={property.id}
+          details={details}
+          onDetailsChange={(next) => setDetails(next)}
+        />
 
         {/* ── Mode toggle: Analyses ↔ Objektdaten (ADR-009 DO4 / ADR-003 §10) ── */}
         <div className="px-6 pt-3 flex items-center gap-1.5">
