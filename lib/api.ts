@@ -561,7 +561,8 @@ export async function getAnalyses(propertyId: string): Promise<PropertyAnalysis[
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
-  const data = await handleResponse(response) as PropertyAnalysis[];
+  const raw = await handleResponse(response) as PropertyAnalysis[];
+  const data = raw.map((a) => normalizeAnalysis(a));
   analysesCache.set(propertyId, { data, at: Date.now() });
   return data;
 }
@@ -586,6 +587,69 @@ export function clearPortfolioAnalysesCache(): void {
   portfolioAnalysesCache = null;
 }
 
+// Prisma Decimal columns serialise as strings in JSON to preserve
+// precision. The TypeScript interface says `number | null` but the raw
+// response holds strings for these fields, which silently breaks
+// calculator math: `"420000.00" + 50000` is string concatenation
+// (`"42000050000"`), not addition. The PropertyAnalysisModal coerces
+// them via `analysisToDraft()` before computing, but the
+// PortfolioAnalysisTable and DashboardAnalysisTile read the raw
+// response and feed it straight to the calculator. Normalising here
+// keeps every caller honest.
+const ANALYSIS_DECIMAL_FIELDS: (keyof PropertyAnalysis)[] = [
+  'listPrice',
+  'desiredPrice',
+  'maklerPct',
+  'notarPct',
+  'grundbuchPct',
+  'grunderwerbsteuerPct',
+  'otherPurchaseCosts',
+  'loan1AmountPct',
+  'loan1Amount',
+  'loan1Rate',
+  'loan2Amount',
+  'loan2Rate',
+  'ooBetriebskostenMonthly',
+  'ooRepairsPct',
+  'ooAppreciationPct',
+  'rentMonthly',
+  'bkUmlagefaehig',
+  'bkNichtUmlagefaehig',
+  'reparaturruecklageMon',
+  'vacancyPct',
+  'repairsPct',
+  'rentGrowthPct',
+  'valueGrowthPct',
+  'gebaeudeAnteilPct',
+  'grenzsteuersatzPct',
+  'gmbhAccountingCostsAnnual',
+  'flipResalePrice',
+];
+
+function normalizeAnalysis<T extends PropertyAnalysis>(a: T): T {
+  const out = { ...a } as unknown as Record<string, unknown>;
+  for (const f of ANALYSIS_DECIMAL_FIELDS) {
+    const v = out[f as string];
+    if (v == null) continue;
+    if (typeof v === 'number') continue;
+    const parsed = parseFloat(String(v));
+    out[f as string] = Number.isFinite(parsed) ? parsed : null;
+  }
+  // The joined property block on PortfolioAnalysis carries Decimal too.
+  const property = (out as { property?: { price?: unknown; sizeSqm?: unknown } }).property;
+  if (property) {
+    if (property.price != null && typeof property.price !== 'number') {
+      const p = parseFloat(String(property.price));
+      property.price = Number.isFinite(p) ? p : null;
+    }
+    if (property.sizeSqm != null && typeof property.sizeSqm !== 'number') {
+      const s = parseFloat(String(property.sizeSqm));
+      property.sizeSqm = Number.isFinite(s) ? s : null;
+    }
+  }
+  return out as T;
+}
+
 export async function getPortfolioAnalyses(): Promise<PortfolioAnalysis[]> {
   if (portfolioAnalysesCache && Date.now() - portfolioAnalysesCache.at < PORTFOLIO_CACHE_TTL_MS) {
     return portfolioAnalysesCache.data;
@@ -595,7 +659,8 @@ export async function getPortfolioAnalyses(): Promise<PortfolioAnalysis[]> {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
-  const data = await handleResponse(response) as PortfolioAnalysis[];
+  const raw = await handleResponse(response) as PortfolioAnalysis[];
+  const data = raw.map((a) => normalizeAnalysis(a));
   portfolioAnalysesCache = { data, at: Date.now() };
   return data;
 }
