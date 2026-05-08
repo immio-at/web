@@ -162,7 +162,8 @@
       "errorLoginFailed": "Login failed",
       "errorConnection": "Could not connect to server.",
       "orContinueWith": "or",
-      "googleSignIn": "Sign in with Google"
+      "googleSignIn": "Sign in with Google",
+      "appleSignIn": "Sign in with Apple"
     },
     "register": {
       "title": "Request access",
@@ -181,10 +182,12 @@
       "back": "← Back",
       "orContinueWith": "or",
       "googleSignUp": "Continue with Google",
+      "appleSignUp": "Continue with Apple",
       "errorEmptyFields": "Please enter your email and password.",
       "errorRegisterFailed": "Registration failed",
       "errorConnection": "Could not connect to server.",
       "errorGoogle": "Google sign-in failed.",
+      "errorApple": "Apple sign-in failed.",
       "errorWeakPassword": "Password must be at least 6 characters long.",
       "errorEmailExists": "An account with this email address already exists.",
       "errorInvalidEmail": "Please enter a valid email address.",

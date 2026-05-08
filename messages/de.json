@@ -162,7 +162,8 @@
       "errorLoginFailed": "Login fehlgeschlagen",
       "errorConnection": "Verbindung zum Server fehlgeschlagen.",
       "orContinueWith": "oder",
-      "googleSignIn": "Mit Google anmelden"
+      "googleSignIn": "Mit Google anmelden",
+      "appleSignIn": "Mit Apple anmelden"
     },
     "register": {
       "title": "Zugang beantragen",
@@ -181,10 +182,12 @@
       "back": "← Zurück",
       "orContinueWith": "oder",
       "googleSignUp": "Mit Google anmelden",
+      "appleSignUp": "Mit Apple anmelden",
       "errorEmptyFields": "Bitte Email und Passwort eingeben.",
       "errorRegisterFailed": "Registrierung fehlgeschlagen",
       "errorConnection": "Verbindung zum Server fehlgeschlagen.",
       "errorGoogle": "Google-Anmeldung fehlgeschlagen.",
+      "errorApple": "Apple-Anmeldung fehlgeschlagen.",
       "errorWeakPassword": "Das Passwort muss mindestens 6 Zeichen lang sein.",
       "errorEmailExists": "Ein Konto mit dieser Email-Adresse existiert bereits.",
       "errorInvalidEmail": "Bitte gib eine gültige Email-Adresse an.",
