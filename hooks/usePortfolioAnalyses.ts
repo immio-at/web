@@ -112,10 +112,23 @@ export function usePortfolioAnalyses(
 
     const decidedCount = ofUsage.filter((a) => isDecidedStage(a.property.status)).length;
 
+    // Tab counts must respect the same stage filter the rendered rows use,
+    // otherwise a tile with `includeDecided=false` and no toggle (e.g. the
+    // Dashboard tile) shows a tab pill saying "Rental (2)" while only 1 row
+    // is visible because the other analysis's property is at `parked` or
+    // `not_relevant`. The full Funnel-page table flips this when the user
+    // turns on its `Show decided (N)` toggle, at which point the counts
+    // include both pools.
     const countsByUsageType = {
-      rental: data.filter((a) => a.usageType === 'rental').length,
-      flip: data.filter((a) => a.usageType === 'flip').length,
-      owner: data.filter((a) => a.usageType === 'owner').length,
+      rental: data.filter(
+        (a) => a.usageType === 'rental' && (opts.includeDecided || isActiveStage(a.property.status)),
+      ).length,
+      flip: data.filter(
+        (a) => a.usageType === 'flip' && (opts.includeDecided || isActiveStage(a.property.status)),
+      ).length,
+      owner: data.filter(
+        (a) => a.usageType === 'owner' && (opts.includeDecided || isActiveStage(a.property.status)),
+      ).length,
     };
 
     return {
