@@ -177,8 +177,8 @@ export default function PortfolioAnalysisRow({ row, compact, locale, onOpen }: P
             className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-medium"
             title={
               locale === 'de'
-                ? `Aktuell ${formatEur(toNum(a.property.price), locale)}, in Analyse ${formatEur(a.desiredPrice, locale)} (${formatPercent(drift.pct, locale, 2)})`
-                : `Currently ${formatEur(toNum(a.property.price), locale)}, in analysis ${formatEur(a.desiredPrice, locale)} (${formatPercent(drift.pct, locale, 2)})`
+                ? `Aktuell ${formatEur(toNum(a.property.price), locale)}, in Analyse ${formatEur(a.listPrice, locale)} (${formatPercent(drift.pct, locale, 2)})`
+                : `Currently ${formatEur(toNum(a.property.price), locale)}, in analysis ${formatEur(a.listPrice, locale)} (${formatPercent(drift.pct, locale, 2)})`
             }
           >
             {t('flag.priceChanged')}

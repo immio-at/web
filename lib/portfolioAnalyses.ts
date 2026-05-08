@@ -181,29 +181,36 @@ export function computeRowMetrics(a: PortfolioAnalysis): RowMetrics {
 }
 
 // ── Drift flag ───────────────────────────────────────────────────────────────
-// True when the parent property's current price has moved more than €1
-// from the analysis's `desiredPrice` snapshot. The €1 floor avoids
-// triggering on rounding noise; tighten to 0.5% / €100 if tester
-// feedback shows the flag lighting up too easily (see ADR §13).
+// True when the parent property's current listing price has moved more than €1
+// from the analysis's `listPrice` snapshot — the listing price captured when
+// the analysis was created (analyses.service backfills it from property.price
+// on create). The €1 floor avoids triggering on Decimal rounding noise.
+//
+// Comparing against `desiredPrice` (the v1 spec, ADR-016 §3.1 v1.0) was a spec
+// bug: desiredPrice is the user's intended *offer* price, not the listing
+// price. Investors routinely set desiredPrice below property.price to model
+// "what if I offer below list?", which made the flag fire on every such
+// analysis even when nothing had drifted. Corrected to listPrice in
+// ADR-016 v1.1.
 
 export interface DriftFlag {
   active: boolean;
-  delta: number; // currentPrice - desiredPrice
-  pct: number;   // delta / desiredPrice
+  delta: number; // currentPrice - listPriceAtAnalysis
+  pct: number;   // delta / listPriceAtAnalysis
 }
 
 export function computeDriftFlag(
-  a: Pick<PortfolioAnalysis, 'desiredPrice' | 'property'>,
+  a: Pick<PortfolioAnalysis, 'listPrice' | 'property'>,
 ): DriftFlag {
   const current = a.property.price;
-  const desired = a.desiredPrice;
-  if (current == null || desired == null || desired === 0) {
+  const listAtAnalysis = a.listPrice;
+  if (current == null || listAtAnalysis == null || listAtAnalysis === 0) {
     return { active: false, delta: 0, pct: 0 };
   }
   const currentNum = typeof current === 'number' ? current : parseFloat(String(current));
-  const desiredNum = typeof desired === 'number' ? desired : parseFloat(String(desired));
-  const delta = currentNum - desiredNum;
-  const pct = delta / desiredNum;
+  const listNum = typeof listAtAnalysis === 'number' ? listAtAnalysis : parseFloat(String(listAtAnalysis));
+  const delta = currentNum - listNum;
+  const pct = delta / listNum;
   return { active: Math.abs(delta) > 1, delta, pct };
 }
 
