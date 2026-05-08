@@ -126,13 +126,14 @@ Do not create a `/login` route. Session expiry redirects to `/?signin=true`.
 - Stage key mapping: snake_case DB keys (`due_diligence`) → camelCase i18n keys (`dueDiligence`) via `STAGE_I18N_KEY`
 - **When adding new strings**: add to BOTH `messages/de.json` and `messages/en.json`
 
-**Google OAuth sign-in**
-- "Sign in with Google" button in SignInModal
-- Flow: `supabase.auth.signInWithOAuth({ provider: 'google' })` → Google → Supabase callback → `/auth/callback`
-- Callback page (`app/[locale]/auth/callback/page.tsx`): gets session, calls `POST /auth/oauth-callback` to provision/retrieve Prisma user, sets AuthContext, redirects to dashboard
+**OAuth sign-in (Google + Apple)**
+- "Sign in with Google" + "Sign in with Apple" buttons on SignInModal, RegisterModal, and the standalone `/register` page
+- Flow: `supabase.auth.signInWithOAuth({ provider: 'google' \| 'apple' })` → provider auth screen → Supabase callback → `/auth/callback`
+- Callback page (`app/[locale]/auth/callback/page.tsx`) is **provider-agnostic** — gets the session Supabase has set up, calls `POST /auth/oauth-callback` to provision/retrieve Prisma user, sets AuthContext, redirects to dashboard. Adding new providers requires no callback changes.
 - First-time OAuth users auto-provisioned (approved: true, immioEmail generated)
 - Google consent screen shows Supabase domain (normal — custom domains is paid feature)
-- Config: Google Cloud Console OAuth credentials + Supabase Authentication → Providers → Google
+- **Google config**: Google Cloud Console OAuth credentials + Supabase Authentication → Providers → Google
+- **Apple config** (one-time admin step): Apple Developer Console → Identifiers → register a **Service ID** (e.g. `at.immio.web`), enable "Sign In with Apple" capability, configure return URL `https://<supabase-project>.supabase.co/auth/v1/callback`. Keys → create a key with "Sign In with Apple" enabled, download the `.p8` file (only shown once), note Key ID + Team ID. Then Supabase Dashboard → Authentication → Providers → Apple → paste Service ID + Team ID + Key ID + `.p8` contents. **Until that's done the Apple button is visible but lands on Apple's "Invalid client" screen** — no code redeploy needed once configured. LinkedIn (A2 in Track 5) deferred indefinitely.
 - Supabase URL Configuration: Site URL = `https://immio.at`, Redirect URLs include `https://immio.at/auth/callback`
 
 ---
