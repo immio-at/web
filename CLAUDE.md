@@ -234,6 +234,28 @@ Terminal stages: `won`, `parked`, `not_relevant`, `delisted`
 
 ---
 
+## `data-tour-id` convention (ADR-021)
+
+The onboarding tour (`react-joyride`, mounted via `OnboardingTour.tsx`) anchors
+its steps to DOM elements via the `data-tour-id` attribute. **Do not anchor on
+class names or structural selectors** — those silently break when components
+are refactored.
+
+Currently-targeted IDs (keep this list authoritative — `OnboardingTour.tsx`
+reads the same selectors):
+- `nav-funnel`, `nav-finder`, `nav-discover`, `nav-help` on the desktop nav
+  links (and `*-mobile` siblings on the mobile nav row).
+- `dashboard-sources-tile` on `SourcesSetupTile`.
+- `dashboard-first-card` on the **first rendered card** across the Dashboard
+  carousels (Recommended → Recently Viewed → New Arrivals). Each carousel
+  passes the id to its first card; `document.querySelector` resolves the
+  first match in document order without coordination between siblings.
+
+If you refactor a targeted component, **preserve the attribute**. If you
+intentionally remove a tour anchor, also remove the corresponding step in
+`OnboardingTour.tsx` so the tour doesn't fall back to its skip-step warning
+on every fresh sign-in.
+
 ## Styling Conventions
 - Tailwind CSS v4 — use core utility classes only
 - No separate CSS files — styles inline with Tailwind classes

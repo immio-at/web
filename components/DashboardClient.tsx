@@ -14,6 +14,7 @@ import PropertyCarousel from '@/app/[locale]/(authenticated)/dashboard/component
 import RecommendedCarousel from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
 import { type CardProperty, type CardActions } from '@/components/PropertyCard';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 
 // Prisma serializes Decimal columns as strings — coerce numeric fields here.
 function ownPropertyToCard(p: Property): CardProperty {
@@ -190,16 +191,44 @@ export default function DashboardClient({
     );
   }, [recentlyViewed]);
 
+  const tEmpty = useTranslations('dashboard.empty');
+  const hasNoOwnProperties = properties.length === 0;
+
   return (
     <div>
-      {/* Carousels — top of the page. Recommended → Recently Viewed → New Arrivals. */}
-      <RecommendedCarousel properties={properties} actions={cardActions} />
+      {/* ADR-021 HH9 — empty-state forwarding-setup link. Surfaces when the
+          user has zero properties; routes to the Help page's email forwarding
+          section so a fresh tester has a clear next-action. */}
+      {hasNoOwnProperties && (
+        <div className="mb-6 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 flex items-center justify-between flex-wrap gap-3">
+          <p className="text-sm text-teal-900">{tEmpty('noPropertiesYet')}</p>
+          <Link
+            href="/help#forwarding"
+            className="text-sm font-medium text-teal-700 hover:text-teal-800 underline whitespace-nowrap"
+          >
+            {tEmpty('setupForwardingLink')} →
+          </Link>
+        </div>
+      )}
+
+      {/* Carousels — top of the page. Recommended → Recently Viewed → New Arrivals.
+          ADR-021 HH8 tour anchor `dashboard-first-card`: every carousel passes
+          the id to its first card; `document.querySelector` matches the first
+          one in document order (Recommended → Recently Viewed → New Arrivals)
+          so the spotlight follows the topmost non-empty carousel without
+          coordination state between sibling components. */}
+      <RecommendedCarousel
+        properties={properties}
+        actions={cardActions}
+        firstCardTourId="dashboard-first-card"
+      />
 
       <PropertyCarousel
         title={t('recentlyViewed')}
         cards={recentlyViewedCards}
         emptyMessage={t('recentlyViewedEmpty')}
         actions={cardActions}
+        firstCardTourId="dashboard-first-card"
       />
 
       <PropertyCarousel
@@ -207,6 +236,7 @@ export default function DashboardClient({
         cards={newArrivalCards}
         emptyMessage={t('newArrivalsEmpty')}
         actions={cardActions}
+        firstCardTourId="dashboard-first-card"
       />
 
       {/* Summary tiles — 2×2 grid below the carousels. */}

@@ -78,6 +78,14 @@ export function useSSEInvalidation(): void {
             case 'analytics':
               clearAnalyticsCache();
               break;
+            case 'inbox':
+              // ADR-020 v1.1 II8 — broadcast so the Sources tile +
+              // inbox views refresh without taking a direct dep on this
+              // hook. Listeners filter on detail.type.
+              window.dispatchEvent(
+                new CustomEvent('immio:cache-invalidation', { detail: { type } }),
+              );
+              break;
           }
         } catch {
           // Malformed event — ignore, TTL fallback handles it

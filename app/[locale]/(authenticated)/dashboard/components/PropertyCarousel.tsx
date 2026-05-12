@@ -8,11 +8,14 @@ export default function PropertyCarousel({
   cards,
   emptyMessage,
   actions,
+  firstCardTourId,
 }: {
   title: string;
   cards: CardProperty[];
   emptyMessage?: string;
   actions: CardActions;
+  /** ADR-021 HH8 — applied as data-tour-id on the first rendered card. */
+  firstCardTourId?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -47,8 +50,14 @@ export default function PropertyCarousel({
         className="flex gap-3 overflow-x-auto pb-2"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {cards.map(c => (
-          <PropertyCard key={c.id} item={c} actions={actions} compact />
+        {cards.map((c, i) => (
+          <PropertyCard
+            key={c.id}
+            item={c}
+            actions={actions}
+            compact
+            dataTourId={i === 0 ? firstCardTourId : undefined}
+          />
         ))}
       </div>
     </div>

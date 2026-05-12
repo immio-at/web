@@ -1363,3 +1363,58 @@ export async function getUnacknowledgedFeedbackCount(): Promise<{ count: number 
   });
   return handleResponse(res);
 }
+
+// ─── Inbox (ADR-020 v1.1) ────────────────────────────────────────────────────
+
+export type InboundFailureReason =
+  | 'gmail_confirmation'
+  | 'unknown_platform'
+  | 'parse_empty'
+  | 'parse_error';
+
+export interface InboundEmail {
+  id: string;
+  fromAddress: string;
+  subject: string | null;
+  receivedAt: string;
+  bodyText: string | null;
+  bodyHtml: string | null;
+  senderCategory: string;
+  failureReason: InboundFailureReason;
+  readAt: string | null;
+}
+
+export interface InboxListResponse {
+  items: InboundEmail[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export async function getInbox(page = 1): Promise<InboxListResponse> {
+  const token = await getAuthToken();
+  const res = await fetch(`${API_URL}/inbox?page=${page}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  return handleResponse(res);
+}
+
+export async function getInboxUnreadCount(): Promise<{ count: number }> {
+  const token = await getAuthToken();
+  const res = await fetch(`${API_URL}/inbox/unread-count`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  return handleResponse(res);
+}
+
+export async function markInboxRead(id: string): Promise<InboundEmail> {
+  const token = await getAuthToken();
+  const res = await fetch(`${API_URL}/inbox/${id}/read`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleResponse(res);
+}

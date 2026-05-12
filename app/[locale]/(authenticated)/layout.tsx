@@ -1,6 +1,7 @@
 import NavBar from '@/components/NavBar';
 import SSEProvider from '@/components/SSEProvider';
 import FeedbackButton from '@/components/feedback/FeedbackButton';
+import OnboardingTour from '@/components/help/OnboardingTour';
 
 // This layout wraps all authenticated routes inside app/(authenticated)/.
 // The route group folder name "(authenticated)" is invisible to the URL router —
@@ -20,6 +21,7 @@ export default function AppLayout({
       <NavBar />
       <main>{children}</main>
       <FeedbackButton />
+      <OnboardingTour />
     </div>
   );
 }

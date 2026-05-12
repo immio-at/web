@@ -141,6 +141,7 @@
     "finder": "Finder",
     "funnel": "Funnel",
     "analytics": "Analytics",
+    "help": "Help",
     "settings": "Settings",
     "admin": "Admin",
     "signOut": "Sign Out"
@@ -247,7 +248,13 @@
       "forwardHint": "Auto-forward search agent emails to this address:",
       "copy": "Copy",
       "copied": "Copied!",
-      "notConfigured": "Not configured"
+      "notConfigured": "Not configured",
+      "unreadSingle": "1 unread system message — view",
+      "unreadPlural": "{count} unread system messages — view"
+    },
+    "empty": {
+      "noPropertiesYet": "No properties yet. Set up email forwarding to start receiving listings automatically.",
+      "setupForwardingLink": "Set up email forwarding"
     },
     "carousels": {
       "newArrivals": "New arrivals",
@@ -1567,6 +1574,168 @@
       "emailSubjectFallback": "Inquiry about your listing",
       "errorEmail": "Invalid email address",
       "errorSave": "Failed to save agent contact."
+    }
+  },
+  "help": {
+    "pageTitle": "Help",
+    "tour": {
+      "heading": "Take the tour again",
+      "description": "Click below to re-run the 1-minute orientation tour. It highlights each main section of IMMIO and where to come for help.",
+      "restartButton": "Restart tour",
+      "next": "Next",
+      "back": "Back",
+      "skip": "Skip",
+      "finish": "Finish",
+      "close": "Close",
+      "steps": {
+        "1": {
+          "title": "Welcome to IMMIO",
+          "body": "This 1-minute tour shows you what's where. You can re-run it any time from the Help page."
+        },
+        "2": {
+          "body": "Your IMMIO email address lives here. Forward your existing Willhaben, ImmoScout24, and other search-agent emails to it — the Sources list shows which portals have started sending. Set up forwarding from the Help page."
+        },
+        "3": {
+          "body": "Your Funnel. Properties move left-to-right through stages as you investigate them. Drag cards between columns."
+        },
+        "4": {
+          "body": "Finder. Fast-swipe through new listings — forwarded emails and scraped listings together — to triage them. Right to investigate further in your Funnel, left to dismiss."
+        },
+        "5": {
+          "body": "Discover. Every scraped listing in Austria. Pre-configured filters (by Bundesland, by search-agent source) sit alongside your own saved filters — stack them to narrow what you see."
+        },
+        "6": {
+          "body": "Click any property to see full details — analysis tools, ROI calculator, document storage, and due-diligence checks. The heart icon on a card adds it to your Funnel to start investigating."
+        },
+        "7": {
+          "body": "When you need help — including how to set up email forwarding — come back here. The tour can be re-run from this page."
+        }
+      }
+    },
+    "gettingStarted": {
+      "heading": "Where do I start?",
+      "intro": "Two paths into IMMIO: the recommended path uses email forwarding (most users). An alternative path lets you add properties manually if you don't have search agents configured.",
+      "firstSession": {
+        "heading": "Your first 30 minutes",
+        "step1": {
+          "link": "Set up email forwarding",
+          "detail": "see the section below. Once configured, search-agent emails from Willhaben, ImmoScout24, and others will start landing in your IMMIO funnel automatically."
+        },
+        "step2": {
+          "link": "Explore Discover",
+          "detail": "while you wait for the first emails to arrive. Every scraped listing in Austria is filterable here. Try the saved filters or set your own criteria."
+        },
+        "step3": {
+          "link": "Triage in the Finder",
+          "detail": "as properties start flowing in — from your forwarded search agents and the scraped database. Swipe right on anything worth a closer look (it lands in your Funnel for investigation), swipe left to dismiss the rest. Don't deliberate during triage — the Funnel is where you slow down and analyse."
+        },
+        "step4": {
+          "link": "Open properties in your Funnel",
+          "detail": "and click into them to run an analysis. The ROI calculator handles Rental, Flip, and Owner-occupied scenarios. The Dossier tab holds documents and AI-extracted facts. The Due Diligence tab runs six legal/structural checks against Austrian statute."
+        }
+      },
+      "paths": {
+        "heading": "The five ingestion paths",
+        "email": {
+          "label": "Email forwarding",
+          "body": "Recommended default.",
+          "link": "see setup below"
+        },
+        "url": {
+          "label": "URL paste",
+          "body": "Click „+ Add Property“ on the Funnel or Dashboard, choose the Webseite tab, paste a Willhaben / ImmoScout24 / s REAL / Raiffeisen URL."
+        },
+        "expose": {
+          "label": "Exposé upload (Pro tier only)",
+          "body": "Same „+ Add Property“ button, choose the Exposé tab, drop a PDF."
+        },
+        "manual": {
+          "label": "Manual entry",
+          "body": "Same „+ Add Property“ button, choose the Manuell tab, fill the seven fields. Useful for properties you're tracking outside the listed portals."
+        },
+        "extension": {
+          "label": "Browser extension",
+          "body": "Install the IMMIO Chrome extension, browse Willhaben or ImmoScout24, click the floating Send to IMMIO button."
+        }
+      }
+    },
+    "forwarding": {
+      "heading": "How email forwarding works",
+      "preamble": "You have a personal IMMIO address: shown both on your Dashboard (in the Sources tile) and in your Settings page. The format is user_xxxxxxxx@mail.immio.at. When you set up a forwarding filter in your inbox, your existing portal search-agent emails are auto-forwarded to that address, parsed by IMMIO, and turned into properties in your funnel.\n\nThe original emails stay in your inbox — forwarding doesn't move them. You can stop or change the forwarding any time by adjusting the filter in your inbox; IMMIO never touches your inbox directly.\n\nOnce a forwarding rule is in place, the Sources tile on your Dashboard shows which portals have started sending. A ✓ next to a portal means emails are arriving; ○ means nothing yet. This is your verification surface — if a portal you've set up isn't ticking over to ✓, the forwarding filter isn't matching.",
+      "gmail": {
+        "heading": "Gmail",
+        "intro": "Create a forwarding address in Gmail and a filter that routes search-agent emails to IMMIO.",
+        "steps": {
+          "1": "Open Gmail. Click the Settings cog (top-right) and choose „See all settings“.",
+          "2": "Click the „Forwarding and POP/IMAP“ tab.",
+          "3": "Click „Add a forwarding address“ and paste your IMMIO address.",
+          "4": "Gmail will send a confirmation code to your IMMIO address. Watch your Dashboard — the Sources tile will show „1 unread system message — view“ within a minute or two. Click through to read the code, then copy it back into the Gmail prompt to confirm.",
+          "5": "Back on the Forwarding tab, open „Filters and Blocked Addresses“ → „Create a new filter“.",
+          "6": "In the „From“ field, enter the sender domain you want to forward (e.g. noreply@willhaben.at for Willhaben, or kein-antwort@email.immobilienscout24.at for ImmoScout24).",
+          "7": "Click „Create filter“ and check „Forward it to: [your IMMIO address]“.",
+          "8": "Click „Create filter“ again to finish."
+        },
+        "verify": "To verify: any future search-agent emails will land directly in IMMIO with no further configuration needed. Check the Sources tile on your Dashboard to see which portals have started sending — a ✓ next to a portal means emails are arriving."
+      },
+      "outlook": {
+        "heading": "Outlook",
+        "intro": "Outlook uses Rules instead of Filters but the structure mirrors Gmail's.",
+        "steps": {
+          "1": "Open Outlook on the web (outlook.live.com or outlook.office.com).",
+          "2": "Click the Settings cog → „View all Outlook settings“.",
+          "3": "Choose „Mail“ → „Forwarding“ and enable „Enable forwarding“ with your IMMIO address — if you want to forward the entire inbox.",
+          "4": "Or: „Mail“ → „Rules“ → „Add new rule“. Condition: „From“ contains the portal domain. Action: „Forward to“ your IMMIO address.",
+          "5": "Save. Outlook sends a confirmation to your IMMIO address.",
+          "6": "Read the confirmation code in your IMMIO inbox (Sources tile → unread system message) and confirm in Outlook if required."
+        },
+        "gapTitle": "Known gap during tester phase",
+        "gapBody": "Outlook's forwarding-confirmation sender is not yet on the IMMIO allowlist (see ADR-020 v1.1). If your confirmation code doesn't appear in the inbox, contact us via the Feedback button — we'll retrieve the code from Railway logs and reply."
+      },
+      "apple": {
+        "heading": "Apple Mail / iCloud Mail",
+        "intro": "Apple Mail (Desktop) and iCloud Mail (Web) use Rules; the editors differ slightly.",
+        "steps": {
+          "1": "iCloud Mail (Web): Sign in at icloud.com/mail, click the Settings cog → „Preferences“.",
+          "2": "Open the „Rules“ tab and click „Add a Rule“.",
+          "3": "Condition: „If a message is from …“ and enter the sender domain (e.g. noreply@willhaben.at).",
+          "4": "Action: „Forward to …“ and enter your IMMIO address.",
+          "5": "Click „Done“ and save Preferences.",
+          "6": "Apple Mail (Desktop): Mail → Settings → Rules → Add Rule with the same condition/action."
+        },
+        "gapTitle": "Known gap during tester phase",
+        "gapBody": "Apple/iCloud's forwarding-confirmation sender is not yet on the IMMIO allowlist (see ADR-020 v1.1). If your confirmation code doesn't appear in the inbox, contact us via the Feedback button — we'll retrieve the code from Railway logs and reply."
+      }
+    },
+    "feedback": {
+      "heading": "Found a bug? Have a suggestion?",
+      "description": "Use the Feedback button at the bottom-right corner of any page (or, on mobile, Settings → Feedback). Report bugs, request features, or send us improvements. You'll see the status of every report in the „My reports“ tab — we'll update them as we work through them.\n\nWe're a two-person team during the tester phase, so reports are read within 24 hours. Critical bugs typically resolved within 2–3 days; we don't send email follow-ups, so check the „My reports“ tab for updates."
+    }
+  },
+  "inbox": {
+    "pageTitle": "Inbox",
+    "pageDescription": "Emails from allowed senders that didn't become a property show up here — for example Gmail forwarding confirmations or messages from a portal we don't yet recognise.",
+    "empty": "No messages yet.",
+    "loading": "Loading…",
+    "loadMore": "Load more",
+    "errorPrefix": "Failed to load",
+    "noSubject": "(No subject)",
+    "fromLabel": "From",
+    "subjectLabel": "Subject",
+    "bodyUnavailable": "(Message body unavailable)",
+    "unreadIndicator": "Unread",
+    "senderCategory": {
+      "gmail_forwarding": "Gmail",
+      "willhaben": "Willhaben",
+      "immoscout24": "ImmoScout24",
+      "bazar": "Bazar.at",
+      "immmo": "immmo.at",
+      "unknown": "Unknown sender"
+    },
+    "failureReason": {
+      "gmail_confirmation": "This is a Gmail forwarding confirmation. Copy the code below back into your Gmail settings to complete setup.",
+      "unknown_platform": "IMMIO received this email but didn't recognise the sender as a real-estate portal. This is informational; no action needed.",
+      "parse_empty": "IMMIO received this email but couldn't extract a property listing. If you expected a listing here, contact us via the Feedback button so we can investigate.",
+      "parse_error": "IMMIO received this email but couldn't extract a property listing. If you expected a listing here, contact us via the Feedback button so we can investigate."
     }
   }
 }

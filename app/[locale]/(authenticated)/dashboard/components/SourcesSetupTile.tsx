@@ -1,8 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { Property } from '@/lib/api';
+import { Property, getInboxUnreadCount } from '@/lib/api';
+import { Link } from '@/i18n/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 const KNOWN_PLATFORMS = ['willhaben', 'immoscout24', 'immowelt', 'bazar', 'immmo'];
 
@@ -23,6 +25,8 @@ export default function SourcesSetupTile({
 }) {
   const t = useTranslations('dashboard.sourcesTile');
   const [copied, setCopied] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const { session, loading: authLoading } = useAuth();
 
   function handleCopy() {
     if (!immioEmail) return;
@@ -30,6 +34,27 @@ export default function SourcesSetupTile({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
+
+  // ADR-020 v1.1 II8 — fetch inbox unread count, refresh on inbox SSE.
+  const refreshUnread = useCallback(async () => {
+    try {
+      const res = await getInboxUnreadCount();
+      setUnreadCount(res.count ?? 0);
+    } catch {
+      // Silent — the indicator just won't appear; tile keeps working.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authLoading || !session?.user?.id) return;
+    void refreshUnread();
+    function handleSseInbox(e: Event) {
+      const detail = (e as CustomEvent).detail as { type?: string } | undefined;
+      if (detail?.type === 'inbox') void refreshUnread();
+    }
+    window.addEventListener('immio:cache-invalidation', handleSseInbox);
+    return () => window.removeEventListener('immio:cache-invalidation', handleSseInbox);
+  }, [authLoading, session?.user?.id, refreshUnread]);
 
   const platformStatus = useMemo(() => {
     const now = Date.now();
@@ -60,7 +85,10 @@ export default function SourcesSetupTile({
   }, [properties]);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full">
+    <div
+      data-tour-id="dashboard-sources-tile"
+      className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col h-full"
+    >
       <h3 className="text-base font-semibold text-gray-900 mb-3">{t('title')}</h3>
 
       {/* Email forwarding section */}
@@ -102,6 +130,18 @@ export default function SourcesSetupTile({
         ))}
       </div>
 
+      {/* Inbox unread indicator — only renders when count > 0 */}
+      {unreadCount > 0 && (
+        <Link
+          href="/inbox"
+          className="mt-3 pt-3 border-t border-gray-100 text-sm text-teal-700 hover:text-teal-800 font-medium flex items-center gap-1"
+        >
+          {unreadCount === 1
+            ? t('unreadSingle')
+            : t('unreadPlural', { count: unreadCount })}
+          <span aria-hidden> →</span>
+        </Link>
+      )}
     </div>
   );
 }

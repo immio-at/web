@@ -73,9 +73,12 @@ function scoreScraped(s: ScrapedListing, criteria: DerivedCriteria): number {
 export default function RecommendedCarousel({
   properties,
   actions,
+  firstCardTourId,
 }: {
   properties: Property[];
   actions: CardActions;
+  /** ADR-021 HH8 — `data-tour-id` for the first rendered card. */
+  firstCardTourId?: string;
 }) {
   const t = useTranslations('dashboard.carousels');
   const { session, loading: authLoading } = useAuth();
@@ -183,8 +186,14 @@ export default function RecommendedCarousel({
         className="flex gap-3 overflow-x-auto pb-2"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {recommended.map(card => (
-          <PropertyCard key={card.id} item={card} actions={actions} compact />
+        {recommended.map((card, i) => (
+          <PropertyCard
+            key={card.id}
+            item={card}
+            actions={actions}
+            compact
+            dataTourId={i === 0 ? firstCardTourId : undefined}
+          />
         ))}
       </div>
     </div>

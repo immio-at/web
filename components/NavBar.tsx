@@ -5,11 +5,12 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 
 const navItems = [
-  { key: 'dashboard' as const, href: '/dashboard', icon: '🏠' },
-  { key: 'search' as const, href: '/search', icon: '🔍' },
-  { key: 'finder' as const, href: '/finder', icon: '⚡' },
-  { key: 'funnel' as const, href: '/funnel', icon: '📊' },
-  { key: 'analytics' as const, href: '/analytics', icon: '📈' },
+  { key: 'dashboard' as const, href: '/dashboard', icon: '🏠', tourId: 'nav-dashboard' },
+  { key: 'search' as const, href: '/search', icon: '🔍', tourId: 'nav-discover' },
+  { key: 'finder' as const, href: '/finder', icon: '⚡', tourId: 'nav-finder' },
+  { key: 'funnel' as const, href: '/funnel', icon: '📊', tourId: 'nav-funnel' },
+  { key: 'analytics' as const, href: '/analytics', icon: '📈', tourId: 'nav-analytics' },
+  { key: 'help' as const, href: '/help', icon: '❓', tourId: 'nav-help' },
 ];
 
 export default function NavBar() {
@@ -48,6 +49,7 @@ export default function NavBar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  data-tour-id={item.tourId}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive
                       ? 'bg-blue-50 text-blue-600'
@@ -116,6 +118,7 @@ export default function NavBar() {
               <Link
                 key={item.href}
                 href={item.href}
+                data-tour-id={`${item.tourId}-mobile`}
                 className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   isActive
                     ? 'bg-blue-50 text-blue-600'

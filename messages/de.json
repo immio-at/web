@@ -141,6 +141,7 @@
     "finder": "Finder",
     "funnel": "Funnel",
     "analytics": "Analytics",
+    "help": "Hilfe",
     "settings": "Einstellungen",
     "admin": "Admin",
     "signOut": "Abmelden"
@@ -247,7 +248,13 @@
       "forwardHint": "Suchagenten-Emails automatisch an diese Adresse weiterleiten:",
       "copy": "Kopieren",
       "copied": "Kopiert!",
-      "notConfigured": "Nicht eingerichtet"
+      "notConfigured": "Nicht eingerichtet",
+      "unreadSingle": "1 ungelesene Systemnachricht ansehen",
+      "unreadPlural": "{count} ungelesene Systemnachrichten ansehen"
+    },
+    "empty": {
+      "noPropertiesYet": "Noch keine Immobilien. Richte deine E-Mail-Weiterleitung ein, um automatisch Inserate zu empfangen.",
+      "setupForwardingLink": "E-Mail-Weiterleitung einrichten"
     },
     "carousels": {
       "newArrivals": "Neu eingetroffen",
@@ -1567,6 +1574,168 @@
       "emailSubjectFallback": "Anfrage zur Immobilie",
       "errorEmail": "Ungültige E-Mail-Adresse",
       "errorSave": "Fehler beim Speichern des Makler-Kontakts."
+    }
+  },
+  "help": {
+    "pageTitle": "Hilfe",
+    "tour": {
+      "heading": "Tour erneut starten",
+      "description": "Mit einem Klick startest du die einminütige Orientierungs-Tour erneut. Sie zeigt dir die wichtigsten Bereiche von IMMIO und wo du Hilfe findest.",
+      "restartButton": "Tour neu starten",
+      "next": "Weiter",
+      "back": "Zurück",
+      "skip": "Überspringen",
+      "finish": "Fertig",
+      "close": "Schließen",
+      "steps": {
+        "1": {
+          "title": "Willkommen bei IMMIO",
+          "body": "Diese einminütige Tour zeigt dir, wo alles zu finden ist. Du kannst sie jederzeit auf der Hilfe-Seite erneut starten."
+        },
+        "2": {
+          "body": "Hier lebt deine persönliche IMMIO-Adresse. Leite deine bestehenden Willhaben-, ImmoScout24- und anderen Suchagenten-Emails an sie weiter — die Quellenliste zeigt, welche Portale bereits senden. Die Einrichtung der Weiterleitung findest du auf der Hilfe-Seite."
+        },
+        "3": {
+          "body": "Dein Funnel. Immobilien wandern von links nach rechts durch die Phasen, während du sie prüfst. Karten lassen sich zwischen Spalten ziehen."
+        },
+        "4": {
+          "body": "Finder. Schnelles Wischen durch neue Inserate — sowohl weitergeleitete Suchagenten als auch gescrapte Daten — um zu triagieren. Rechts: in den Funnel zur näheren Prüfung. Links: verwerfen."
+        },
+        "5": {
+          "body": "Entdecken. Alle gescrapten Inserate in Österreich. Voreingestellte Filter (nach Bundesland, nach Suchagenten-Quelle) liegen neben deinen eigenen gespeicherten Filtern — kombiniere sie, um die Auswahl einzugrenzen."
+        },
+        "6": {
+          "body": "Klicke auf eine Immobilie für alle Details — Analyse-Tools, Renditerechner, Dokumentenablage und Due-Diligence-Checks. Das Herz-Symbol fügt die Immobilie deinem Funnel zur Prüfung hinzu."
+        },
+        "7": {
+          "body": "Wenn du Hilfe brauchst — auch zur Einrichtung der E-Mail-Weiterleitung — komme hierher zurück. Die Tour kannst du auf dieser Seite erneut starten."
+        }
+      }
+    },
+    "gettingStarted": {
+      "heading": "Wo soll ich anfangen?",
+      "intro": "Es gibt zwei Wege nach IMMIO: Der empfohlene Weg nutzt E-Mail-Weiterleitung (die meisten Nutzer:innen). Alternativ kannst du Immobilien manuell hinzufügen, wenn du keine Suchagenten eingerichtet hast.",
+      "firstSession": {
+        "heading": "Deine ersten 30 Minuten",
+        "step1": {
+          "link": "Richte die E-Mail-Weiterleitung ein",
+          "detail": "siehe Abschnitt unten. Sobald konfiguriert, landen Suchagenten-Mails von Willhaben, ImmoScout24 und anderen automatisch in deinem Funnel."
+        },
+        "step2": {
+          "link": "Erkunde Entdecken",
+          "detail": "während die ersten Mails eintreffen. Hier sind alle gescrapten Inserate in Österreich filterbar. Probiere gespeicherte Filter oder lege eigene Kriterien fest."
+        },
+        "step3": {
+          "link": "Triagiere im Finder",
+          "detail": "sobald Immobilien einlaufen — aus deinen Suchagenten und aus der gescrapten Datenbank. Wische rechts auf alles, was einen näheren Blick wert ist (landet im Funnel zur Prüfung), wische den Rest weg. Triage ist schnell — die Analyse passiert im Funnel."
+        },
+        "step4": {
+          "link": "Öffne Immobilien im Funnel",
+          "detail": "und führe eine Analyse durch. Der Renditerechner kann Vermietung, Flip und Eigennutzung. Der Dossier-Tab speichert Dokumente und KI-extrahierte Fakten. Der Due-Diligence-Tab prüft sechs rechtliche/bauliche Punkte gegen österreichische Gesetze."
+        }
+      },
+      "paths": {
+        "heading": "Die fünf Eingangswege",
+        "email": {
+          "label": "E-Mail-Weiterleitung",
+          "body": "Empfohlener Standardweg.",
+          "link": "Einrichtung siehe unten"
+        },
+        "url": {
+          "label": "URL einfügen",
+          "body": "Klicke auf „+ Immobilie hinzufügen“ im Funnel oder Dashboard, wähle den Webseite-Tab, füge eine Willhaben- / ImmoScout24- / s REAL- / Raiffeisen-URL ein."
+        },
+        "expose": {
+          "label": "Exposé hochladen (nur Pro)",
+          "body": "Gleicher „+ Immobilie hinzufügen“-Button, wähle den Exposé-Tab, ziehe ein PDF hinein."
+        },
+        "manual": {
+          "label": "Manuelle Eingabe",
+          "body": "Gleicher „+ Immobilie hinzufügen“-Button, wähle den Manuell-Tab, fülle die sieben Felder aus. Praktisch für Immobilien außerhalb der gelisteten Portale."
+        },
+        "extension": {
+          "label": "Browser-Erweiterung",
+          "body": "Installiere die IMMIO Chrome-Erweiterung, surfe auf Willhaben oder ImmoScout24 und klicke auf den „An IMMIO senden“-Button."
+        }
+      }
+    },
+    "forwarding": {
+      "heading": "E-Mail-Weiterleitung einrichten",
+      "preamble": "Du hast eine persönliche IMMIO-Adresse: Sie wird auf deinem Dashboard (in der Quellen-Kachel) und in deinen Einstellungen angezeigt. Format: user_xxxxxxxx@mail.immio.at. Wenn du in deinem Posteingang einen Weiterleitungsfilter einrichtest, werden deine bestehenden Portal-Suchagenten-Mails automatisch an diese Adresse gesendet, von IMMIO geparst und in Immobilien in deinem Funnel umgewandelt.\n\nDie Originalemails bleiben in deinem Posteingang — Weiterleitung verschiebt sie nicht. Du kannst die Weiterleitung jederzeit stoppen oder ändern, indem du den Filter in deinem Posteingang anpasst. IMMIO greift nie direkt auf deinen Posteingang zu.\n\nSobald eine Weiterleitungsregel aktiv ist, zeigt die Quellen-Kachel auf deinem Dashboard, welche Portale begonnen haben zu senden. Ein ✓ neben einem Portal bedeutet, dass Mails eintreffen. ○ bedeutet noch nichts. Das ist deine Verifizierungs-Oberfläche — wenn ein eingerichtetes Portal nicht auf ✓ wechselt, greift der Filter nicht.",
+      "gmail": {
+        "heading": "Gmail",
+        "intro": "Erstelle in Gmail eine Weiterleitungsadresse und einen Filter, der Suchagenten-Emails an IMMIO weiterleitet.",
+        "steps": {
+          "1": "Öffne Gmail. Klicke auf das Einstellungen-Zahnrad (oben rechts) und wähle „Alle Einstellungen ansehen“.",
+          "2": "Klicke auf den Tab „Weiterleitung und POP/IMAP“.",
+          "3": "Klicke auf „Weiterleitungsadresse hinzufügen“ und füge deine IMMIO-Adresse ein.",
+          "4": "Gmail sendet einen Bestätigungscode an deine IMMIO-Adresse. Beobachte dein Dashboard — die Quellen-Kachel zeigt innerhalb von ein bis zwei Minuten „1 ungelesene Systemnachricht ansehen“. Klicke durch, lies den Code und füge ihn zurück in das Gmail-Eingabefeld.",
+          "5": "Zurück im Weiterleitungs-Tab öffne „Filter und blockierte Adressen“ → „Neuen Filter erstellen“.",
+          "6": "Trage im Feld „Von“ die gewünschte Absender-Domain ein (z.B. noreply@willhaben.at für Willhaben oder kein-antwort@email.immobilienscout24.at für ImmoScout24).",
+          "7": "Klicke „Filter erstellen“ und setze ein Häkchen bei „Weiterleiten an: [deine IMMIO-Adresse]“.",
+          "8": "Klicke erneut „Filter erstellen“, um abzuschließen."
+        },
+        "verify": "Zur Verifizierung: Alle zukünftigen Suchagenten-Mails landen ohne weiteres Zutun direkt in IMMIO. Schaue auf die Quellen-Kachel auf deinem Dashboard — ein ✓ neben einem Portal bedeutet, dass Mails eintreffen."
+      },
+      "outlook": {
+        "heading": "Outlook",
+        "intro": "Outlook verwendet Regeln statt Filter. Die Struktur ist vergleichbar.",
+        "steps": {
+          "1": "Öffne Outlook im Web (outlook.live.com oder outlook.office.com).",
+          "2": "Klicke auf das Einstellungen-Zahnrad → „Alle Outlook-Einstellungen anzeigen“.",
+          "3": "Wähle „E-Mail“ → „Weiterleitung“ und aktiviere „Weiterleitung aktivieren“ mit deiner IMMIO-Adresse — wenn du den gesamten Posteingang weiterleiten willst.",
+          "4": "Oder: „E-Mail“ → „Regeln“ → „Neue Regel hinzufügen“. Bedingung: „Von“ enthält die Portal-Domain. Aktion: „Weiterleiten an“ deine IMMIO-Adresse.",
+          "5": "Speichern. Outlook sendet eine Bestätigung an deine IMMIO-Adresse.",
+          "6": "Lies den Bestätigungscode in deiner IMMIO-Inbox (Quellen-Kachel → ungelesene Systemnachricht) und bestätige in Outlook, falls erforderlich."
+        },
+        "gapTitle": "Bekannte Einschränkung in der Tester-Phase",
+        "gapBody": "Der Absender der Outlook-Weiterleitungsbestätigung ist noch nicht in der IMMIO-Allowlist (siehe ADR-020 v1.1). Wenn dein Bestätigungscode nicht in der Inbox erscheint, melde dich über den Feedback-Button — wir holen den Code aus den Railway-Logs und antworten."
+      },
+      "apple": {
+        "heading": "Apple Mail / iCloud Mail",
+        "intro": "Apple Mail (Desktop) und iCloud Mail (Web) verwenden Regeln. Die Editoren unterscheiden sich leicht.",
+        "steps": {
+          "1": "iCloud Mail (Web): Melde dich bei icloud.com/mail an, klicke auf das Einstellungen-Zahnrad → „Einstellungen“.",
+          "2": "Wechsle in den Tab „Regeln“ und klicke auf „Regel hinzufügen“.",
+          "3": "Bedingung: „Wenn die Nachricht ist von …“ und gib die Absender-Domain ein (z.B. noreply@willhaben.at).",
+          "4": "Aktion: „Weiterleiten an …“ und gib deine IMMIO-Adresse ein.",
+          "5": "Klicke „Fertig“ und speichere die Einstellungen.",
+          "6": "Apple Mail (Desktop): Mail → Einstellungen → Regeln → Regel hinzufügen mit derselben Bedingung/Aktion."
+        },
+        "gapTitle": "Bekannte Einschränkung in der Tester-Phase",
+        "gapBody": "Der Absender der Apple-/iCloud-Weiterleitungsbestätigung ist noch nicht in der IMMIO-Allowlist (siehe ADR-020 v1.1). Wenn dein Bestätigungscode nicht in der Inbox erscheint, melde dich über den Feedback-Button — wir holen den Code aus den Railway-Logs und antworten."
+      }
+    },
+    "feedback": {
+      "heading": "Fehler gefunden? Vorschlag?",
+      "description": "Nutze den Feedback-Button unten rechts auf jeder Seite (oder am Handy: Einstellungen → Feedback). Melde Bugs, schlage Funktionen vor oder schicke uns Verbesserungen. Den Status jedes Berichts siehst du im Tab „Meine Berichte“ — wir aktualisieren ihn, sobald wir uns kümmern.\n\nWir sind ein Zwei-Personen-Team in der Tester-Phase, daher lesen wir Berichte innerhalb von 24 Stunden. Kritische Bugs sind meist innerhalb von 2–3 Tagen behoben. Wir schicken keine E-Mail-Antworten — Updates findest du im Tab „Meine Berichte“."
+    }
+  },
+  "inbox": {
+    "pageTitle": "Posteingang",
+    "pageDescription": "Hier erscheinen E-Mails von zugelassenen Absendern, die nicht zu einer Immobilie wurden — z.B. Gmail-Weiterleitungsbestätigungen oder Mails von neuen Portalen, die wir noch nicht erkennen.",
+    "empty": "Noch keine Nachrichten.",
+    "loading": "Wird geladen…",
+    "loadMore": "Mehr laden",
+    "errorPrefix": "Fehler beim Laden",
+    "noSubject": "(Kein Betreff)",
+    "fromLabel": "Von",
+    "subjectLabel": "Betreff",
+    "bodyUnavailable": "(Nachrichteninhalt nicht verfügbar)",
+    "unreadIndicator": "Ungelesen",
+    "senderCategory": {
+      "gmail_forwarding": "Gmail",
+      "willhaben": "Willhaben",
+      "immoscout24": "ImmoScout24",
+      "bazar": "Bazar.at",
+      "immmo": "immmo.at",
+      "unknown": "Unbekannter Absender"
+    },
+    "failureReason": {
+      "gmail_confirmation": "Das ist eine Gmail-Weiterleitungsbestätigung. Kopiere den Code unten zurück in deine Gmail-Einstellungen, um die Einrichtung abzuschließen.",
+      "unknown_platform": "IMMIO hat diese E-Mail erhalten, aber den Absender nicht als Immobilienportal erkannt. Nur zur Information — keine Aktion erforderlich.",
+      "parse_empty": "IMMIO hat diese E-Mail erhalten, konnte aber kein Inserat extrahieren. Wenn du hier eine Immobilie erwartest, melde dich über den Feedback-Button.",
+      "parse_error": "IMMIO hat diese E-Mail erhalten, konnte aber kein Inserat extrahieren. Wenn du hier eine Immobilie erwartest, melde dich über den Feedback-Button."
     }
   }
 }

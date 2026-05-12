@@ -73,6 +73,7 @@ export default function PropertyCard({
   compact = false,
   fullWidth = false,
   draggable,
+  dataTourId,
 }: {
   item: CardProperty;
   actions: CardActions;
@@ -84,6 +85,8 @@ export default function PropertyCard({
     onDragStart: (e: React.DragEvent) => void;
     onDragEnd: () => void;
   };
+  /** ADR-021 HH8 — `data-tour-id` for the card root. */
+  dataTourId?: string;
 }) {
   const t = useTranslations('propertyCard');
   const tStages = useTranslations('funnel.stages');
@@ -234,6 +237,7 @@ export default function PropertyCard({
   return (
     <div
       {...draggableProps}
+      data-tour-id={dataTourId}
       className={`group relative bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col ${widthClass} hover:shadow-md transition-shadow ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
       {/* Image — ADR-012 v1.1 PC5: tapping opens the modal (was: link to source).
