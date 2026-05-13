@@ -5,13 +5,21 @@
  *
  * Mounted at the authenticated layout level (sibling to FeedbackButton +
  * SSEProvider). Auto-fires on first visit to /dashboard when:
- *   - localStorage flag immio.onboardingTour.completed is absent
+ *   - localStorage flag immio.onboardingTour.completed:<userId> is absent
  *   - router pathname is /dashboard
  *   - viewport width >= 600px (tour disabled on mobile per HH1 spec)
  *   - no property modal is open (data-property-modal-open attr absent)
  *
  * Skip / Finish / Esc all set the flag the same way. Re-trigger from
  * /help wipes the flag and routes to /dashboard.
+ *
+ * The completion flag is **scoped per user id** so that:
+ *   (a) the same user signing out and back in does NOT re-fire the tour;
+ *   (b) a different user signing in on the same browser sees the tour
+ *       fresh (their flag is absent).
+ * The previous unscoped key `immio.onboardingTour.completed` was wiped
+ * on every sign-out via `clearAllUserCaches()` to defend (b), which
+ * regressed (a). Per-user scoping defends both without the wipe.
  *
  * Uses react-joyride v3's `onEvent` callback + `EVENTS.TOUR_END` to
  * detect both finish and skip outcomes. The Skip button is enabled via
@@ -32,36 +40,46 @@ const Joyride = dynamic(
   { ssr: false },
 );
 
-export const TOUR_COMPLETED_KEY = 'immio.onboardingTour.completed';
+const TOUR_COMPLETED_KEY_PREFIX = 'immio.onboardingTour.completed';
 const MIN_VIEWPORT_WIDTH = 600;
 const START_DELAY_MS = 800; // wait for dashboard data fetches to settle
 
-function readCompleted(): boolean {
+function tourKey(userId: string): string {
+  return `${TOUR_COMPLETED_KEY_PREFIX}:${userId}`;
+}
+
+function readCompleted(userId: string): boolean {
   try {
-    return localStorage.getItem(TOUR_COMPLETED_KEY) === 'true';
+    return localStorage.getItem(tourKey(userId)) === 'true';
   } catch {
     return false;
   }
 }
 
-function writeCompleted(value: boolean): void {
+function writeCompleted(userId: string, value: boolean): void {
   try {
-    if (value) localStorage.setItem(TOUR_COMPLETED_KEY, 'true');
-    else localStorage.removeItem(TOUR_COMPLETED_KEY);
+    if (value) localStorage.setItem(tourKey(userId), 'true');
+    else localStorage.removeItem(tourKey(userId));
   } catch {
     // private mode / quota — fall back to in-memory (tour re-fires next reload)
   }
 }
 
-/** Imperative restart used by the Help page tour-restart button. */
-export function restartOnboardingTour(): void {
-  writeCompleted(false);
+/**
+ * Imperative restart used by the Help page tour-restart button.
+ * Caller is responsible for passing the current user id; pulled from
+ * AuthContext in HelpTourRestartSection.
+ */
+export function restartOnboardingTour(userId: string): void {
+  if (!userId) return;
+  writeCompleted(userId, false);
 }
 
 export default function OnboardingTour() {
   const t = useTranslations('help.tour');
   const pathname = usePathname();
   const { session, loading: authLoading } = useAuth();
+  const userId = session?.user?.id;
   const [run, setRun] = useState(false);
 
   const steps = useMemo<Step[]>(
@@ -102,9 +120,9 @@ export default function OnboardingTour() {
   );
 
   useEffect(() => {
-    if (authLoading || !session?.user?.id) return;
+    if (authLoading || !userId) return;
     if (pathname !== '/dashboard') return;
-    if (readCompleted()) return;
+    if (readCompleted(userId)) return;
     if (typeof window === 'undefined') return;
     if (window.innerWidth < MIN_VIEWPORT_WIDTH) return;
     // Acceptance criterion 13: don't fire over an open property modal.
@@ -121,14 +139,14 @@ export default function OnboardingTour() {
     // session?.user?.id is stable across token refresh; full session
     // reference rotates every ~hour. Pathname is what we actually care
     // about for first-run detection.
-  }, [pathname, session?.user?.id, authLoading]);
+  }, [pathname, userId, authLoading]);
 
   function handleEvent(data: EventData): void {
     // TOUR_END fires for both finish (last step → primary) and skip
     // (skip button OR Esc). Both count as completion — we don't
     // distinguish.
     if (data.type === EVENTS.TOUR_END) {
-      writeCompleted(true);
+      if (userId) writeCompleted(userId, true);
       setRun(false);
     }
   }

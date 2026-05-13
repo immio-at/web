@@ -10,7 +10,6 @@ import { clearAnalyticsCache } from '@/app/[locale]/(authenticated)/dashboard/co
 import { clearRecommendedCache } from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
 import { clearDiscoverStateCache } from '@/app/[locale]/(authenticated)/search/page';
 import { clearFeedbackDrawerState } from '@/components/feedback/FeedbackDrawer';
-import { TOUR_COMPLETED_KEY } from '@/components/help/OnboardingTour';
 
 /**
  * Wipe every module-level cache that holds user-scoped data. Called on
@@ -28,14 +27,11 @@ function clearAllUserCaches(): void {
   clearPortfolioAnalysesCache();
   clearDiscoverStateCache();
   clearFeedbackDrawerState();
-  // ADR-021 risks — clear the onboarding-tour completion flag so a second
-  // user signing in on the same browser still sees the tour. localStorage
-  // is the user-scoped cache; the flag lives there.
-  try {
-    localStorage.removeItem(TOUR_COMPLETED_KEY);
-  } catch {
-    // Safari private mode / quota — best-effort.
-  }
+  // The onboarding-tour completion flag is now per-user-id (key:
+  // `immio.onboardingTour.completed:<userId>`) so cross-user separation
+  // is preserved by construction — a second user's first sign-in finds
+  // no flag for their id. Same-user repeat sign-ins keep their flag and
+  // don't re-fire the tour. No wipe needed here.
 }
 
 // ─── App-specific fields Supabase doesn't know about ─────────────────────────

@@ -1,20 +1,24 @@
 'use client';
 
 /**
- * ADR-021 HH4 — Tour-restart section. Wipes the localStorage completion
- * flag and routes to /dashboard so the tour fires on mount.
+ * ADR-021 HH4 — Tour-restart section. Wipes the per-user localStorage
+ * completion flag and routes to /dashboard so the tour fires on mount.
  */
 
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { restartOnboardingTour } from './OnboardingTour';
 
 export default function HelpTourRestartSection() {
   const t = useTranslations('help.tour');
   const router = useRouter();
+  const { session } = useAuth();
 
   function handleRestart(): void {
-    restartOnboardingTour();
+    const userId = session?.user?.id;
+    if (!userId) return;
+    restartOnboardingTour(userId);
     router.push('/dashboard');
   }
 
