@@ -10,8 +10,11 @@ const navItems = [
   { key: 'finder' as const, href: '/finder', icon: '⚡', tourId: 'nav-finder' },
   { key: 'funnel' as const, href: '/funnel', icon: '📊', tourId: 'nav-funnel' },
   { key: 'analytics' as const, href: '/analytics', icon: '📈', tourId: 'nav-analytics' },
-  { key: 'help' as const, href: '/help', icon: '❓', tourId: 'nav-help' },
 ];
+
+// Help lives in the utility area next to Settings on desktop (icon button),
+// and as a labelled link in the mobile nav row below.
+const HELP_NAV = { key: 'help' as const, href: '/help', icon: '❓', tourId: 'nav-help' };
 
 export default function NavBar() {
   const pathname = usePathname();
@@ -75,6 +78,20 @@ export default function NavBar() {
             </button>
 
             <Link
+              href={HELP_NAV.href}
+              data-tour-id={HELP_NAV.tourId}
+              title={t(HELP_NAV.key)}
+              aria-label={t(HELP_NAV.key)}
+              className={`text-sm border border-gray-200 rounded-lg px-3 py-1.5 transition-colors ${
+                pathname === HELP_NAV.href
+                  ? 'bg-blue-50 text-blue-600 border-blue-200'
+                  : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              ?
+            </Link>
+
+            <Link
               href="/settings"
               title={t('settings')}
               className={`text-sm border border-gray-200 rounded-lg px-3 py-1.5 transition-colors ${
@@ -110,9 +127,11 @@ export default function NavBar() {
           </div>
         </div>
 
-        {/* Mobile nav */}
+        {/* Mobile nav — labelled links for every product surface plus Help.
+            Mobile has no utility area, so Help stays in the row here even
+            though desktop renders it as an icon button next to Settings. */}
         <div className="md:hidden flex gap-1 pb-2 overflow-x-auto">
-          {navItems.map((item) => {
+          {[...navItems, HELP_NAV].map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
