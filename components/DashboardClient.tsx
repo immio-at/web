@@ -98,17 +98,34 @@ export default function DashboardClient({
         optimisticInsert(property);
       } catch { /* 409 = already saved */ }
     },
-    onAnalyse: (item: CardProperty) => {
+    onAnalyse: async (item: CardProperty) => {
       if (item.source === 'own') {
         trackInteraction(item.id, 'analysis');
         const prop = properties.find(p => p.id === item.id);
         if (prop) setAnalyseProperty(prop);
         return;
       }
-      // Scraped — image-tap signals interest. Track view so it surfaces in
-      // Recently Viewed; no analysis modal exists for scraped rows.
-      if (item.scrapedListingId) {
-        trackScrapedInteraction(item.scrapedListingId, 'view');
+      // Scraped — open the same modal as forwarded properties. Reuse an
+      // existing Property by sourceUrl if present (prior save / undo);
+      // otherwise auto-create at status 'new' so it lands where forwarded
+      // emails do, without polluting the funnel kanban.
+      if (!item.scrapedListingId) return;
+      trackScrapedInteraction(item.scrapedListingId, 'view');
+      const existing = item.sourceUrl
+        ? properties.find(p => p.sourceUrl === item.sourceUrl)
+        : null;
+      if (existing) {
+        trackInteraction(existing.id, 'analysis');
+        setAnalyseProperty(existing);
+        return;
+      }
+      try {
+        const { property } = await saveScrapedListing(item.scrapedListingId, 'new');
+        optimisticInsert(property);
+        trackInteraction(property.id, 'analysis');
+        setAnalyseProperty(property);
+      } catch {
+        // 409 — race: another tab created it. User can re-click.
       }
     },
     onReportDead: (item: CardProperty) => {

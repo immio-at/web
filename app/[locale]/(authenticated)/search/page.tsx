@@ -824,17 +824,42 @@ export default function EntdeckenPage() {
         movedToStageAt: new Date().toISOString(),
       });
     },
-    onAnalyse: (item: CardProperty) => {
+    onAnalyse: async (item: CardProperty) => {
       if (item.source === 'own') {
         trackInteraction(item.id, 'analysis');
         const prop = cachedProperties.find(p => p.id === item.id);
         if (prop) setAnalyseProperty(prop);
         return;
       }
-      // Scraped — image-tap signals interest, log a view so it surfaces in
-      // Recently Viewed. No analysis modal opens (scraped has no analysis).
-      if (item.scrapedListingId) {
-        trackScrapedInteraction(item.scrapedListingId, 'view');
+      // Scraped — open the same modal as forwarded properties. The user's
+      // mental model is "click any property to see details" regardless of
+      // source. If a Property row already exists for this listing (prior
+      // save / undo cycle), reuse it; otherwise auto-create at status
+      // 'new' — matches where forwarded emails land, doesn't pollute the
+      // funnel kanban, and the row stays visible on Discover via the
+      // existing own@new filter.
+      if (!item.scrapedListingId) return;
+      trackScrapedInteraction(item.scrapedListingId, 'view');
+      const scraped = scrapedListings.find(l => l.id === `scraped-${item.scrapedListingId}`);
+      const existing = scraped
+        ? cachedProperties.find(p => p.sourceUrl === scraped.sourceUrl)
+        : null;
+      if (existing) {
+        trackInteraction(existing.id, 'analysis');
+        setAnalyseProperty(existing);
+        return;
+      }
+      try {
+        const { property } = await saveScrapedListing(item.scrapedListingId, 'new');
+        optimisticInsert(property);
+        setScrapedListings(prev => prev.map(l =>
+          l.id === `scraped-${item.scrapedListingId}` ? { ...l, savedByUser: true } : l
+        ));
+        trackInteraction(property.id, 'analysis');
+        setAnalyseProperty(property);
+      } catch {
+        // 409 — race: another tab created it. Refetch is the recovery
+        // path; user can re-click. Silent.
       }
     },
     onReportDead: (item: CardProperty) => {

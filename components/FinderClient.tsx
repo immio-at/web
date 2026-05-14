@@ -251,7 +251,11 @@ export default function FinderClient({
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [lastAction, setLastAction] = useState<string | null>(null);
-  const [showAnalyseModal, setShowAnalyseModal] = useState(false);
+  // Holds the Property to render in the analyse modal. Set by image-tap
+  // on either an own card (open on the cached Property) or a scraped card
+  // (auto-save at status 'new' first, then open on the new Property —
+  // matches forwarded-email behaviour).
+  const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
   const dragStart = useRef<{ x: number; y: number } | null>(null);
 
   // Reset card index when filters change
@@ -273,14 +277,7 @@ export default function FinderClient({
     }
 
     if (action === 'analyse') {
-      if (card.propertyId) {
-        trackInteraction(card.propertyId, 'analysis');
-        setShowAnalyseModal(true);
-      } else if (card.scrapedListingId) {
-        // Scraped has no analysis modal — track the view so it surfaces in
-        // Recently Viewed and skip opening anything.
-        trackScrapedInteraction(card.scrapedListingId, 'view');
-      }
+      void openAnalyseFor(card);
       setDragX(0);
       setDragY(0);
       return;
@@ -383,6 +380,39 @@ export default function FinderClient({
     };
   }
 
+  // Resolve "open the analysis modal for this card" — works for both own
+  // and scraped. Scraped auto-saves at status 'new' (matches forwarded
+  // landing) and opens on the freshly-created Property. Re-using an
+  // existing Property (saved-then-undone, or saved from another surface)
+  // is preferred to a duplicate POST.
+  async function openAnalyseFor(item: CardProperty): Promise<void> {
+    if (item.source === 'own') {
+      const prop = allOwn.find(p => p.id === item.id);
+      if (!prop) return;
+      trackInteraction(prop.id, 'analysis');
+      setAnalyseProperty(prop);
+      return;
+    }
+    if (!item.scrapedListingId) return;
+    trackScrapedInteraction(item.scrapedListingId, 'view');
+    const existing = item.sourceUrl
+      ? allOwn.find(p => p.sourceUrl === item.sourceUrl)
+      : null;
+    if (existing) {
+      trackInteraction(existing.id, 'analysis');
+      setAnalyseProperty(existing);
+      return;
+    }
+    try {
+      const { property } = await saveScrapedListing(item.scrapedListingId, 'new');
+      optimisticInsert(property);
+      trackInteraction(property.id, 'analysis');
+      setAnalyseProperty(property);
+    } catch {
+      // 409 — race with another tab. Silent; user can re-tap.
+    }
+  }
+
   // Card actions for the PropertyCard component
   const cardActions: CardActions = useMemo(() => ({
     onSaveToFunnel: async (item: CardProperty) => {
@@ -409,13 +439,7 @@ export default function FinderClient({
       } catch { /* 409 */ }
     },
     onAnalyse: (item: CardProperty) => {
-      if (item.source === 'own') {
-        trackInteraction(item.id, 'analysis');
-        setShowAnalyseModal(true);
-      } else if (item.scrapedListingId) {
-        // Scraped — track view; no analysis modal exists for scraped rows.
-        trackScrapedInteraction(item.scrapedListingId, 'view');
-      }
+      void openAnalyseFor(item);
       setDragX(0); setDragY(0);
     },
     onReportDead: (item: CardProperty) => {
@@ -564,11 +588,11 @@ export default function FinderClient({
       {/* Progress count */}
       <div className="text-gray-400 text-xs mt-2">{t('progress', { current: current + 1, total })}</div>
 
-      {/* Analyse modal — only for own properties */}
-      {showAnalyseModal && card?.source === 'own' && card.propertyId && (
+      {/* Analyse modal — opens on both own and (auto-saved) scraped cards. */}
+      {analyseProperty && (
         <PropertyAnalysisModal
-          property={allOwn.find(p => p.id === card.propertyId)!}
-          onClose={() => setShowAnalyseModal(false)}
+          property={analyseProperty}
+          onClose={() => setAnalyseProperty(null)}
         />
       )}
       </>

@@ -519,11 +519,18 @@ export async function getScrapedListings(filter: ScrapedListingsFilter = {}): Pr
   return handleResponse(response);
 }
 
-export async function saveScrapedListing(id: string): Promise<{ message: string; property: Property }> {
+export async function saveScrapedListing(
+  id: string,
+  status: 'new' | 'investigating' = 'investigating',
+): Promise<{ message: string; property: Property }> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/scraped-listings/${id}/save`, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` },
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ status }),
   });
   return handleResponse(response);
 }
