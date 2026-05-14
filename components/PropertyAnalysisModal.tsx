@@ -69,7 +69,7 @@ interface Props {
 // ─── Input helpers ────────────────────────────────────────────────────────────
 
 function NumInput({
-  label, value, onChange, suffix, prefix, readOnly, hint,
+  label, value, onChange, suffix, prefix, readOnly, hint, step,
 }: {
   label: string;
   value: number | null | undefined;
@@ -78,6 +78,12 @@ function NumInput({
   prefix?: string;
   readOnly?: boolean;
   hint?: string;
+  /** Arrow-button increment. Defaults to "any" (browser-default 1).
+   *  Use 1000 for property-scale € amounts (purchase price, loan amount,
+   *  resale price, other purchase costs); 50 for monthly € costs;
+   *  leave default for percentages. Manual typing of any value still
+   *  works regardless. */
+  step?: number | string;
 }) {
   // Round display value to avoid floating point artifacts (e.g. 4.499999 → 4.5).
   // Guard against Prisma Decimal strings sneaking in at runtime.
@@ -90,7 +96,7 @@ function NumInput({
         {prefix && <span className="px-3 py-2 bg-[#f8f9fb] text-[#6b7a99] text-sm border-r border-[#e2e6ed]">{prefix}</span>}
         <input
           type="number"
-          step="any"
+          step={step ?? 'any'}
           readOnly={readOnly}
           value={displayValue}
           onChange={e => onChange?.(e.target.value === '' ? null : parseFloat(e.target.value))}
@@ -911,7 +917,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
               <SectionTitle>{t('purchase.title')}</SectionTitle>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <NumInput label={t('purchase.listPrice')} value={draft.listPrice} prefix={'\u20AC'} readOnly />
-                <NumInput label={t('purchase.desiredPrice')} value={draft.desiredPrice} onChange={v => set('desiredPrice', v)} prefix={'\u20AC'} />
+                <NumInput label={t('purchase.desiredPrice')} value={draft.desiredPrice} onChange={v => set('desiredPrice', v)} prefix={'\u20AC'} step={1000} />
                 <NumInput
                   label={t('purchase.pricePerSqm')}
                   value={pricePerSqm ? Math.round(pricePerSqm) : null}
@@ -929,7 +935,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
               </div>
 
               <div className="mb-4">
-                <NumInput label={t('purchase.otherCosts')} value={draft.otherPurchaseCosts} onChange={v => set('otherPurchaseCosts', v ?? 0)} prefix={'\u20AC'} />
+                <NumInput label={t('purchase.otherCosts')} value={draft.otherPurchaseCosts} onChange={v => set('otherPurchaseCosts', v ?? 0)} prefix={'\u20AC'} step={1000} />
               </div>
 
               {/* Renovierungskosten */}
@@ -1025,6 +1031,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
                         value={draft.loan1Amount ?? Math.round(resolvedL1)}
                         onChange={v => set('loan1Amount', v)}
                         prefix={'\u20AC'}
+                        step={1000}
                         hint={draft.loan1Amount === null ? t('financing.amountHintAuto', { pct: (draft.loan1AmountPct * 100).toFixed(0) }) : t('financing.amountHintManual')}
                       />
                       <NumInput label={t('financing.rate')} value={draft.loan1Rate !== null ? (draft.loan1Rate ?? 0) * 100 : null} onChange={v => set('loan1Rate', v !== null ? v / 100 : null)} suffix="%" />
@@ -1048,7 +1055,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
                     <div>
                       <p className="text-xs font-medium text-[#6b7a99] mb-2">{t('financing.loan2')}</p>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <NumInput label={t('financing.amount')} value={draft.loan2Amount} onChange={v => set('loan2Amount', v)} prefix={'\u20AC'} />
+                        <NumInput label={t('financing.amount')} value={draft.loan2Amount} onChange={v => set('loan2Amount', v)} prefix={'\u20AC'} step={1000} />
                         <NumInput label={t('financing.rate')} value={draft.loan2Rate !== null ? (draft.loan2Rate ?? 0) * 100 : null} onChange={v => set('loan2Rate', v !== null ? v / 100 : null)} suffix="%" />
                         <NumInput label={t('financing.term')} value={draft.loan2TermYears} onChange={v => set('loan2TermYears', v ? Math.round(v) : null)} suffix="J" />
                         <NumInput label={t('financing.monthlyPayment')} value={Math.round(loan2Monthly)} prefix={'\u20AC'} readOnly />
@@ -1146,7 +1153,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
                 <SectionTitle>{t('flip.title')}</SectionTitle>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <NumInput label={t('flip.duration')} value={draft.flipDurationMonths} onChange={v => set('flipDurationMonths', v ? Math.round(v) : null)} suffix={t('flip.durationSuffix')} />
-                  <NumInput label={t('flip.resalePrice')} value={draft.flipResalePrice} onChange={v => set('flipResalePrice', v)} prefix={'\u20AC'} />
+                  <NumInput label={t('flip.resalePrice')} value={draft.flipResalePrice} onChange={v => set('flipResalePrice', v)} prefix={'\u20AC'} step={1000} />
                   {/* ADR-003 v2.3 \u2014 single BK input on Flip (no tenant during a
                        hold, so umlagef\u00E4hig/nicht-umlagef\u00E4hig split doesn't apply).
                        Persisted column is still bkNichtUmlagefaehig \u2014 UI relabel
