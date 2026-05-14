@@ -383,6 +383,21 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
             label: t(`stages.${STAGE_I18N_KEY[s.key] ?? s.key}`),
             variant: 'default' as const,
           }));
+        // Append Not Relevant as a danger-variant option (divider above,
+        // red text). FUNNEL_STAGES_DISPLAY excludes it because it's not
+        // a kanban column, but the heart-menu still needs it so users
+        // can move a card straight to Not Relevant without dragging.
+        // requestMove() already routes 'not_relevant' through a confirm
+        // dialog — see line 215. Guard against duplicating it if the
+        // current stage somehow is 'not_relevant' (shouldn't happen on
+        // the Funnel since those rows are filtered out, but defensive).
+        if (currentStage !== 'not_relevant') {
+          options.push({
+            key: 'not_relevant',
+            label: t('stages.notRelevant'),
+            variant: 'danger',
+          });
+        }
         return (
           <DropdownPortal
             anchorRect={heartMenu.anchor}
