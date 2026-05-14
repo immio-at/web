@@ -175,11 +175,11 @@ export default function FilterBar({
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
         <form onSubmit={e => { e.preventDefault(); onSearch(); }}>
 
-          {/* Line 1: Keyword + Location */}
-          <div className="flex flex-wrap gap-3 items-end">
-            {/* ADR-008 PT1 — keyword input hidden behind SEARCH_INPUT_ENABLED.
-                State + URL plumbing remain so this is a one-line flip. */}
-            {SEARCH_INPUT_ENABLED && (
+          {/* Line 1: Keyword (only rendered when SEARCH_INPUT_ENABLED).
+              Location moved to Line 2 alongside Price / €/m². When PT1
+              hides the keyword input, this whole row collapses. */}
+          {SEARCH_INPUT_ENABLED && (
+            <div className="flex flex-wrap gap-3 items-end">
               <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
                 <label className={labelClass}>{t('keyword')}</label>
                 <input
@@ -190,21 +190,15 @@ export default function FilterBar({
                   className={`${inputClass} w-full`}
                 />
               </div>
-            )}
-            <div className="flex flex-col gap-1 min-w-[200px] flex-1">
-              <label className={labelClass}>{t('location')}</label>
-              <input
-                type="text"
-                value={values.location}
-                onChange={set('location')}
-                placeholder={t('locationPlaceholder')}
-                className={`${inputClass} w-full`}
-              />
             </div>
-          </div>
+          )}
 
-          {/* Line 2: Price + Price/m² */}
-          <div className="flex flex-wrap gap-3 items-end mt-3">
+          {/* Line 2: Price + €/m² + Location.
+              Location is appended at the end and uses `flex-1` so it
+              fills whatever horizontal space the fixed-width numeric
+              fields leave behind on wide viewports; on narrow ones it
+              wraps to its own line via `flex-wrap`. */}
+          <div className={`flex flex-wrap gap-3 items-end ${SEARCH_INPUT_ENABLED ? 'mt-3' : ''}`}>
             <div className="flex flex-col gap-1">
               <label className={labelClass}>{t('priceFrom')}</label>
               <input type="number" value={values.minPrice} onChange={set('minPrice')} placeholder={t('priceFromPlaceholder')} className={`${inputClass} w-36`} />
@@ -220,6 +214,16 @@ export default function FilterBar({
             <div className="flex flex-col gap-1">
               <label className={labelClass}>{t('pricePerSqmTo')}</label>
               <input type="number" value={values.maxPricePerSqm} onChange={set('maxPricePerSqm')} placeholder={t('pricePerSqmToPlaceholder')} className={`${inputClass} w-32`} />
+            </div>
+            <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
+              <label className={labelClass}>{t('location')}</label>
+              <input
+                type="text"
+                value={values.location}
+                onChange={set('location')}
+                placeholder={t('locationPlaceholder')}
+                className={`${inputClass} w-full`}
+              />
             </div>
           </div>
 
