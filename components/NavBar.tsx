@@ -103,18 +103,33 @@ export default function NavBar() {
               ⚙
             </Link>
 
-            {/* Admin link — only rendered for admin users */}
+            {/* Admin + Reports links — only rendered for admin users.
+                Reports is a separate top-level route (not nested under
+                /admin) so it gets its own utility-area entry between
+                Admin and Sign Out. */}
             {isAdmin && (
-              <Link
-                href="/admin"
-                className={`text-sm border rounded-lg px-3 py-1.5 font-medium transition-colors ${
-                  pathname === '/admin'
-                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                    : 'text-gray-400 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200 border-gray-200'
-                }`}
-              >
-                {t('admin')}
-              </Link>
+              <>
+                <Link
+                  href="/admin"
+                  className={`text-sm border rounded-lg px-3 py-1.5 font-medium transition-colors ${
+                    pathname === '/admin'
+                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                      : 'text-gray-400 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200 border-gray-200'
+                  }`}
+                >
+                  {t('admin')}
+                </Link>
+                <Link
+                  href="/reports"
+                  className={`text-sm border rounded-lg px-3 py-1.5 font-medium transition-colors ${
+                    pathname === '/reports'
+                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                      : 'text-gray-400 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200 border-gray-200'
+                  }`}
+                >
+                  {t('reports')}
+                </Link>
+              </>
             )}
 
             <button
@@ -149,12 +164,20 @@ export default function NavBar() {
             );
           })}
           {isAdmin && (
-            <Link
-              href="/admin"
-              className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors"
-            >
-              ⚡ {t('admin')}
-            </Link>
+            <>
+              <Link
+                href="/admin"
+                className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors"
+              >
+                ⚡ {t('admin')}
+              </Link>
+              <Link
+                href="/reports"
+                className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors"
+              >
+                📨 {t('reports')}
+              </Link>
+            </>
           )}
         </div>
 

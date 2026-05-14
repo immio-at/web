@@ -144,6 +144,7 @@
     "help": "Help",
     "settings": "Settings",
     "admin": "Admin",
+    "reports": "Reports",
     "signOut": "Sign Out"
   },
   "auth": {

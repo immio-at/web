@@ -1,13 +1,19 @@
 'use client';
 
 /**
- * Admin Reports page (ADR-018 §5) — /admin/reports.
+ * Reports page (ADR-018 §5) — `/reports`.
  *
- * Lists every feedback report across all users with status / type /
- * unacknowledged filters, per-row status dropdown (immediate save),
- * debounced team-note autosave, and the click-to-acknowledge button.
+ * Admin-only feedback reports view. Split out from `/admin/reports`
+ * to give it its own top-level utility-area nav entry alongside the
+ * existing Admin link. Self-gates on `isAdmin` (server-side enforcement
+ * lives on the API endpoints — frontend gate is defence-in-depth +
+ * helpful empty state for non-admins who reach the route by accident).
+ *
  * Filter state is captured in URL query params so views are
- * deep-linkable.
+ * deep-linkable: `/reports?unacknowledged=true`, `/reports?status=open`,
+ * etc. The AdminUnacknowledgedToast (mounted globally in the
+ * authenticated layout) links here with the `unacknowledged=true`
+ * shortcut.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -40,7 +46,7 @@ const TYPE_COLORS: Record<FeedbackType, string> = {
   improvement: 'bg-slate-100 text-slate-800',
 };
 
-export default function AdminReportsPage() {
+export default function ReportsPage() {
   const t = useTranslations('admin.feedback');
   const tFb = useTranslations('feedback');
   const router = useRouter();
