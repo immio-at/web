@@ -59,12 +59,14 @@ export default function FilterModalForm({ name, onNameChange, values, onValuesCh
         />
       </div>
 
-      {/* Price */}
+      {/* Price — step 1000 so arrow-up bumps by thousands not units;
+          property prices are 5–7 figures so €1 increments are useless. */}
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className={labelClass}>{t('priceFrom')}</label>
           <input
             type="number"
+            step="1000"
             value={values.minPrice}
             onChange={set('minPrice')}
             placeholder={t('priceFromPlaceholder')}
@@ -75,6 +77,7 @@ export default function FilterModalForm({ name, onNameChange, values, onValuesCh
           <label className={labelClass}>{t('priceTo')}</label>
           <input
             type="number"
+            step="1000"
             value={values.maxPrice}
             onChange={set('maxPrice')}
             placeholder={t('priceToPlaceholder')}
@@ -83,12 +86,14 @@ export default function FilterModalForm({ name, onNameChange, values, onValuesCh
         </div>
       </div>
 
-      {/* Price/m² */}
+      {/* Price/m² — step 100; €/m² values typically 1000–15000 in AT,
+          so hundreds is the right granularity. */}
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className={labelClass}>{t('pricePerSqmFrom')}</label>
           <input
             type="number"
+            step="100"
             value={values.minPricePerSqm}
             onChange={set('minPricePerSqm')}
             placeholder={t('pricePerSqmFromPlaceholder')}
@@ -99,6 +104,7 @@ export default function FilterModalForm({ name, onNameChange, values, onValuesCh
           <label className={labelClass}>{t('pricePerSqmTo')}</label>
           <input
             type="number"
+            step="100"
             value={values.maxPricePerSqm}
             onChange={set('maxPricePerSqm')}
             placeholder={t('pricePerSqmToPlaceholder')}

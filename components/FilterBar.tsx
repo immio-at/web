@@ -201,19 +201,19 @@ export default function FilterBar({
           <div className={`flex flex-wrap gap-3 items-end ${SEARCH_INPUT_ENABLED ? 'mt-3' : ''}`}>
             <div className="flex flex-col gap-1">
               <label className={labelClass}>{t('priceFrom')}</label>
-              <input type="number" value={values.minPrice} onChange={set('minPrice')} placeholder={t('priceFromPlaceholder')} className={`${inputClass} w-36`} />
+              <input type="number" step="1000" value={values.minPrice} onChange={set('minPrice')} placeholder={t('priceFromPlaceholder')} className={`${inputClass} w-36`} />
             </div>
             <div className="flex flex-col gap-1">
               <label className={labelClass}>{t('priceTo')}</label>
-              <input type="number" value={values.maxPrice} onChange={set('maxPrice')} placeholder={t('priceToPlaceholder')} className={`${inputClass} w-36`} />
+              <input type="number" step="1000" value={values.maxPrice} onChange={set('maxPrice')} placeholder={t('priceToPlaceholder')} className={`${inputClass} w-36`} />
             </div>
             <div className="flex flex-col gap-1">
               <label className={labelClass}>{t('pricePerSqmFrom')}</label>
-              <input type="number" value={values.minPricePerSqm} onChange={set('minPricePerSqm')} placeholder={t('pricePerSqmFromPlaceholder')} className={`${inputClass} w-32`} />
+              <input type="number" step="100" value={values.minPricePerSqm} onChange={set('minPricePerSqm')} placeholder={t('pricePerSqmFromPlaceholder')} className={`${inputClass} w-32`} />
             </div>
             <div className="flex flex-col gap-1">
               <label className={labelClass}>{t('pricePerSqmTo')}</label>
-              <input type="number" value={values.maxPricePerSqm} onChange={set('maxPricePerSqm')} placeholder={t('pricePerSqmToPlaceholder')} className={`${inputClass} w-32`} />
+              <input type="number" step="100" value={values.maxPricePerSqm} onChange={set('maxPricePerSqm')} placeholder={t('pricePerSqmToPlaceholder')} className={`${inputClass} w-32`} />
             </div>
             <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
               <label className={labelClass}>{t('location')}</label>

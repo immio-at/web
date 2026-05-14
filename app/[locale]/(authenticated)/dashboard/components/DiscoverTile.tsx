@@ -186,11 +186,11 @@ export default function DiscoverTile({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className={labelClass}>{t('priceFrom')}</label>
-            <input type="number" value={filterValues.minPrice} onChange={set('minPrice')} placeholder="€ min" className={inputClass} />
+            <input type="number" step="1000" value={filterValues.minPrice} onChange={set('minPrice')} placeholder="€ min" className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>{t('priceTo')}</label>
-            <input type="number" value={filterValues.maxPrice} onChange={set('maxPrice')} placeholder="€ max" className={inputClass} />
+            <input type="number" step="1000" value={filterValues.maxPrice} onChange={set('maxPrice')} placeholder="€ max" className={inputClass} />
           </div>
         </div>
 
