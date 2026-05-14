@@ -141,6 +141,17 @@ export default function OnboardingTour() {
     // about for first-run detection.
   }, [pathname, userId, authLoading]);
 
+  // Shut down the tour when the user navigates off /dashboard. All seven
+  // step anchors live on /dashboard or the nav bar; on /search, /funnel,
+  // etc. Joyride's spotlight has nothing to point at AND its full-viewport
+  // overlay swallows clicks on the underlying page. Treat navigation as
+  // a tacit dismiss — but DON'T mark the tour completed, so the next
+  // /dashboard visit re-fires it. The user can also Skip explicitly or
+  // re-trigger from /help.
+  useEffect(() => {
+    if (run && pathname !== '/dashboard') setRun(false);
+  }, [pathname, run]);
+
   function handleEvent(data: EventData): void {
     // TOUR_END fires for both finish (last step → primary) and skip
     // (skip button OR Esc). Both count as completion — we don't
@@ -151,7 +162,9 @@ export default function OnboardingTour() {
     }
   }
 
-  if (!run) return null;
+  // Belt-and-braces: even if `run` is briefly stale during a pathname
+  // change, never render the Joyride overlay on a non-dashboard route.
+  if (!run || pathname !== '/dashboard') return null;
 
   return (
     <Joyride
