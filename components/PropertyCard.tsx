@@ -306,116 +306,21 @@ export default function PropertyCard({
           </span>
         )}
 
-        {/* House icon — top-right of image */}
-        <button
-          type="button"
-          onClick={handleHeart}
-          title={heartTooltip}
-          aria-label={heartTooltip}
-          disabled={!heartActionable}
-          className={`absolute ${compact ? 'top-1.5 right-1.5 w-6 h-6' : 'top-2 right-2 w-8 h-8'} flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm transition-all ${
-            heartFilled
-              ? `text-teal-600${ownCanMoveStage ? ' hover:scale-110' : ''}`
-              : 'text-gray-400 hover:text-teal-600 hover:scale-110'
-          } ${isOwn && !ownCanMoveStage ? 'cursor-default' : ''}`}
+        {/* ADR-012 v1.3 PC10 — top-right cluster: magnifying-glass + house.
+            Magnifying-glass left, house right (left-to-right reads
+            lighter-commitment exploratory action first, state-changing
+            action second). Both achieve the same modal-open as the
+            invisible image-tap shortcut; the magnifying-glass is the
+            explicit visual cue. Each button stops propagation so the
+            click never falls through to the image's handleImageClick. */}
+        <div
+          className={`absolute z-10 flex items-center ${
+            compact ? 'top-1.5 right-1.5 gap-1' : 'top-2 right-2 gap-1.5'
+          }`}
         >
-          <svg
-            viewBox="0 0 24 24"
-            className={compact ? 'w-3.5 h-3.5' : 'w-4.5 h-4.5'}
-            fill={heartFilled ? 'currentColor' : 'none'}
-            stroke="currentColor"
-            strokeWidth={heartFilled ? 0 : 2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10.5z" />
-            {!heartFilled && <path d="M9 21V14h6v7" />}
-          </svg>
-        </button>
-
-      </div>
-
-      {/* Right-side action stack: external-link / ⚠ / ✕.
-          Sibling of the image div (NOT a child) so clicks never accidentally
-          navigate to the listing or fire the image-tap modal handler.
-          Positioned over the image via the card root's `relative`. Always
-          visible — the previous hover-reveal pattern was unreliable across
-          Tailwind v4's `(hover: hover)` media-query scoping and made the
-          discoverability poor on touch laptops. */}
-      <div className={`absolute z-10 ${
-        compact
-          ? 'right-1.5 top-9 flex-col gap-1'
-          : 'right-2 top-[6.6rem] -translate-y-1/2 flex-col gap-1.5'
-      } flex`}>
-        {/* ADR-012 v1.1 PC6: external-link replaces the 🔍 view button —
-            opens the source listing in a new tab; modal is now the image-tap
-            target. Disabled state for manual properties without sourceUrl. */}
-        {hasSourceUrl ? (
-          <a
-            href={item.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => { e.stopPropagation(); handleLink(); }}
-            title={t('openExternal')}
-            aria-label={t('openExternal')}
-            className={`${actionBtn} text-gray-500 hover:text-blue-600 hover:bg-blue-50`}
-          >
-            <ExternalLinkIcon compact={compact} />
-          </a>
-        ) : (
-          <button
-            type="button"
-            disabled
-            title={t('openExternalUnavailable')}
-            aria-label={t('openExternalUnavailable')}
-            className={`${actionBtn} text-gray-300 cursor-not-allowed`}
-          >
-            <ExternalLinkIcon compact={compact} />
-          </button>
-        )}
-        {actions.onReportDead && !isExpired && (
-          <button
-            type="button"
-            onClick={() => actions.onReportDead!(item)}
-            title={t('reportDead')}
-            aria-label={t('reportDead')}
-            className={`${actionBtn} text-gray-500 hover:text-orange-500 hover:bg-orange-50`}
-          >
-            ⚠
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => actions.onDismiss(item)}
-          title={t('dismiss')}
-          aria-label={t('dismiss')}
-          className={`${actionBtn} text-gray-500 hover:text-rose-500 hover:bg-rose-50`}
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* Details */}
-      <div className={`${compact ? 'p-2' : 'p-3'} flex flex-col flex-grow`}>
-        <div className="flex items-start gap-2">
-          <a
-            href={item.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={handleLink}
-            className="flex-1 min-w-0"
-          >
-            <h3 className={`font-medium text-gray-900 ${compact ? 'text-xs line-clamp-1' : 'text-sm line-clamp-2 hover:text-blue-600 transition-colors leading-snug'}`}>
-              {item.title ?? '—'}
-            </h3>
-          </a>
           {(() => {
-            // Analyse-button — open the analysis modal in line with the
-            // title. Coloured blue once the user has any saved analysis
-            // OR uploaded document for the property; gray otherwise (no
-            // engagement signal yet, also the only state scraped tiles
-            // ever show since they have no backing Property).
             const hasContent = (item.analysisCount ?? 0) > 0 || (item.documentCount ?? 0) > 0;
+            const sizeClass = compact ? 'w-6 h-6' : 'w-8 h-8';
             const colourClass = hasContent
               ? 'text-blue-600 hover:text-blue-700'
               : 'text-gray-400 hover:text-gray-600';
@@ -423,19 +328,123 @@ export default function PropertyCard({
               <button
                 type="button"
                 onClick={(e) => {
-                  e.preventDefault();
                   e.stopPropagation();
+                  e.preventDefault();
                   actions.onAnalyse?.(item);
                 }}
-                title={t('analyse')}
-                aria-label={t('analyse')}
-                className={`flex-shrink-0 mt-0.5 p-1 rounded transition-colors ${colourClass} hover:bg-gray-50`}
+                title={t('openAnalysis')}
+                aria-label={t('openAnalysis')}
+                className={`${sizeClass} flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm transition-colors ${colourClass}`}
               >
-                <MagnifyingGlassIcon size={compact ? 12 : 14} />
+                <MagnifyingGlassIcon size={compact ? 14 : 18} />
               </button>
             );
           })()}
+
+          <button
+            type="button"
+            onClick={handleHeart}
+            title={heartTooltip}
+            aria-label={heartTooltip}
+            disabled={!heartActionable}
+            className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm transition-all ${
+              heartFilled
+                ? `text-teal-600${ownCanMoveStage ? ' hover:scale-110' : ''}`
+                : 'text-gray-400 hover:text-teal-600 hover:scale-110'
+            } ${isOwn && !ownCanMoveStage ? 'cursor-default' : ''}`}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className={compact ? 'w-3.5 h-3.5' : 'w-4.5 h-4.5'}
+              fill={heartFilled ? 'currentColor' : 'none'}
+              stroke="currentColor"
+              strokeWidth={heartFilled ? 0 : 2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10.5z" />
+              {!heartFilled && <path d="M9 21V14h6v7" />}
+            </svg>
+          </button>
         </div>
+
+        {/* ADR-012 v1.3 PC11 — bottom-right horizontal cluster:
+            external-link / ⚠ / ✕. Was a right-edge vertical stack
+            (sibling of the image div) below the heart; the v1.3 layout
+            pass groups card chrome by intent — top-right for engagement,
+            bottom-right for housekeeping. Now inside the image div like
+            the top-right cluster; every button stopPropagation()s so
+            the image-tap modal handler doesn't fire on cluster clicks.
+            Always visible — Session 45 always-visible deviation
+            absorbed into spec. */}
+        <div className={`absolute z-10 flex items-center ${
+          compact ? 'bottom-1.5 right-1.5 gap-1' : 'bottom-2 right-2 gap-1.5'
+        }`}>
+          {hasSourceUrl ? (
+            <a
+              href={item.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => { e.stopPropagation(); handleLink(); }}
+              title={t('openExternal')}
+              aria-label={t('openExternal')}
+              className={`${actionBtn} text-gray-500 hover:text-blue-600 hover:bg-blue-50`}
+            >
+              <ExternalLinkIcon compact={compact} />
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled
+              onClick={(e) => e.stopPropagation()}
+              title={t('openExternalUnavailable')}
+              aria-label={t('openExternalUnavailable')}
+              className={`${actionBtn} text-gray-300 cursor-not-allowed`}
+            >
+              <ExternalLinkIcon compact={compact} />
+            </button>
+          )}
+          {actions.onReportDead && !isExpired && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); actions.onReportDead!(item); }}
+              title={t('reportDead')}
+              aria-label={t('reportDead')}
+              className={`${actionBtn} text-gray-500 hover:text-orange-500 hover:bg-orange-50`}
+            >
+              ⚠
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); actions.onDismiss(item); }}
+            title={t('dismiss')}
+            aria-label={t('dismiss')}
+            className={`${actionBtn} text-gray-500 hover:text-rose-500 hover:bg-rose-50`}
+          >
+            ✕
+          </button>
+        </div>
+
+      </div>
+
+
+      {/* Details */}
+      <div className={`${compact ? 'p-2' : 'p-3'} flex flex-col flex-grow`}>
+        {/* ADR-012 v1.3 PC9 — the inline-with-title magnifying-glass
+            shipped in v1.2.1 (Session 50 iteration item 6) is removed.
+            The affordance lives on the image overlay's top-right cluster
+            now; analysisCount/documentCount drive its gray/blue state. */}
+        <a
+          href={item.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handleLink}
+        >
+          <h3 className={`font-medium text-gray-900 ${compact ? 'text-xs line-clamp-1' : 'text-sm line-clamp-2 hover:text-blue-600 transition-colors leading-snug'}`}>
+            {item.title ?? '—'}
+          </h3>
+        </a>
 
         <div className={`${compact ? 'mt-0.5' : 'mt-1'} flex-grow`}>
           {priceText && (

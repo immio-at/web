@@ -1311,6 +1311,7 @@
     "changeStage": "Change stage",
     "changeStageFrom": "Change stage (currently: {stage})",
     "analyse": "Analyse",
+    "openAnalysis": "Open analysis",
     "openExternal": "Open original listing",
     "openExternalUnavailable": "No source listing available",
     "reportDead": "Report dead link",
