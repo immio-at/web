@@ -36,6 +36,7 @@ export default function AddPropertyButton({ size = 'default' }: { size?: 'defaul
   return (
     <>
       <button
+        type="button"
         onClick={() => setModalOpen(true)}
         className={`inline-flex items-center gap-1.5 font-medium rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:border-blue-300 transition-colors ${sizeClass}`}
       >

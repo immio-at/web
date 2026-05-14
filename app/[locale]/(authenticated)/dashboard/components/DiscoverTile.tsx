@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { Property, SavedFilter, getScrapedListings } from '@/lib/api';
 import { FilterValues, EMPTY_FILTERS, savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
 import { type PresetFilterKey, passesPresetFilters, passesFilterValues } from '@/lib/preset-filters';
@@ -20,6 +20,7 @@ export default function DiscoverTile({
   properties: Property[];
 }) {
   const t = useTranslations('dashboard.discoverTile');
+  const router = useRouter();
 
   const { session, loading: authLoading } = useAuth();
   const { remove: removeFilter } = useSavedFilters();
@@ -146,8 +147,18 @@ export default function DiscoverTile({
         compact
       />
 
-      {/* Filter fields */}
-      <div className="space-y-2 mb-3">
+      {/* Filter fields — wrapped in a <form> so pressing Enter in any
+          input fires the search (matches the Search button below). Without
+          the form, Enter would either do nothing (correct browser default)
+          or, in some implicit-submission scenarios, trigger the first
+          ambient <button>; this guarantees Enter always means "search". */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          router.push(`/search${buildQueryString()}`);
+        }}
+        className="space-y-2 mb-3"
+      >
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className={labelClass}>{t('keyword')}</label>
@@ -186,7 +197,12 @@ export default function DiscoverTile({
             </div>
           </div>
         </div>
-      </div>
+        {/* Hidden submit so Enter triggers the form's onSubmit even when
+            no visible submit button is inside the form (the visible Search
+            link is intentionally outside the form so Cmd-click still
+            opens it in a new tab). */}
+        <button type="submit" hidden tabIndex={-1} aria-hidden />
+      </form>
 
       {/* Action buttons at bottom */}
       <div className="mt-auto space-y-2 pt-3 border-t border-gray-100">
