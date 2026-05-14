@@ -224,42 +224,24 @@ interface RowProps {
 function AdminFeedbackRow({ report, onStatusChange, onAcknowledge, onTeamNoteSave }: RowProps) {
   const t = useTranslations('admin.feedback');
   const tFb = useTranslations('feedback');
+  // `note` is seeded from props once on mount via useState's initializer,
+  // then becomes the sole source of truth for the textarea until the row
+  // unmounts. **No useEffect resyncs from props** — the previous resync
+  // raced against in-flight typing during the autosave round-trip and
+  // caused the "characters appear, disappear, reappear" symptom. Each
+  // row's React key is `report.id`, so when the user switches filters /
+  // refreshes, rows unmount and remount with fresh state. Out-of-band
+  // updates (another admin editing the same row) won't propagate to a
+  // currently-mounted row — acceptable for the tester window.
   const [note, setNote] = useState(report.teamNote ?? '');
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  // Tracks what we expect `report.teamNote` to be — set to the saved
-  // value at the moment we fire the save. When the parent's reports
-  // refetch echoes that value back via patchLocalReport, the useEffect
-  // below sees a match and no-ops. Without this, the autosave round-
-  // trip races against in-flight typing: server-echo would overwrite
-  // characters typed during the ~100ms save round-trip ("char appears,
-  // disappears, reappears" symptom).
-  const lastSyncedRef = useRef(report.teamNote ?? '');
-
-  useEffect(() => {
-    const incoming = report.teamNote ?? '';
-    // Server echoed back our own save → no-op.
-    if (incoming === lastSyncedRef.current) return;
-    // Local edit in flight — our state is more recent than what props
-    // are telling us. Skip the resync; record what props say so we
-    // don't trip on this same value again.
-    if (debounceRef.current !== null) {
-      lastSyncedRef.current = incoming;
-      return;
-    }
-    // Genuine out-of-band update (another admin edited the same row) —
-    // accept it.
-    setNote(incoming);
-    lastSyncedRef.current = incoming;
-  }, [report.teamNote]);
 
   function handleNoteChange(next: string) {
     setNote(next);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       debounceRef.current = null;
-      // Mark what we're sending so the server echo no-ops the resync.
-      lastSyncedRef.current = next.trim() === '' ? '' : next;
       void onTeamNoteSave(next.trim() === '' ? null : next).then(() => {
         setSavedAt(Date.now());
         setTimeout(() => {
