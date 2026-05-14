@@ -1605,9 +1605,12 @@
           "body": "Discover. Every scraped listing in Austria. Pre-configured filters (by Bundesland, by search-agent source) sit alongside your own saved filters — stack them to narrow what you see."
         },
         "6": {
-          "body": "Click any property to see full details — analysis tools, ROI calculator, document storage, and due-diligence checks. The heart icon on a card adds it to your Funnel to start investigating."
+          "body": "Click any property to see full details — analysis tools, ROI calculator, document storage, and due-diligence checks. The house icon on a card adds it to your Funnel to start investigating."
         },
         "7": {
+          "body": "Use this button to report problems or request improvements. We read every piece of feedback."
+        },
+        "8": {
           "body": "When you need help — including how to set up email forwarding — come back here. The tour can be re-run from this page."
         }
       }

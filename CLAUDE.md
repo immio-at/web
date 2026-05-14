@@ -252,6 +252,8 @@ reads the same selectors):
   carousels (Recommended → Recently Viewed → New Arrivals). Each carousel
   passes the id to its first card; `document.querySelector` resolves the
   first match in document order without coordination between siblings.
+- `feedback-button` on the bottom-right floating Feedback button
+  (`components/feedback/FeedbackButton.tsx`).
 
 If you refactor a targeted component, **preserve the attribute**. If you
 intentionally remove a tour anchor, also remove the corresponding step in

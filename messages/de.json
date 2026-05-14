@@ -1599,15 +1599,18 @@
           "body": "Dein Funnel. Immobilien wandern von links nach rechts durch die Phasen, während du sie prüfst. Karten lassen sich zwischen Spalten ziehen."
         },
         "4": {
-          "body": "Finder — Tinder für Immo. Schnelles Wischen durch neue Inserate — sowohl weitergeleitete Suchagenten als auch gescrapte Daten — um zu triagieren. Rechts: in den Funnel zur näheren Prüfung. Links: verwerfen."
+          "body": "Finder — Tinder für Immo. Schnelles Wischen durch neue Inserate — sowohl weitergeleitete Suchagenten als auch gescrapte Daten — um zu priorisieren. Rechts: in den Funnel zur näheren Prüfung. Links: verwerfen."
         },
         "5": {
           "body": "Entdecken. Alle gescrapten Inserate in Österreich. Voreingestellte Filter (nach Bundesland, nach Suchagenten-Quelle) liegen neben deinen eigenen gespeicherten Filtern — kombiniere sie, um die Auswahl einzugrenzen."
         },
         "6": {
-          "body": "Klicke auf eine Immobilie für alle Details — Analyse-Tools, Renditerechner, Dokumentenablage und Due-Diligence-Checks. Das Herz-Symbol fügt die Immobilie deinem Funnel zur Prüfung hinzu."
+          "body": "Klicke auf eine Immobilie für alle Details — Analyse-Tools, Renditerechner, Dokumentenablage und Due-Diligence-Checks. Das Haus-Symbol fügt die Immobilie deinem Funnel zur Prüfung hinzu."
         },
         "7": {
+          "body": "Mit diesem Button kannst du Probleme melden oder Verbesserungen vorschlagen. Wir lesen jede Rückmeldung."
+        },
+        "8": {
           "body": "Wenn du Hilfe brauchst — auch zur Einrichtung der E-Mail-Weiterleitung — komme hierher zurück. Die Tour kannst du auf dieser Seite erneut starten."
         }
       }

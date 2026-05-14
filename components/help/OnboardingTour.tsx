@@ -112,8 +112,12 @@ export default function OnboardingTour() {
         content: t('steps.6.body'),
       },
       {
-        target: '[data-tour-id="nav-help"]',
+        target: '[data-tour-id="feedback-button"]',
         content: t('steps.7.body'),
+      },
+      {
+        target: '[data-tour-id="nav-help"]',
+        content: t('steps.8.body'),
       },
     ],
     [t],
