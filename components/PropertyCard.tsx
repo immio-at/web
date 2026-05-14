@@ -22,6 +22,14 @@ export interface CardProperty {
   scrapedListingId?: string;
   emailReceivedAt?: string | null;
   savedByUser?: boolean;
+  /** Number of saved analyses on the underlying Property. Drives the
+   *  analyse-button colour (gray when both this and documentCount are 0,
+   *  blue otherwise). Optional — scraped tiles without a backing Property
+   *  omit it and render gray. */
+  analysisCount?: number;
+  /** Number of uploaded documents on the underlying Property. Same role
+   *  as analysisCount in the analyse-button colour. */
+  documentCount?: number;
 }
 
 export interface CardActions {
@@ -44,6 +52,30 @@ export interface CardActions {
   onReportDead?: (item: CardProperty) => void;
   onDismiss: (item: CardProperty) => void;
   onUrlClick?: (item: CardProperty) => void;
+}
+
+// ─── Magnifying-glass icon (lucide-style, no extra dep) ──────────────────────
+// Used by the analyse-button inline with the card title. Coloured blue when
+// the property has any saved analyses or uploaded documents; gray otherwise.
+
+function MagnifyingGlassIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
 }
 
 // ─── Stage mapping for i18n ──────────────────────────────────────────────────
@@ -365,11 +397,45 @@ export default function PropertyCard({
 
       {/* Details */}
       <div className={`${compact ? 'p-2' : 'p-3'} flex flex-col flex-grow`}>
-        <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={handleLink}>
-          <h3 className={`font-medium text-gray-900 ${compact ? 'text-xs line-clamp-1' : 'text-sm line-clamp-2 hover:text-blue-600 transition-colors leading-snug'}`}>
-            {item.title ?? '—'}
-          </h3>
-        </a>
+        <div className="flex items-start gap-2">
+          <a
+            href={item.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleLink}
+            className="flex-1 min-w-0"
+          >
+            <h3 className={`font-medium text-gray-900 ${compact ? 'text-xs line-clamp-1' : 'text-sm line-clamp-2 hover:text-blue-600 transition-colors leading-snug'}`}>
+              {item.title ?? '—'}
+            </h3>
+          </a>
+          {(() => {
+            // Analyse-button — open the analysis modal in line with the
+            // title. Coloured blue once the user has any saved analysis
+            // OR uploaded document for the property; gray otherwise (no
+            // engagement signal yet, also the only state scraped tiles
+            // ever show since they have no backing Property).
+            const hasContent = (item.analysisCount ?? 0) > 0 || (item.documentCount ?? 0) > 0;
+            const colourClass = hasContent
+              ? 'text-blue-600 hover:text-blue-700'
+              : 'text-gray-400 hover:text-gray-600';
+            return (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  actions.onAnalyse?.(item);
+                }}
+                title={t('analyse')}
+                aria-label={t('analyse')}
+                className={`flex-shrink-0 mt-0.5 p-1 rounded transition-colors ${colourClass} hover:bg-gray-50`}
+              >
+                <MagnifyingGlassIcon size={compact ? 12 : 14} />
+              </button>
+            );
+          })()}
+        </div>
 
         <div className={`${compact ? 'mt-0.5' : 'mt-1'} flex-grow`}>
           {priceText && (

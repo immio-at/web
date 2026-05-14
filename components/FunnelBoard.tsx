@@ -286,6 +286,8 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
       listingStatus: p.listingStatus,
       source: 'own',
       emailReceivedAt: p.emailReceivedAt,
+      analysisCount: p.analysisCount ?? 0,
+      documentCount: p.documentCount ?? 0,
     };
   }
 

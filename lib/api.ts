@@ -78,6 +78,13 @@ export interface Property {
   suspectedDuplicateAt?: string | null;
   relistBadgeDismissedAt?: string | null;
   lastSeenAt?: string | null;
+  // Number of saved analyses + documents on the property. Drives the
+  // PropertyCard analyse-button colour: 0 = gray (no content yet), >0 =
+  // blue (user has invested work). Populated by GET /properties; absent
+  // (treat as 0) on responses from other endpoints that don't include
+  // the counts.
+  analysisCount?: number;
+  documentCount?: number;
 }
 
 // ─── Property Analysis ────────────────────────────────────────────────────────

@@ -55,6 +55,13 @@ interface UnifiedListing {
   createdAt?: string;
   emailReceivedAt?: string | null;
   firstSeenAt?: string;
+  // Per-Property content counters. Email rows pass through from the
+  // Property; scraped rows default to 0 (no backing Property yet) but
+  // are upgraded in listingToCard when an existing own row matches by
+  // sourceUrl — so a "previously engaged" scraped tile still surfaces
+  // its analyses/docs indicator.
+  analysisCount?: number;
+  documentCount?: number;
 }
 
 function propertyToUnified(p: Property): UnifiedListing {
@@ -76,6 +83,8 @@ function propertyToUnified(p: Property): UnifiedListing {
     status: p.status,
     createdAt: p.createdAt,
     emailReceivedAt: p.emailReceivedAt,
+    analysisCount: p.analysisCount ?? 0,
+    documentCount: p.documentCount ?? 0,
   };
 }
 
@@ -683,14 +692,21 @@ export default function EntdeckenPage() {
   const presetsActive = hasClientOnlyPresets || activeSavedFilterIds.size > 0;
   // ── Convert UnifiedListing to CardProperty ──
   function listingToCard(l: UnifiedListing): CardProperty {
-    // For scraped, derive savedByUser from current cache so an own-Property
-    // at not_relevant / delisted (e.g. after re-click-undo) doesn't keep
-    // forcing the heart filled. Backend's fetch-time savedByUser doesn't
-    // know about subsequent status changes.
+    // For scraped, derive savedByUser AND content counts from current
+    // cache so (a) an own-Property at not_relevant / delisted doesn't
+    // keep forcing the heart filled, and (b) a scraped tile that maps
+    // to an existing own Property still surfaces the analyse-button
+    // blue if the user has analyses/docs against the underlying row.
     let derivedSavedByUser = l.savedByUser;
+    let analysisCount = l.analysisCount ?? 0;
+    let documentCount = l.documentCount ?? 0;
     if (l.source === 'scraped') {
       const own = cachedProperties.find(p => p.sourceUrl === l.sourceUrl);
       derivedSavedByUser = !!own && !TERMINAL_STAGES.has(own.status);
+      if (own) {
+        analysisCount = own.analysisCount ?? 0;
+        documentCount = own.documentCount ?? 0;
+      }
     }
     return {
       id: l.source === 'email' ? l.id.replace('prop-', '') : l.id,
@@ -708,6 +724,8 @@ export default function EntdeckenPage() {
       scrapedListingId: l.scrapedListingId,
       emailReceivedAt: l.emailReceivedAt,
       savedByUser: derivedSavedByUser,
+      analysisCount,
+      documentCount,
     };
   }
 

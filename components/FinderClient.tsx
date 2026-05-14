@@ -42,6 +42,11 @@ interface FinderCard {
   emailReceivedAt?: string | null;
   createdAt?: string;
   firstSeenAt?: string;
+  // Per-Property content counters — drives the analyse-button colour on
+  // PropertyCard. Own rows carry the real counts; scraped rows default
+  // to 0 (no backing Property yet).
+  analysisCount?: number;
+  documentCount?: number;
 }
 
 function propertyToCard(p: Property): FinderCard {
@@ -62,6 +67,8 @@ function propertyToCard(p: Property): FinderCard {
     propertyId: p.id,
     emailReceivedAt: p.emailReceivedAt,
     createdAt: p.createdAt,
+    analysisCount: p.analysisCount ?? 0,
+    documentCount: p.documentCount ?? 0,
   };
 }
 
@@ -377,6 +384,8 @@ export default function FinderClient({
       source: c.source,
       scrapedListingId: c.scrapedListingId,
       emailReceivedAt: c.emailReceivedAt,
+      analysisCount: c.analysisCount ?? 0,
+      documentCount: c.documentCount ?? 0,
     };
   }
 
