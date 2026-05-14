@@ -1335,7 +1335,27 @@
     "confirmDelete": "Filter \"{name}\" löschen?",
     "filterMenu": "Menü für {name} öffnen",
     "locationFromFilter": "Standort vom gespeicherten Filter gesetzt",
-    "comingSoon": "Demnächst verfügbar",
+    "comingSoon": "Kommt bald",
+    "comingSoonTooltip": "Dieser Filter ist in Vorbereitung — bald verfügbar",
+    "propertyType": {
+      "label": "Immobilientyp",
+      "haus": "Haus",
+      "wohnung": "Wohnung",
+      "zinshaus": "Zinshaus",
+      "garage": "Garage",
+      "gewerbe": "Gewerbe",
+      "grundstueck": "Grundstück"
+    },
+    "classification": {
+      "label": "Klassifizierung",
+      "altbau": "Altbau",
+      "neubau": "Neubau",
+      "wiederaufbau": "Wiederaufbau"
+    },
+    "moreFilters": {
+      "prompt": "Mehr Filter? Sag uns, was du brauchst →",
+      "feedbackPrefill": "Ich möchte Immobilien filtern nach: "
+    },
     "createFilterTitle": "Neuer Filter",
     "editFilterTitle": "Filter bearbeiten",
     "filterName": "Filtername",

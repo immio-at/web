@@ -27,6 +27,10 @@ interface Props {
   onDirtyChange: (dirty: boolean) => void;
   onSubmitSuccess: () => void;
   onTransitionToMine: () => void;
+  /** ADR-008 PT3 — opens with a pre-selected type (e.g. 'feature'). */
+  initialType?: FeedbackType;
+  /** ADR-008 PT3 — opens with a pre-filled description body. */
+  initialDescription?: string;
 }
 
 interface PendingAttachment {
@@ -70,12 +74,17 @@ export default function FeedbackNewReport({
   onDirtyChange,
   onSubmitSuccess,
   onTransitionToMine,
+  initialType,
+  initialDescription,
 }: Props) {
   const t = useTranslations('feedback');
 
-  const [type, setType] = useState<FeedbackType | null>(null);
+  // initialType / initialDescription are used as the seed values only —
+  // not re-applied on prop change, so the user is free to clear the
+  // prefill and the parent's prefill stays stable across re-renders.
+  const [type, setType] = useState<FeedbackType | null>(initialType ?? null);
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(initialDescription ?? '');
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { SavedFilter, CreateSavedFilterDto } from '@/lib/api';
 import { resolveBundesland, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
 import AddPropertyButton from '@/components/ingestion/AddPropertyButton';
+import { SEARCH_INPUT_ENABLED } from '@/config/feature-flags';
 
 // ─── Filter values type ──────────────────────────────────────────────────────
 
@@ -176,17 +177,21 @@ export default function FilterBar({
 
           {/* Line 1: Keyword + Location */}
           <div className="flex flex-wrap gap-3 items-end">
-            <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
-              <label className={labelClass}>{t('keyword')}</label>
-              <input
-                type="text"
-                value={values.keyword}
-                onChange={set('keyword')}
-                placeholder={t('keywordPlaceholder')}
-                className={`${inputClass} w-full`}
-              />
-            </div>
-            <div className="flex flex-col gap-1 min-w-[200px]">
+            {/* ADR-008 PT1 — keyword input hidden behind SEARCH_INPUT_ENABLED.
+                State + URL plumbing remain so this is a one-line flip. */}
+            {SEARCH_INPUT_ENABLED && (
+              <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
+                <label className={labelClass}>{t('keyword')}</label>
+                <input
+                  type="text"
+                  value={values.keyword}
+                  onChange={set('keyword')}
+                  placeholder={t('keywordPlaceholder')}
+                  className={`${inputClass} w-full`}
+                />
+              </div>
+            )}
+            <div className="flex flex-col gap-1 min-w-[200px] flex-1">
               <label className={labelClass}>{t('location')}</label>
               <input
                 type="text"

@@ -1336,6 +1336,26 @@
     "filterMenu": "Open menu for {name}",
     "locationFromFilter": "Location set by saved filter",
     "comingSoon": "Coming soon",
+    "comingSoonTooltip": "This filter is coming soon",
+    "propertyType": {
+      "label": "Property type",
+      "haus": "House",
+      "wohnung": "Apartment",
+      "zinshaus": "Zinshaus",
+      "garage": "Garage",
+      "gewerbe": "Commercial",
+      "grundstueck": "Land"
+    },
+    "classification": {
+      "label": "Property classification",
+      "altbau": "Altbau",
+      "neubau": "Neubau",
+      "wiederaufbau": "Wiederaufbau"
+    },
+    "moreFilters": {
+      "prompt": "More filters? Tell us what you need →",
+      "feedbackPrefill": "I'd like to filter properties by: "
+    },
     "createFilterTitle": "New filter",
     "editFilterTitle": "Edit filter",
     "filterName": "Filter name",

@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import FeedbackNewReport from './FeedbackNewReport';
 import FeedbackMyReports from './FeedbackMyReports';
+import type { FeedbackType } from '@/lib/api';
 
 type Tab = 'new' | 'mine';
 
@@ -25,11 +26,19 @@ export function clearFeedbackDrawerState(): void {
 
 interface Props {
   onClose: () => void;
+  /** ADR-008 PT3 — prefill the New Report form's type radio. */
+  initialType?: FeedbackType;
+  /** ADR-008 PT3 — prefill the New Report form's description textarea. */
+  initialDescription?: string;
 }
 
-export default function FeedbackDrawer({ onClose }: Props) {
+export default function FeedbackDrawer({ onClose, initialType, initialDescription }: Props) {
   const t = useTranslations('feedback');
-  const [tab, setTab] = useState<Tab>(lastActiveTab);
+  // Prefill forces the "Neuer Bericht" tab open regardless of last
+  // active. The prompt's intent is "fill out a feature request right
+  // now"; landing on "Meine Berichte" would be wrong.
+  const initialTab: Tab = (initialType || initialDescription) ? 'new' : lastActiveTab;
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [hasUnsavedContent, setHasUnsavedContent] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
 
@@ -121,6 +130,8 @@ export default function FeedbackDrawer({ onClose }: Props) {
               onDirtyChange={setHasUnsavedContent}
               onSubmitSuccess={handleSubmitSuccess}
               onTransitionToMine={() => setTab('mine')}
+              initialType={initialType}
+              initialDescription={initialDescription}
             />
           ) : (
             <FeedbackMyReports />

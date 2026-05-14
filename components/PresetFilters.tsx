@@ -44,6 +44,25 @@ import {
 import { EMPTY_FILTERS, type FilterValues } from '@/components/FilterBar';
 import UserFilterPill from '@/components/filters/UserFilterPill';
 import FilterModal from '@/components/filters/FilterModal';
+import ComingSoonRow from '@/components/filters/ComingSoonRow';
+import MoreFiltersPrompt from '@/components/filters/MoreFiltersPrompt';
+
+// ADR-008 PT2 — two coming-soon chip rows. Static config so the chip
+// list is greppable and easy to expand when wiring goes live.
+const PROPERTY_TYPE_CHIPS = [
+  { key: 'haus', labelKey: 'propertyType.haus' },
+  { key: 'wohnung', labelKey: 'propertyType.wohnung' },
+  { key: 'zinshaus', labelKey: 'propertyType.zinshaus' },
+  { key: 'garage', labelKey: 'propertyType.garage' },
+  { key: 'gewerbe', labelKey: 'propertyType.gewerbe' },
+  { key: 'grundstueck', labelKey: 'propertyType.grundstueck' },
+];
+
+const CLASSIFICATION_CHIPS = [
+  { key: 'altbau', labelKey: 'classification.altbau' },
+  { key: 'neubau', labelKey: 'classification.neubau' },
+  { key: 'wiederaufbau', labelKey: 'classification.wiederaufbau' },
+];
 
 const STATE_KEYS = new Set<PresetFilterKey>(['W', 'NÖ', 'OÖ', 'ST', 'K', 'S', 'T', 'V', 'B']);
 
@@ -379,6 +398,24 @@ export default function PresetFilters({
         {bundeslandRow}
         {showStages && stagesRow}
         {sourceRow}
+        {/* ADR-008 PT2 — disabled roadmap chip rows. Same compact-prop
+            pass-through as the rest of the bar. Not shown in the
+            Filter Modal or Settings → Filters because PresetFilters
+            isn't mounted there. */}
+        <ComingSoonRow
+          labelKey="propertyType.label"
+          chips={PROPERTY_TYPE_CHIPS}
+          compact={compact}
+        />
+        <ComingSoonRow
+          labelKey="classification.label"
+          chips={CLASSIFICATION_CHIPS}
+          compact={compact}
+        />
+        {/* ADR-008 PT3 — invite tester feedback on the next filter
+            axes. Opens the FeedbackButton drawer with the feature_request
+            type and a prefilled body via window CustomEvent. */}
+        <MoreFiltersPrompt compact={compact} />
         {canSaveSearch && (
           <div className={`flex ${justify}`}>
             <button

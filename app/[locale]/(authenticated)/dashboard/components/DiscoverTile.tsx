@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { Property, SavedFilter, getScrapedListings } from '@/lib/api';
+import { SEARCH_INPUT_ENABLED } from '@/config/feature-flags';
 import { FilterValues, EMPTY_FILTERS, savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
 import { type PresetFilterKey, passesPresetFilters, passesFilterValues } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
@@ -159,16 +160,28 @@ export default function DiscoverTile({
         }}
         className="space-y-2 mb-3"
       >
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className={labelClass}>{t('keyword')}</label>
-            <input type="text" value={filterValues.keyword} onChange={set('keyword')} placeholder={t('keywordPlaceholder')} className={inputClass} />
+        {/* ADR-008 PT1 — keyword input hidden behind SEARCH_INPUT_ENABLED.
+            When the flag is false the row collapses to a single
+            full-width Location input; state hooks, URL plumbing, and
+            the parent <form>'s Enter-runs-search wiring stay live for
+            re-enable. */}
+        {SEARCH_INPUT_ENABLED ? (
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>{t('keyword')}</label>
+              <input type="text" value={filterValues.keyword} onChange={set('keyword')} placeholder={t('keywordPlaceholder')} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>{t('location')}</label>
+              <input type="text" value={filterValues.location} onChange={set('location')} placeholder={t('locationPlaceholder')} className={inputClass} />
+            </div>
           </div>
+        ) : (
           <div>
             <label className={labelClass}>{t('location')}</label>
             <input type="text" value={filterValues.location} onChange={set('location')} placeholder={t('locationPlaceholder')} className={inputClass} />
           </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-2 gap-2">
           <div>
