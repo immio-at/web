@@ -248,11 +248,15 @@ export default function PropertyCard({
     }
   }
 
-  // Button styling shared by the right-side action stack. Scales down in
-  // compact (Dashboard carousels) so buttons stay proportional to the
-  // smaller card chrome and the top action clears the heart on hover.
+  // Button styling shared by the bottom-right action cluster. Fixed
+  // square dimensions (w-X h-X) on both compact and full sizes so
+  // rounded-full renders as a true circle regardless of the inner
+  // glyph's intrinsic width — the previous full-mode `p-1.5` was
+  // padding-based and the differing glyph widths (⚠ vs ✕ vs the
+  // ExternalLink SVG) produced oval/pill shapes. Sizes match the
+  // top-right cluster so the four card icons read as a consistent set.
   const actionBtn = `${
-    compact ? 'w-6 h-6 text-[10px]' : 'p-1.5 text-xs'
+    compact ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs'
   } inline-flex items-center justify-center bg-white/90 backdrop-blur-sm rounded-full border border-gray-200 shadow-sm transition-all flex-shrink-0`;
 
   const widthClass = compact
