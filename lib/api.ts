@@ -202,6 +202,8 @@ export interface PropertiesFilter {
   // ADR-022 §8 — functional filter chips (multi-select).
   propertyType?: string[];
   rentRegulationCategory?: string[];
+  // ADR-023 §3 — time-on-market upper bound in days.
+  tomMaxDays?: number;
   sortBy?: string;
   sortOrder?: string;
 }
@@ -224,6 +226,7 @@ export async function getPropertiesFiltered(filter: PropertiesFilter = {}): Prom
   if (filter.rentRegulationCategory?.length) {
     params.set('rentRegulationCategory', filter.rentRegulationCategory.join(','));
   }
+  if (filter.tomMaxDays) params.set('tomMaxDays', String(filter.tomMaxDays));
   if (filter.sortBy) params.set('sortBy', filter.sortBy);
   if (filter.sortOrder) params.set('sortOrder', filter.sortOrder);
   const qs = params.toString();
@@ -523,6 +526,8 @@ export interface ScrapedListingsFilter {
   // ADR-022 §8.4 — functional filter chips (multi-select).
   propertyType?: string[];
   rentRegulationCategory?: string[];
+  // ADR-023 §3 — time-on-market upper bound in days.
+  tomMaxDays?: number;
   sortBy?: string;
   sortOrder?: string;
   page?: number;
@@ -546,6 +551,7 @@ export async function getScrapedListings(filter: ScrapedListingsFilter = {}): Pr
   if (filter.rentRegulationCategory?.length) {
     params.set('rentRegulationCategory', filter.rentRegulationCategory.join(','));
   }
+  if (filter.tomMaxDays) params.set('tomMaxDays', String(filter.tomMaxDays));
   if (filter.sortBy) params.set('sortBy', filter.sortBy);
   if (filter.sortOrder) params.set('sortOrder', filter.sortOrder);
   if (filter.page) params.set('page', String(filter.page));

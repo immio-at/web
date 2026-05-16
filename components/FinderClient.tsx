@@ -159,18 +159,13 @@ export default function FinderClient({
   const [scrapedCards, setScrapedCards] = useState<FinderCard[]>([]);
   const [scrapedLoading, setScrapedLoading] = useState(true);
 
-  // Sort controls — auto-refresh on change via fetchScraped deps
-  const [sortBy, setSortBy] = useState<string>('listedDate');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  // ADR-023 §5.3 — consolidated pill bar state (inert while the flag is off).
+  // ADR-023 §5.3 — consolidated pill bar state. Sort is part of it (R8).
   const [filterValues, setFilterValues] = useState<FilterValues>(EMPTY_FILTERS);
   const [filterExpanded, setFilterExpanded] = useState(false);
-  // Effective sort — driven by the pill bar's SortDropdown when the
-  // consolidated filter UI is live, otherwise by the standalone SortControl.
-  const effSortBy = PILL_BAR_ONLY_FILTERS ? filterValues.sortBy : sortBy;
-  const effSortOrder: 'asc' | 'desc' = PILL_BAR_ONLY_FILTERS
-    ? (filterValues.sortOrder === 'asc' ? 'asc' : 'desc')
-    : sortOrder;
+  // Sort feeds both the deck order and the scraped fetch — driven by the
+  // pill bar's SortDropdown.
+  const effSortBy = filterValues.sortBy;
+  const effSortOrder: 'asc' | 'desc' = filterValues.sortOrder === 'asc' ? 'asc' : 'desc';
 
   function toggleSavedFilter(id: string) {
     setActiveSavedFilterIds(prev => {

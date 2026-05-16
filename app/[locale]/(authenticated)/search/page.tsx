@@ -476,6 +476,8 @@ export default function EntdeckenPage() {
       propertyType: f.propertyType.length > 0 ? f.propertyType : undefined,
       rentRegulationCategory:
         f.rentRegulationCategory.length > 0 ? f.rentRegulationCategory : undefined,
+      // ADR-023 §3 — time-on-market upper bound (server-side).
+      tomMaxDays: f.tomMaxDays ? parseInt(f.tomMaxDays, 10) : undefined,
       hideNullPrice: true,
       sortBy: f.sortBy || undefined,
       sortOrder: f.sortOrder || undefined,
