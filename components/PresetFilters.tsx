@@ -49,7 +49,6 @@ import {
 } from '@/lib/filter-values';
 import UserFilterPill from '@/components/filters/UserFilterPill';
 import FilterModal from '@/components/filters/FilterModal';
-import ComingSoonRow from '@/components/filters/ComingSoonRow';
 import MoreFiltersPrompt from '@/components/filters/MoreFiltersPrompt';
 import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
 import RangeSlider from '@/components/filters/RangeSlider';
@@ -67,23 +66,6 @@ const SLIDER_BOUNDS = {
   pricePerSqm: { min: 0, max: 15_000, step: 100 },
   rooms: { min: 0, max: 10, step: 0.5 },
 } as const;
-
-// ADR-008 PT2 — two coming-soon chip rows. Static config so the chip
-// list is greppable and easy to expand when wiring goes live.
-const PROPERTY_TYPE_CHIPS = [
-  { key: 'haus', labelKey: 'propertyType.haus' },
-  { key: 'wohnung', labelKey: 'propertyType.wohnung' },
-  { key: 'zinshaus', labelKey: 'propertyType.zinshaus' },
-  { key: 'garage', labelKey: 'propertyType.garage' },
-  { key: 'gewerbe', labelKey: 'propertyType.gewerbe' },
-  { key: 'grundstueck', labelKey: 'propertyType.grundstueck' },
-];
-
-const CLASSIFICATION_CHIPS = [
-  { key: 'altbau', labelKey: 'classification.altbau' },
-  { key: 'neubau', labelKey: 'classification.neubau' },
-  { key: 'wiederaufbau', labelKey: 'classification.wiederaufbau' },
-];
 
 const STATE_KEYS = new Set<PresetFilterKey>(['W', 'NÖ', 'OÖ', 'ST', 'K', 'S', 'T', 'V', 'B']);
 
@@ -541,14 +523,7 @@ export default function PresetFilters({
         compact={compact}
       />
     </>
-  ) : (
-    <>
-      {/* ADR-008 PT2 — inert roadmap chip rows. Shown while the pill bar
-          is not yet the canonical filter UI (PILL_BAR_ONLY_FILTERS off). */}
-      <ComingSoonRow labelKey="propertyType.label" chips={PROPERTY_TYPE_CHIPS} compact={compact} />
-      <ComingSoonRow labelKey="classification.label" chips={CLASSIFICATION_CHIPS} compact={compact} />
-    </>
-  );
+  ) : null;
 
   // Row order:
   //   - Discover (showStages): Bundesland → Stages → Source

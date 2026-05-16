@@ -9,7 +9,6 @@ import { Property, getScrapedListings, saveScrapedListing, ScrapedListing, repor
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
 import PresetFilters from '@/components/PresetFilters';
-import SortControl from '@/components/SortControl';
 import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters, passesFilterValues } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
@@ -558,17 +557,6 @@ export default function FinderClient({
         />
       )}
 
-      <div className="mt-2 mb-3">
-        {/* SortControl — ADR-023 §4: superseded by the pill bar's
-            SortDropdown when the consolidated filter UI is live. */}
-        {!PILL_BAR_ONLY_FILTERS && (
-        <SortControl
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          onChange={(by, order) => { setSortBy(by); setSortOrder(order); }}
-        />
-        )}
-      </div>
 
       {allReviewed ? (
         <div className="flex-1 flex items-center justify-center w-full">

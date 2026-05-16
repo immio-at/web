@@ -10,18 +10,13 @@ import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractio
 import { useAuth } from '@/context/AuthContext';
 import { useProperties, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
-import FilterBar from '@/components/FilterBar';
 import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
 import {
   FilterValues,
-  EMPTY_FILTERS,
   savedFilterToValues,
-  valuesToSavedFilterDto,
-  isFilterActive,
   resolvePostcodes,
 } from '@/lib/filter-values';
 import PresetFilters from '@/components/PresetFilters';
-import SortControl from '@/components/SortControl';
 import UndoToastStack, { type UndoToastEntry } from '@/components/UndoToastStack';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
@@ -348,7 +343,7 @@ export default function EntdeckenPage() {
   const t = useTranslations('search');
   const searchParams = useSearchParams();
   const { session, loading: authLoading } = useAuth();
-  const { filters: savedFilters, create: createFilter, remove: removeFilter } = useSavedFilters();
+  const { filters: savedFilters, remove: removeFilter } = useSavedFilters();
   // Use cached properties from useProperties — avoids a redundant API call on page 1
   const { properties: cachedProperties, loading: propertiesLoading } = useProperties();
 
@@ -428,8 +423,6 @@ export default function EntdeckenPage() {
     scrapedListing?: UnifiedListing;
   }>>(new Map());
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [saveFilterError, setSaveFilterError] = useState<string | null>(null);
-  const [saveFilterSuccess, setSaveFilterSuccess] = useState<string | null>(null);
 
   // Capture scrollY on unmount so a remount can restore it. Save on every
   // navigation away — don't bother throttling scroll events; window.scrollY
@@ -647,43 +640,12 @@ export default function EntdeckenPage() {
 
   const loading = scrapedLoading;
 
-  function handleSearch() {
-    setApplied({ ...filterValues });
-    setPage(1);
-  }
-
-  function handleReset() {
-    setFilterValues(EMPTY_FILTERS);
-    setApplied(EMPTY_FILTERS);
-    setActiveFilterId(null);
-    setPage(1);
-  }
-
   function handleLoadFilter(sf: SavedFilter) {
     const vals = savedFilterToValues(sf);
     setFilterValues(vals);
     setApplied(vals);
     setActiveFilterId(sf.id);
     setPage(1);
-  }
-
-  async function handleSaveFilter(name: string) {
-    if (!isFilterActive(filterValues)) return;
-    setSaveFilterError(null);
-    setSaveFilterSuccess(null);
-    try {
-      const created = await createFilter(valuesToSavedFilterDto(filterValues, name));
-      setActiveFilterId(created.id);
-      setSaveFilterSuccess(t('filterSaved', { name: created.name }));
-      setTimeout(() => setSaveFilterSuccess(null), 4000);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
-      if (msg.includes('403')) {
-        setSaveFilterError(t('filterLimitReached'));
-      } else {
-        setSaveFilterError(t('filterSaveError'));
-      }
-    }
   }
 
   async function handleDeleteFilter(id: string) {
@@ -986,19 +948,8 @@ export default function EntdeckenPage() {
         <h1 className="text-2xl font-light text-gray-900 tracking-tight">{t('title')}</h1>
       </div>
 
-      {/* Filter bar — ADR-023 C2/C3: the legacy FilterBar form renders only
-          while PILL_BAR_ONLY_FILTERS is off. When the flag flips, the
-          consolidated pill bar below (R4–R9) is the sole filter surface. */}
-      {!PILL_BAR_ONLY_FILTERS && (
-        <FilterBar
-          values={filterValues}
-          onChange={setFilterValues}
-          onSearch={handleSearch}
-          onReset={handleReset}
-          onSave={handleSaveFilter}
-        />
-      )}
-
+      {/* ADR-023 — the consolidated pill bar is the sole filter surface on
+          Discover. Stage pills are Funnel-only (§5.1/§5.2). */}
       <PresetFilters
         active={activePresets}
         onChange={setActivePresets}
@@ -1006,22 +957,9 @@ export default function EntdeckenPage() {
         activeSavedFilterIds={activeSavedFilterIds}
         onToggleSavedFilter={toggleSavedFilter}
         onDeleteFilter={removeFilter}
-        showStages
         values={filterValues}
         onValuesChange={setFilterValues}
       />
-
-      {/* Save filter feedback */}
-      {saveFilterSuccess && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-          <p className="text-green-800 text-sm">✓ {saveFilterSuccess}</p>
-        </div>
-      )}
-      {saveFilterError && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-          <p className="text-amber-800 text-sm">{saveFilterError}</p>
-        </div>
-      )}
 
       {/* Error */}
       {error && (
@@ -1034,18 +972,7 @@ export default function EntdeckenPage() {
       {!loading && (
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-4 flex-wrap">
-            {/* ADR-023 §4 — superseded by the pill bar's SortDropdown when
-                the consolidated filter UI is live. */}
-            {!PILL_BAR_ONLY_FILTERS && (
-            <SortControl
-              sortBy={applied.sortBy}
-              sortOrder={applied.sortOrder}
-              onChange={(sortBy, sortOrder) => {
-                setFilterValues(v => ({ ...v, sortBy, sortOrder }));
-                setApplied(a => ({ ...a, sortBy, sortOrder }));
-              }}
-            />
-            )}
+            {/* ADR-023 §4 — sort lives in the pill bar's SortDropdown now. */}
             <p className="text-sm text-gray-500">
               {listings.length === 0
                 ? t('noListingsFound')
