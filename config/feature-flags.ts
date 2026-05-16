@@ -38,4 +38,4 @@ export const SEARCH_INPUT_ENABLED = false;
  *     PropertyTypeChips, RentRegulationChips, PostcodeEntry, SortDropdown)
  *     become the active filter controls.
  */
-export const PILL_BAR_ONLY_FILTERS = false;
+export const PILL_BAR_ONLY_FILTERS = true;
