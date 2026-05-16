@@ -51,6 +51,11 @@ interface UnifiedListing {
   scrapedListingId?: string;
   // Only present for email properties
   status?: string;
+  // ADR-022 §7.5 — effective rent-regulation state (own properties only).
+  rentRegulationCategory?: string | null;
+  rentRegulationSource?: string | null;
+  baujahr?: number | null;
+  propertyType?: string | null;
   // Time fields for preset filters
   createdAt?: string;
   emailReceivedAt?: string | null;
@@ -85,6 +90,10 @@ function propertyToUnified(p: Property): UnifiedListing {
     emailReceivedAt: p.emailReceivedAt,
     analysisCount: p.analysisCount ?? 0,
     documentCount: p.documentCount ?? 0,
+    rentRegulationCategory: p.rentRegulationCategoryEffective ?? null,
+    rentRegulationSource: p.rentRegulationCategorySourceEffective ?? null,
+    baujahr: p.baujahr ?? null,
+    propertyType: p.propertyType ?? null,
   };
 }
 
@@ -726,6 +735,13 @@ export default function EntdeckenPage() {
       savedByUser: derivedSavedByUser,
       analysisCount,
       documentCount,
+      // ADR-022 §7.5 — regulation badge fields are only meaningful for own
+      // properties (heuristic needs a Dossier baujahr). Scraped tiles omit
+      // them so the "Baujahr unbekannt" badge doesn't fire on every row.
+      rentRegulationCategory: l.source === 'email' ? l.rentRegulationCategory : undefined,
+      rentRegulationSource: l.source === 'email' ? l.rentRegulationSource : undefined,
+      baujahr: l.source === 'email' ? l.baujahr : undefined,
+      propertyType: l.source === 'email' ? l.propertyType : undefined,
     };
   }
 

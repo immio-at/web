@@ -1316,7 +1316,10 @@
     "openExternalUnavailable": "Keine Originalanzeige verfügbar",
     "reportDead": "Link melden",
     "dismiss": "Entfernen",
-    "expired": "Nicht verfügbar"
+    "expired": "Nicht verfügbar",
+    "regulationInferred": "Mietrechtsstatus geschätzt aus Baujahr",
+    "regulationUnknown": "Mietrechtsstatus ungewiss — Baujahr im regulierten Bereich, bitte Wohnbauförderung prüfen",
+    "baujahrUnknown": "Baujahr unbekannt"
   },
   "presetFilters": {
     "searchAgents": "Suchagenten",

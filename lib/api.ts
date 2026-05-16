@@ -85,6 +85,19 @@ export interface Property {
   // the counts.
   analysisCount?: number;
   documentCount?: number;
+  // ADR-022 — property type & rent regulation category. `propertyType` is
+  // the stored normalised value. The `*Effective` fields fold in the
+  // year-based heuristic: when no value is stored, the backend computes one
+  // from `baujahr` and marks the source 'inferred'. PropertyCard badges
+  // (§7.5) read the effective fields. All optional — absent on endpoints
+  // other than GET /properties.
+  propertyType?: string | null;
+  propertyTypeSource?: string | null;
+  rentRegulationCategory?: string | null;
+  rentRegulationCategorySource?: string | null;
+  rentRegulationCategoryEffective?: string | null;
+  rentRegulationCategorySourceEffective?: string | null;
+  baujahr?: number | null;
 }
 
 // ─── Property Analysis ────────────────────────────────────────────────────────
@@ -186,6 +199,9 @@ export interface PropertiesFilter {
   minRooms?: number;
   maxRooms?: number;
   hideNullPrice?: boolean;
+  // ADR-022 §8 — functional filter chips (multi-select).
+  propertyType?: string[];
+  rentRegulationCategory?: string[];
   sortBy?: string;
   sortOrder?: string;
 }
@@ -204,6 +220,10 @@ export async function getPropertiesFiltered(filter: PropertiesFilter = {}): Prom
   if (filter.minRooms !== undefined) params.set('minRooms', String(filter.minRooms));
   if (filter.maxRooms !== undefined) params.set('maxRooms', String(filter.maxRooms));
   if (filter.hideNullPrice === false) params.set('hideNullPrice', 'false');
+  if (filter.propertyType?.length) params.set('propertyType', filter.propertyType.join(','));
+  if (filter.rentRegulationCategory?.length) {
+    params.set('rentRegulationCategory', filter.rentRegulationCategory.join(','));
+  }
   if (filter.sortBy) params.set('sortBy', filter.sortBy);
   if (filter.sortOrder) params.set('sortOrder', filter.sortOrder);
   const qs = params.toString();
@@ -474,6 +494,10 @@ export interface ScrapedListing {
   firstSeenAt: string;
   lastSeenAt: string;
   savedByUser: boolean;
+  // ADR-022 §8.4 — type / regulation. Scraped listings have no Dossier, so
+  // there is no heuristic: only a stored value is ever present.
+  propertyType?: string | null;
+  rentRegulationCategory?: string | null;
 }
 
 export interface ScrapedListingsResponse {
@@ -496,6 +520,9 @@ export interface ScrapedListingsFilter {
   minRooms?: number;
   maxRooms?: number;
   hideNullPrice?: boolean;
+  // ADR-022 §8.4 — functional filter chips (multi-select).
+  propertyType?: string[];
+  rentRegulationCategory?: string[];
   sortBy?: string;
   sortOrder?: string;
   page?: number;
@@ -515,6 +542,10 @@ export async function getScrapedListings(filter: ScrapedListingsFilter = {}): Pr
   if (filter.minRooms !== undefined) params.set('minRooms', String(filter.minRooms));
   if (filter.maxRooms !== undefined) params.set('maxRooms', String(filter.maxRooms));
   if (filter.hideNullPrice === false) params.set('hideNullPrice', 'false');
+  if (filter.propertyType?.length) params.set('propertyType', filter.propertyType.join(','));
+  if (filter.rentRegulationCategory?.length) {
+    params.set('rentRegulationCategory', filter.rentRegulationCategory.join(','));
+  }
   if (filter.sortBy) params.set('sortBy', filter.sortBy);
   if (filter.sortOrder) params.set('sortOrder', filter.sortOrder);
   if (filter.page) params.set('page', String(filter.page));

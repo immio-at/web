@@ -1316,7 +1316,10 @@
     "openExternalUnavailable": "No source listing available",
     "reportDead": "Report dead link",
     "dismiss": "Dismiss",
-    "expired": "Unavailable"
+    "expired": "Unavailable",
+    "regulationInferred": "Rent status inferred from year built",
+    "regulationUnknown": "Rent status uncertain — year is in the regulated era; check for state subsidies",
+    "baujahrUnknown": "Year built unknown"
   },
   "presetFilters": {
     "searchAgents": "Search Agents",

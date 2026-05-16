@@ -30,6 +30,15 @@ export interface CardProperty {
   /** Number of uploaded documents on the underlying Property. Same role
    *  as analysisCount in the analyse-button colour. */
   documentCount?: number;
+  // ADR-022 §7.5 — effective rent-regulation state. `rentRegulationCategory`
+  // is the effective category (stored value or year-based heuristic);
+  // `rentRegulationSource` is its provenance ('inferred' for heuristic
+  // values); `baujahr` distinguishes "year unknown" from "uncertain era".
+  // All optional — cards without the data render no badge.
+  rentRegulationCategory?: string | null;
+  rentRegulationSource?: string | null;
+  baujahr?: number | null;
+  propertyType?: string | null;
 }
 
 export interface CardActions {
@@ -95,6 +104,47 @@ function formatPricePerSqm(price: number | null, size: number | null) {
   if (!price || !size || size <= 0) return null;
   const ppsm = Math.round(price / size);
   return '€ ' + ppsm.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '/m²';
+}
+
+// ─── ADR-022 §7.5 — rent-regulation badge ────────────────────────────────────
+// Three visually-distinct states surfacing what we know about a property's
+// MRG status. A confident known category renders nothing here (ADR-023 owns
+// the positive Altbau/Wiederaufbau/Neubau chip). Precedence: an `mrg_unknown`
+// category is always the warning badge, even when it was heuristic-inferred.
+
+function RegulationBadge({
+  category,
+  source,
+  baujahr,
+  t,
+}: {
+  category?: string | null;
+  source?: string | null;
+  baujahr?: number | null;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  if (category === 'mrg_unknown') {
+    return (
+      <span className="inline-block mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+        {t('regulationUnknown')}
+      </span>
+    );
+  }
+  if (source === 'inferred') {
+    return (
+      <span className="inline-block mt-1 text-[10px] italic text-gray-400">
+        {t('regulationInferred')}
+      </span>
+    );
+  }
+  if (baujahr == null && !category) {
+    return (
+      <span className="inline-block mt-1 text-[10px] text-gray-400">
+        {t('baujahrUnknown')}
+      </span>
+    );
+  }
+  return null;
 }
 
 // ─── Card Component ──────────────────────────────────────────────────────────
@@ -461,6 +511,16 @@ export default function PropertyCard({
             {item.rooms && <span>{item.rooms} Zi.</span>}
             {compact && item.zipCode && <span>{item.zipCode}</span>}
           </div>
+          {/* ADR-022 §7.5 — rent-regulation status badge. Full cards only;
+              compact carousel/kanban tiles have no room for it. */}
+          {!compact && (
+            <RegulationBadge
+              category={item.rentRegulationCategory}
+              source={item.rentRegulationSource}
+              baujahr={item.baujahr}
+              t={t}
+            />
+          )}
           {/* Current stage indicator */}
           {currentStageLabel && isOwn && item.status !== 'new' && (
             <div className="text-[10px] text-teal-600 font-medium mt-1">{currentStageLabel}</div>
