@@ -23,3 +23,19 @@
  *     other code change required.
  */
 export const SEARCH_INPUT_ENABLED = false;
+
+/**
+ * ADR-023 — the pill bar becomes the single filter UI. While this flag is
+ * `false` (migration step C2), the legacy `FilterBar` form stays the active
+ * filter surface and the new pill-bar filter rows (range sliders, chips,
+ * TOM, sort, postcode entry) are built but not rendered. Flipping to `true`
+ * (step C3) removes `FilterBar` and renders the consolidated pill bar.
+ *
+ * When flipped to `true`:
+ *   - Discover, Dashboard tile, Finder, Funnel render the pill bar's full
+ *     R1–R10 inventory; `FilterBar` is no longer mounted.
+ *   - The new components in `components/filters/` (RangeSlider, TomFilter,
+ *     PropertyTypeChips, RentRegulationChips, PostcodeEntry, SortDropdown)
+ *     become the active filter controls.
+ */
+export const PILL_BAR_ONLY_FILTERS = false;

@@ -217,6 +217,10 @@ function filterValuesFromParams(params: URLSearchParams): FilterValues {
     maxSize: params.get('maxSize') ?? '',
     minRooms: params.get('minRooms') ?? '',
     maxRooms: params.get('maxRooms') ?? '',
+    // ADR-022 chip criteria — comma-separated in the URL, '' for TOM.
+    propertyType: (params.get('propertyType') ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+    rentRegulationCategory: (params.get('rentRegulationCategory') ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+    tomMaxDays: params.get('tomMaxDays') ?? '',
     sortBy: params.get('sortBy') ?? 'listedDate',
     sortOrder: params.get('sortOrder') ?? 'desc',
   };

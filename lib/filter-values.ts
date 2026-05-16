@@ -24,6 +24,13 @@ export interface FilterValues {
   maxSize: string;
   minRooms: string;
   maxRooms: string;
+  // ADR-022 / ADR-023 — chip filter criteria. `propertyType` and
+  // `rentRegulationCategory` are multi-select arrays of canonical values.
+  // `tomMaxDays` is the time-on-market upper bound in days, held as a
+  // string for parity with the other numeric form fields ('' = no filter).
+  propertyType: string[];
+  rentRegulationCategory: string[];
+  tomMaxDays: string;
   sortBy: string;
   sortOrder: string;
 }
@@ -39,6 +46,9 @@ export const EMPTY_FILTERS: FilterValues = {
   maxSize: '',
   minRooms: '',
   maxRooms: '',
+  propertyType: [],
+  rentRegulationCategory: [],
+  tomMaxDays: '',
   sortBy: 'listedDate',
   sortOrder: 'desc',
 };
@@ -81,6 +91,9 @@ export function savedFilterToValues(sf: SavedFilter): FilterValues {
     maxSize: sf.sizeMax != null ? String(sf.sizeMax) : '',
     minRooms: sf.roomsMin != null ? String(sf.roomsMin) : '',
     maxRooms: sf.roomsMax != null ? String(sf.roomsMax) : '',
+    propertyType: sf.propertyType ?? [],
+    rentRegulationCategory: sf.rentRegulationCategory ?? [],
+    tomMaxDays: sf.tomMaxDays != null ? String(sf.tomMaxDays) : '',
     sortBy: sf.sortBy ?? 'listedDate',
     sortOrder: sf.sortOrder ?? 'desc',
   };
@@ -100,6 +113,9 @@ export function valuesToSavedFilterDto(v: FilterValues, name?: string): CreateSa
     roomsMax: v.maxRooms ? parseFloat(v.maxRooms) : null,
     postcodes: resolvePostcodes(v.location),
     sources: ['all'],
+    propertyType: v.propertyType,
+    rentRegulationCategory: v.rentRegulationCategory,
+    tomMaxDays: v.tomMaxDays ? parseInt(v.tomMaxDays, 10) : null,
     sortBy: v.sortBy || 'listedDate',
     sortOrder: v.sortOrder || 'desc',
   };
@@ -109,6 +125,7 @@ export function isFilterActive(v: FilterValues): boolean {
   return !!(
     v.keyword || v.location || v.minPrice || v.maxPrice ||
     v.minPricePerSqm || v.maxPricePerSqm || v.minSize || v.maxSize ||
-    v.minRooms || v.maxRooms
+    v.minRooms || v.maxRooms ||
+    v.propertyType.length || v.rentRegulationCategory.length || v.tomMaxDays
   );
 }

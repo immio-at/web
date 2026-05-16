@@ -1107,6 +1107,12 @@ export interface SavedFilter {
   bezirke: string[];
   bundeslaender: string[];
   sources: string[];
+  // ADR-022 — chip filter criteria. `rentRegulationCategory` only ever
+  // holds {mrg_full, mrg_partial, free}; `tomMaxDays` is the time-on-market
+  // upper bound in days.
+  propertyType: string[];
+  rentRegulationCategory: string[];
+  tomMaxDays: number | null;
   listedAfter: string | null;
   listedBefore: string | null;
   sortBy: string;

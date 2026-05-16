@@ -32,6 +32,74 @@ import { useProperties } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import FilterModalForm from './FilterModalForm';
 
+// ADR-023 R4/R5 — chip labels stay colloquial German in both locales
+// (these are Austrian terms of art — ADR-022 §12 / ADR-023 §1.1).
+const TYPE_LABELS: Record<string, string> = {
+  wohnung: 'Wohnung',
+  haus: 'Haus',
+  zinshaus: 'Zinshaus',
+  gewerbe: 'Gewerbe',
+  grundstueck: 'Grundstück',
+  garage: 'Garage',
+};
+const REGULATION_LABELS: Record<string, string> = {
+  mrg_full: 'Altbau',
+  mrg_partial: 'Wiederaufbau',
+  free: 'Neubau',
+};
+
+/**
+ * Read-only summary of the chip filter criteria (ADR-022 columns) carried
+ * into the saved filter. Renders nothing when none are set.
+ */
+function CapturedChipCriteria({
+  values,
+  t,
+}: {
+  values: FilterValues;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  const hasAny =
+    values.propertyType.length > 0 ||
+    values.rentRegulationCategory.length > 0 ||
+    !!values.tomMaxDays;
+  if (!hasAny) return null;
+
+  const rows: Array<{ label: string; value: string }> = [];
+  if (values.propertyType.length > 0) {
+    rows.push({
+      label: t('summaryPropertyType'),
+      value: values.propertyType.map((v) => TYPE_LABELS[v] ?? v).join(', '),
+    });
+  }
+  if (values.rentRegulationCategory.length > 0) {
+    rows.push({
+      label: t('summaryRentRegulation'),
+      value: values.rentRegulationCategory.map((v) => REGULATION_LABELS[v] ?? v).join(', '),
+    });
+  }
+  if (values.tomMaxDays) {
+    rows.push({
+      label: t('summaryTom'),
+      value: t('summaryTomValue', { days: values.tomMaxDays }),
+    });
+  }
+
+  return (
+    <div className="mt-4 border-t border-gray-100 pt-3">
+      <p className="text-xs font-medium text-gray-500 mb-1.5">{t('furtherCriteria')}</p>
+      <ul className="space-y-1">
+        {rows.map((r) => (
+          <li key={r.label} className="text-sm text-gray-700 flex gap-2">
+            <span className="text-gray-400">{r.label}:</span>
+            <span>{r.value}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 interface Props {
   open: boolean;
   mode: 'create' | 'edit';
@@ -197,6 +265,12 @@ export default function FilterModal({ open, mode, editingFilter, initialValues, 
             values={values}
             onValuesChange={setValues}
           />
+          {/* ADR-022 / ADR-023 §6.1 — captured-criteria summary for the chip
+              filters (property type, rent regulation, time-on-market). These
+              are set on the pill bar, not edited in this dialog, so the modal
+              surfaces them read-only so the user sees the full filter they
+              are about to save. */}
+          <CapturedChipCriteria values={values} t={t} />
         </div>
 
         {/* Footer — live count + action buttons */}
