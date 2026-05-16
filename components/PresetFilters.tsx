@@ -41,7 +41,7 @@ import {
   getPostcodesByBundesland,
   BUNDESLAND_ABBREVIATIONS,
 } from '@/lib/austria-plz-bundesland';
-import { EMPTY_FILTERS, type FilterValues } from '@/components/FilterBar';
+import { EMPTY_FILTERS, type FilterValues } from '@/lib/filter-values';
 import UserFilterPill from '@/components/filters/UserFilterPill';
 import FilterModal from '@/components/filters/FilterModal';
 import ComingSoonRow from '@/components/filters/ComingSoonRow';

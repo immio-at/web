@@ -26,7 +26,7 @@ import {
   savedFilterToValues,
   valuesToSavedFilterDto,
   resolvePostcodes,
-} from '@/components/FilterBar';
+} from '@/lib/filter-values';
 import { passesFilterValues } from '@/lib/preset-filters';
 import { useProperties } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';

@@ -12,7 +12,7 @@
  */
 
 import { useTranslations } from 'next-intl';
-import type { FilterValues } from '@/components/FilterBar';
+import type { FilterValues } from '@/lib/filter-values';
 
 interface Props {
   name: string;

@@ -10,14 +10,15 @@ import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractio
 import { useAuth } from '@/context/AuthContext';
 import { useProperties, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
-import FilterBar, {
+import FilterBar from '@/components/FilterBar';
+import {
   FilterValues,
   EMPTY_FILTERS,
   savedFilterToValues,
   valuesToSavedFilterDto,
   isFilterActive,
   resolvePostcodes,
-} from '@/components/FilterBar';
+} from '@/lib/filter-values';
 import PresetFilters from '@/components/PresetFilters';
 import SortControl from '@/components/SortControl';
 import UndoToastStack, { type UndoToastEntry } from '@/components/UndoToastStack';

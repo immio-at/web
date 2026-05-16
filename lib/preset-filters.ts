@@ -7,7 +7,7 @@
 
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from './austria-plz-bundesland';
 import { type SavedFilter } from '@/lib/api';
-import { savedFilterToValues, resolvePostcodes, type FilterValues } from '@/components/FilterBar';
+import { savedFilterToValues, resolvePostcodes, type FilterValues } from '@/lib/filter-values';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

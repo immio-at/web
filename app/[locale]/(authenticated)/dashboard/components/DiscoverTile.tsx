@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { Property, SavedFilter, getScrapedListings } from '@/lib/api';
 import { SEARCH_INPUT_ENABLED } from '@/config/feature-flags';
-import { FilterValues, EMPTY_FILTERS, savedFilterToValues, resolvePostcodes } from '@/components/FilterBar';
+import { FilterValues, EMPTY_FILTERS, savedFilterToValues, resolvePostcodes } from '@/lib/filter-values';
 import { type PresetFilterKey, passesPresetFilters, passesFilterValues } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
 import { useAuth } from '@/context/AuthContext';
