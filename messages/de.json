@@ -1373,6 +1373,7 @@
     "summaryRentRegulation": "Mietrechtskategorie",
     "summaryTom": "Inseriert seit",
     "summaryTomValue": "höchstens {days} Tage",
+    "filterToggle": "Filter",
     "tomLabel": "Inseriert seit",
     "tomAll": "Alle",
     "tomThreshold": "≤ {days} Tage",

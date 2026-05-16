@@ -1373,6 +1373,7 @@
     "summaryRentRegulation": "Rent regulation",
     "summaryTom": "Listed within",
     "summaryTomValue": "at most {days} days",
+    "filterToggle": "Filter",
     "tomLabel": "Listed within",
     "tomAll": "All",
     "tomThreshold": "≤ {days}d",

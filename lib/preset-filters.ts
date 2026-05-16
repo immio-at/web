@@ -180,12 +180,34 @@ interface FilterValuesItem {
   zipCode?: string | null;
   title?: string | null;
   location?: string | null;
+  // ADR-022 — chip filter fields. `rentRegulationCategoryEffective` folds
+  // in the year-based heuristic and is preferred over the raw column.
+  propertyType?: string | null;
+  rentRegulationCategory?: string | null;
+  rentRegulationCategoryEffective?: string | null;
+  // Time-on-market source dates (ADR-023 §3.2 fallback chain).
+  platformListedAt?: string | null;
+  emailReceivedAt?: string | null;
+  firstSeenAt?: string | null;
+  createdAt?: string | null;
+}
+
+/**
+ * Time-on-market age in days, computed from the §3.2 fallback chain.
+ * Returns null when no date is available.
+ */
+function tomAgeDays(p: FilterValuesItem): number | null {
+  const raw = p.platformListedAt ?? p.emailReceivedAt ?? p.firstSeenAt ?? p.createdAt ?? null;
+  if (!raw) return null;
+  const ms = Date.now() - new Date(raw).getTime();
+  return Number.isFinite(ms) ? ms / 86_400_000 : null;
 }
 
 /**
  * Returns true if a property matches the given FilterValues form state.
- * Used by the Dashboard Discover tile match count and the Filter Modal
- * live count. Pure function — no side effects.
+ * Used by the Dashboard Discover tile match count, the Filter Modal live
+ * count, and the Funnel / Finder client-side filtering when the pill bar
+ * is the active filter UI. Pure function — no side effects.
  */
 export function passesFilterValues<T extends FilterValuesItem>(p: T, v: FilterValues): boolean {
   const price = p.price != null ? parseFloat(String(p.price)) : null;
@@ -215,6 +237,22 @@ export function passesFilterValues<T extends FilterValuesItem>(p: T, v: FilterVa
 
   const postcodes = resolvePostcodes(v.location);
   if (postcodes.length > 0 && (!p.zipCode || !postcodes.includes(p.zipCode))) return false;
+
+  // ADR-022 chip filters. Empty arrays / blank tom are no-ops, so this is
+  // inert until the pill bar populates them.
+  if (v.propertyType.length > 0) {
+    if (!p.propertyType || !v.propertyType.includes(p.propertyType)) return false;
+  }
+  if (v.rentRegulationCategory.length > 0) {
+    // Match the effective category (stored value or year heuristic).
+    // mrg_unknown / NULL never match an active chip selection (§7.4).
+    const cat = p.rentRegulationCategoryEffective ?? p.rentRegulationCategory ?? null;
+    if (!cat || !v.rentRegulationCategory.includes(cat)) return false;
+  }
+  if (v.tomMaxDays) {
+    const age = tomAgeDays(p);
+    if (age == null || age > parseFloat(v.tomMaxDays)) return false;
+  }
 
   return true;
 }

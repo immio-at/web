@@ -11,6 +11,8 @@ import AddPropertyButton from '@/components/ingestion/AddPropertyButton';
 import { Link } from '@/i18n/navigation';
 import { type PresetFilterKey } from '@/lib/preset-filters';
 import { type Property } from '@/lib/api';
+import { EMPTY_FILTERS, type FilterValues } from '@/lib/filter-values';
+import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
 
 const PropertyAnalysisModal = dynamic(
   () => import('@/components/PropertyAnalysisModal'),
@@ -25,6 +27,9 @@ export default function FunnelPage() {
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(new Set());
   const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
+  // ADR-023 §5.2 — the consolidated pill bar's live filter state. Inert
+  // while PILL_BAR_ONLY_FILTERS is off (FunnelBoard ignores it).
+  const [filterValues, setFilterValues] = useState<FilterValues>(EMPTY_FILTERS);
 
   // Deep-link: ?analyse=PROPERTY_ID opens the analysis modal automatically.
   // Reads from window.location.search instead of useSearchParams to avoid
@@ -60,12 +65,16 @@ export default function FunnelPage() {
         activeSavedFilterIds={activeSavedFilterIds}
         onToggleSavedFilter={toggleSavedFilter}
         onDeleteFilter={removeFilter}
+        showStages={PILL_BAR_ONLY_FILTERS}
+        values={filterValues}
+        onValuesChange={setFilterValues}
       />
 
       <FunnelBoard
         activePresets={activePresets}
         activeSavedFilterIds={activeSavedFilterIds}
         savedFilters={savedFilters}
+        filterValues={filterValues}
         headerAction={
           <div className="flex items-center gap-2">
             <Link

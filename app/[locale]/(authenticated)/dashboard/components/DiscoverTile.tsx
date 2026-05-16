@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { Property, SavedFilter, getScrapedListings } from '@/lib/api';
-import { SEARCH_INPUT_ENABLED } from '@/config/feature-flags';
+import { SEARCH_INPUT_ENABLED, PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
 import { FilterValues, EMPTY_FILTERS, savedFilterToValues, resolvePostcodes } from '@/lib/filter-values';
 import { type PresetFilterKey, passesPresetFilters, passesFilterValues } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
@@ -108,6 +108,12 @@ export default function DiscoverTile({
     if (v.maxSize) params.set('maxSize', v.maxSize);
     if (v.minRooms) params.set('minRooms', v.minRooms);
     if (v.maxRooms) params.set('maxRooms', v.maxRooms);
+    // ADR-022 chip criteria — carried to /search so the pill bar restores them.
+    if (v.propertyType.length) params.set('propertyType', v.propertyType.join(','));
+    if (v.rentRegulationCategory.length) {
+      params.set('rentRegulationCategory', v.rentRegulationCategory.join(','));
+    }
+    if (v.tomMaxDays) params.set('tomMaxDays', v.tomMaxDays);
     if (v.sortBy && v.sortBy !== 'listedDate') params.set('sortBy', v.sortBy);
     if (v.sortOrder && v.sortOrder !== 'desc') params.set('sortOrder', v.sortOrder);
     // Pass active preset selections
@@ -146,6 +152,8 @@ export default function DiscoverTile({
         dashboardMode
         onApplyToFields={applyFilterToFields}
         compact
+        values={filterValues}
+        onValuesChange={setFilterValues}
       />
 
       {/* Filter fields — wrapped in a <form> so pressing Enter in any
@@ -160,6 +168,9 @@ export default function DiscoverTile({
         }}
         className="space-y-2 mb-3"
       >
+        {/* ADR-023 §5.4 — the embedded field form is replaced by the
+            compact pill bar above when PILL_BAR_ONLY_FILTERS is on. */}
+        {!PILL_BAR_ONLY_FILTERS && <>
         {/* ADR-008 PT1 — keyword input hidden behind SEARCH_INPUT_ENABLED.
             When the flag is false the row collapses to a single
             full-width Location input; state hooks, URL plumbing, and
@@ -210,6 +221,7 @@ export default function DiscoverTile({
             </div>
           </div>
         </div>
+        </>}
         {/* Hidden submit so Enter triggers the form's onSubmit even when
             no visible submit button is inside the form (the visible Search
             link is intentionally outside the form so Cmd-click still

@@ -7,7 +7,9 @@ import { useTranslations } from 'next-intl';
 import { Property, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
 import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
-import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
+import { type PresetFilterKey, passesPresetFilters, passesSavedFilters, passesFilterValues } from '@/lib/preset-filters';
+import { type FilterValues } from '@/lib/filter-values';
+import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
 import PropertyCard, { type CardActions, type CardProperty } from '@/components/PropertyCard';
 
@@ -160,10 +162,15 @@ function ConfirmNotRelevantModal({
 
 // ─── Main board ───────────────────────────────────────────────────────────────
 
-export default function FunnelBoard({ activePresets, activeSavedFilterIds, savedFilters, headerAction }: {
+export default function FunnelBoard({ activePresets, activeSavedFilterIds, savedFilters, filterValues, headerAction }: {
   activePresets?: Set<PresetFilterKey>;
   activeSavedFilterIds?: Set<string>;
   savedFilters?: SavedFilter[];
+  /**
+   * ADR-023 — consolidated pill bar filter state. Applied only when
+   * PILL_BAR_ONLY_FILTERS is on; ignored otherwise.
+   */
+  filterValues?: FilterValues;
   /**
    * Optional right-aligned action rendered inside the kanban's horizontal
    * scroll container so its right edge tracks the right edge of the
@@ -194,8 +201,14 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
       filtered = filtered.filter(p => passesSavedFilters(p, savedFilters, activeSavedFilterIds));
     }
 
+    // ADR-023 — pill bar criteria, applied only when it is the active
+    // filter UI. Inert while PILL_BAR_ONLY_FILTERS is off.
+    if (PILL_BAR_ONLY_FILTERS && filterValues) {
+      filtered = filtered.filter(p => passesFilterValues(p, filterValues));
+    }
+
     return filtered;
-  }, [all, activePresets, activeSavedFilterIds, savedFilters]);
+  }, [all, activePresets, activeSavedFilterIds, savedFilters, filterValues]);
 
   async function moveToStage(propertyId: string, newStatus: string) {
     if (newStatus !== 'not_relevant') {

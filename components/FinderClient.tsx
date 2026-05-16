@@ -11,8 +11,10 @@ import { useAuth } from '@/context/AuthContext';
 import PresetFilters from '@/components/PresetFilters';
 import SortControl from '@/components/SortControl';
 import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
-import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
+import { type PresetFilterKey, passesPresetFilters, passesSavedFilters, passesFilterValues } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
+import { EMPTY_FILTERS, type FilterValues } from '@/lib/filter-values';
+import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
 import Link from 'next/link';
 
 const PropertyAnalysisModal = dynamic(
@@ -147,6 +149,7 @@ export default function FinderClient({
   initialSavedFilterIds?: Set<string>;
 } = {}) {
   const t = useTranslations('finder');
+  const tPreset = useTranslations('presetFilters');
   const { session, loading: authLoading } = useAuth();
   const { properties: allOwn, loading: propsLoading, update, optimisticUpdate, optimisticInsert } = useProperties();
   const { filters: savedFilters, remove: removeFilter } = useSavedFilters();
@@ -160,6 +163,15 @@ export default function FinderClient({
   // Sort controls — auto-refresh on change via fetchScraped deps
   const [sortBy, setSortBy] = useState<string>('listedDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  // ADR-023 §5.3 — consolidated pill bar state (inert while the flag is off).
+  const [filterValues, setFilterValues] = useState<FilterValues>(EMPTY_FILTERS);
+  const [filterExpanded, setFilterExpanded] = useState(false);
+  // Effective sort — driven by the pill bar's SortDropdown when the
+  // consolidated filter UI is live, otherwise by the standalone SortControl.
+  const effSortBy = PILL_BAR_ONLY_FILTERS ? filterValues.sortBy : sortBy;
+  const effSortOrder: 'asc' | 'desc' = PILL_BAR_ONLY_FILTERS
+    ? (filterValues.sortOrder === 'asc' ? 'asc' : 'desc')
+    : sortOrder;
 
   function toggleSavedFilter(id: string) {
     setActiveSavedFilterIds(prev => {
@@ -189,8 +201,8 @@ export default function FinderClient({
       setScrapedLoading(true);
       const baseParams: Record<string, unknown> = {
         hideNullPrice: true,
-        sortBy,
-        sortOrder,
+        sortBy: effSortBy,
+        sortOrder: effSortOrder,
       };
       if (presetPostcodes.length > 0) {
         baseParams.postcodes = presetPostcodes;
@@ -215,7 +227,7 @@ export default function FinderClient({
       setScrapedLoading(false);
     }
     // session?.user?.id (stable) — see search/page.tsx note.
-  }, [authLoading, session?.user?.id, presetPostcodes, sortBy, sortOrder]);
+  }, [authLoading, session?.user?.id, presetPostcodes, effSortBy, effSortOrder]);
 
   useEffect(() => { fetchScraped(); }, [fetchScraped]);
 
@@ -250,8 +262,14 @@ export default function FinderClient({
       merged = merged.filter(c => passesSavedFilters(c, savedFilters, activeSavedFilterIds));
     }
 
-    return sortFinderCards(merged, sortBy, sortOrder);
-  }, [allOwn, scrapedCards, dismissedIds, activePresets, activeSavedFilterIds, savedFilters, sortBy, sortOrder]);
+    // ADR-023 — pill bar criteria, applied only when it is the active
+    // filter UI. Inert while PILL_BAR_ONLY_FILTERS is off.
+    if (PILL_BAR_ONLY_FILTERS) {
+      merged = merged.filter(c => passesFilterValues(c, filterValues));
+    }
+
+    return sortFinderCards(merged, effSortBy, effSortOrder);
+  }, [allOwn, scrapedCards, dismissedIds, activePresets, activeSavedFilterIds, savedFilters, effSortBy, effSortOrder, filterValues]);
 
   const [current, setCurrent] = useState(0);
   const [dragX, setDragX] = useState(0);
@@ -498,24 +516,58 @@ export default function FinderClient({
   return (
     <div className="flex-1 flex flex-col items-center justify-start pt-4 px-4 pb-8 w-full">
 
-      {/* Preset + saved filter pills — always visible.
-          Stage row hidden: Finder only surfaces new properties. */}
-      <PresetFilters
-        active={activePresets}
-        onChange={setActivePresets}
-        savedFilters={savedFilters}
-        activeSavedFilterIds={activeSavedFilterIds}
-        onToggleSavedFilter={toggleSavedFilter}
-        onDeleteFilter={removeFilter}
-        align="center"
-      />
+      {/* Preset + saved filter pills.
+          ADR-023 §5.3 — when the pill bar is the filter UI it renders in
+          compact mode, collapsed behind a "Filter" expander (mid-triage,
+          sliders are noise). While the flag is off it renders as today. */}
+      {PILL_BAR_ONLY_FILTERS ? (
+        <div className="w-full max-w-2xl">
+          <button
+            type="button"
+            onClick={() => setFilterExpanded((v) => !v)}
+            className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-full px-3 py-1"
+          >
+            {tPreset('filterToggle')} {filterExpanded ? '▴' : '▾'}
+          </button>
+          {filterExpanded && (
+            <div className="mt-2">
+              <PresetFilters
+                active={activePresets}
+                onChange={setActivePresets}
+                savedFilters={savedFilters}
+                activeSavedFilterIds={activeSavedFilterIds}
+                onToggleSavedFilter={toggleSavedFilter}
+                onDeleteFilter={removeFilter}
+                align="center"
+                compact
+                values={filterValues}
+                onValuesChange={setFilterValues}
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        <PresetFilters
+          active={activePresets}
+          onChange={setActivePresets}
+          savedFilters={savedFilters}
+          activeSavedFilterIds={activeSavedFilterIds}
+          onToggleSavedFilter={toggleSavedFilter}
+          onDeleteFilter={removeFilter}
+          align="center"
+        />
+      )}
 
       <div className="mt-2 mb-3">
+        {/* SortControl — ADR-023 §4: superseded by the pill bar's
+            SortDropdown when the consolidated filter UI is live. */}
+        {!PILL_BAR_ONLY_FILTERS && (
         <SortControl
           sortBy={sortBy}
           sortOrder={sortOrder}
           onChange={(by, order) => { setSortBy(by); setSortOrder(order); }}
         />
+        )}
       </div>
 
       {allReviewed ? (
