@@ -370,6 +370,15 @@ export default function EntdeckenPage() {
   const [applied, setApplied] = useState<FilterValues>(
     () => cached?.applied ?? initialFromUrl,
   );
+
+  // ADR-023 §9.1 — when the pill bar is the filter UI there is no Search
+  // button: every adjustment auto-applies after a 300ms debounce. While the
+  // flag is off this effect is inert (handleSearch drives `applied`).
+  useEffect(() => {
+    if (!PILL_BAR_ONLY_FILTERS) return;
+    const h = setTimeout(() => setApplied({ ...filterValues }), 300);
+    return () => clearTimeout(h);
+  }, [filterValues]);
   const [activeFilterId, setActiveFilterId] = useState<string | null>(
     () => cached?.activeFilterId ?? null,
   );
@@ -469,6 +478,11 @@ export default function EntdeckenPage() {
       maxSize: f.maxSize ? parseFloat(f.maxSize) : undefined,
       minRooms: f.minRooms ? parseFloat(f.minRooms) : undefined,
       maxRooms: f.maxRooms ? parseFloat(f.maxRooms) : undefined,
+      // ADR-022 §8 — chip filters resolved server-side. Empty arrays send
+      // nothing, so this is inert until the pill bar populates them.
+      propertyType: f.propertyType.length > 0 ? f.propertyType : undefined,
+      rentRegulationCategory:
+        f.rentRegulationCategory.length > 0 ? f.rentRegulationCategory : undefined,
       hideNullPrice: true,
       sortBy: f.sortBy || undefined,
       sortOrder: f.sortOrder || undefined,
@@ -1020,6 +1034,9 @@ export default function EntdeckenPage() {
       {!loading && (
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-4 flex-wrap">
+            {/* ADR-023 §4 — superseded by the pill bar's SortDropdown when
+                the consolidated filter UI is live. */}
+            {!PILL_BAR_ONLY_FILTERS && (
             <SortControl
               sortBy={applied.sortBy}
               sortOrder={applied.sortOrder}
@@ -1028,6 +1045,7 @@ export default function EntdeckenPage() {
                 setApplied(a => ({ ...a, sortBy, sortOrder }));
               }}
             />
+            )}
             <p className="text-sm text-gray-500">
               {listings.length === 0
                 ? t('noListingsFound')

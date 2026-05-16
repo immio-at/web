@@ -28,6 +28,7 @@ import {
   resolvePostcodes,
 } from '@/lib/filter-values';
 import { passesFilterValues } from '@/lib/preset-filters';
+import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
 import { useProperties } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import FilterModalForm from './FilterModalForm';
@@ -48,41 +49,57 @@ const REGULATION_LABELS: Record<string, string> = {
   free: 'Neubau',
 };
 
+// Format a min/max pair into "a – b" / "ab a" / "bis b" (or '' when empty).
+function fmtRange(min: string, max: string, unit: string, suffix = ''): string {
+  const a = min ? `${unit}${min}${suffix}` : '';
+  const b = max ? `${unit}${max}${suffix}` : '';
+  if (a && b) return `${a} – ${b}`;
+  if (a) return `ab ${a}`;
+  if (b) return `bis ${b}`;
+  return '';
+}
+
 /**
- * Read-only summary of the chip filter criteria (ADR-022 columns) carried
- * into the saved filter. Renders nothing when none are set.
+ * Read-only summary of every active filter criterion carried into the
+ * saved filter (ADR-023 §6.1 "Kriterien (Übersicht)"). Renders nothing
+ * when no criterion is set.
  */
-function CapturedChipCriteria({
+function FilterCriteriaSummary({
   values,
   t,
 }: {
   values: FilterValues;
   t: ReturnType<typeof useTranslations>;
 }) {
-  const hasAny =
-    values.propertyType.length > 0 ||
-    values.rentRegulationCategory.length > 0 ||
-    !!values.tomMaxDays;
-  if (!hasAny) return null;
-
   const rows: Array<{ label: string; value: string }> = [];
+  const push = (label: string, value: string) => {
+    if (value) rows.push({ label, value });
+  };
+
+  push(t('rangePrice'), fmtRange(values.minPrice, values.maxPrice, '€'));
+  push(t('rangePricePerSqm'), fmtRange(values.minPricePerSqm, values.maxPricePerSqm, '€', '/m²'));
+  push(t('rangeSize'), fmtRange(values.minSize, values.maxSize, '', ' m²'));
+  push(t('rangeRooms'), fmtRange(values.minRooms, values.maxRooms, '', ' Zi.'));
+  push(t('postcodeLabel'), values.location);
   if (values.propertyType.length > 0) {
-    rows.push({
-      label: t('summaryPropertyType'),
-      value: values.propertyType.map((v) => TYPE_LABELS[v] ?? v).join(', '),
-    });
+    push(t('summaryPropertyType'), values.propertyType.map((v) => TYPE_LABELS[v] ?? v).join(', '));
   }
   if (values.rentRegulationCategory.length > 0) {
-    rows.push({
-      label: t('summaryRentRegulation'),
-      value: values.rentRegulationCategory.map((v) => REGULATION_LABELS[v] ?? v).join(', '),
-    });
+    push(
+      t('summaryRentRegulation'),
+      values.rentRegulationCategory.map((v) => REGULATION_LABELS[v] ?? v).join(', '),
+    );
   }
   if (values.tomMaxDays) {
-    rows.push({
-      label: t('summaryTom'),
-      value: t('summaryTomValue', { days: values.tomMaxDays }),
-    });
+    push(t('summaryTom'), t('summaryTomValue', { days: values.tomMaxDays }));
+  }
+
+  if (rows.length === 0) {
+    return (
+      <p className="mt-4 border-t border-gray-100 pt-3 text-sm text-gray-400 italic">
+        {t('noCriteria')}
+      </p>
+    );
   }
 
   return (
@@ -259,18 +276,39 @@ export default function FilterModal({ open, mode, editingFilter, initialValues, 
               {error}
             </div>
           )}
-          <FilterModalForm
-            name={name}
-            onNameChange={setName}
-            values={values}
-            onValuesChange={setValues}
-          />
-          {/* ADR-022 / ADR-023 §6.1 — captured-criteria summary for the chip
-              filters (property type, rent regulation, time-on-market). These
-              are set on the pill bar, not edited in this dialog, so the modal
-              surfaces them read-only so the user sees the full filter they
-              are about to save. */}
-          <CapturedChipCriteria values={values} t={t} />
+          {/* ADR-023 §6 — when the pill bar is the filter UI the modal is a
+              naming-only dialog: a name field plus a read-only summary of
+              the criteria the pill bar already holds. While the flag is off
+              the legacy configuration form (FilterModalForm) is shown. */}
+          {PILL_BAR_ONLY_FILTERS ? (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                {t('nameLabel')}
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={150}
+                placeholder={t('namePlaceholder')}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <FilterCriteriaSummary values={values} t={t} />
+            </div>
+          ) : (
+            <>
+              <FilterModalForm
+                name={name}
+                onNameChange={setName}
+                values={values}
+                onValuesChange={setValues}
+              />
+              {/* ADR-022 — the chip criteria (type / regulation / TOM) are
+                  set on the pill bar, not in this form; surface them so the
+                  user sees the full filter they are about to save. */}
+              <FilterCriteriaSummary values={values} t={t} />
+            </>
+          )}
         </div>
 
         {/* Footer — live count + action buttons */}

@@ -20,13 +20,19 @@ interface Props {
   id: string;
   name: string;
   isActive: boolean;
+  /**
+   * ADR-023 §7.2 — detach-on-edit. True when this filter is active but the
+   * pill bar has been edited away from its stored criteria. The pill
+   * renders deactivated (amber → gray) to signal the divergence.
+   */
+  dirty?: boolean;
   onClick: () => void;
   onEdit: () => void;
   onDelete: () => void | Promise<void>;
   compact?: boolean;
 }
 
-export default function UserFilterPill({ id, name, isActive, onClick, onEdit, onDelete, compact = false }: Props) {
+export default function UserFilterPill({ id, name, isActive, dirty = false, onClick, onEdit, onDelete, compact = false }: Props) {
   const t = useTranslations('presetFilters');
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -63,11 +69,12 @@ export default function UserFilterPill({ id, name, isActive, onClick, onEdit, on
 
   return (
     <div ref={wrapperRef} className="relative inline-flex items-center">
+      {/* §7.2 — a dirty (edited-away) active filter renders deactivated. */}
       <button
         onClick={onClick}
         title={name}
         className={`${labelClass} transition-colors whitespace-nowrap truncate ${
-          isActive
+          isActive && !dirty
             ? 'bg-amber-500 text-white border-amber-500'
             : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
         }`}
@@ -78,7 +85,7 @@ export default function UserFilterPill({ id, name, isActive, onClick, onEdit, on
         onClick={() => setMenuOpen(o => !o)}
         aria-label={t('filterMenu', { name })}
         className={`${kebabClass} transition-colors ${
-          isActive
+          isActive && !dirty
             ? 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600'
             : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50 hover:text-gray-600'
         }`}

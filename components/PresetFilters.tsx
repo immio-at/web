@@ -41,7 +41,12 @@ import {
   getPostcodesByBundesland,
   BUNDESLAND_ABBREVIATIONS,
 } from '@/lib/austria-plz-bundesland';
-import { EMPTY_FILTERS, type FilterValues } from '@/lib/filter-values';
+import {
+  EMPTY_FILTERS,
+  type FilterValues,
+  savedFilterToValues,
+  valuesToSavedFilterDto,
+} from '@/lib/filter-values';
 import UserFilterPill from '@/components/filters/UserFilterPill';
 import FilterModal from '@/components/filters/FilterModal';
 import ComingSoonRow from '@/components/filters/ComingSoonRow';
@@ -129,6 +134,22 @@ export default function PresetFilters({
   // `FilterBar` remains the filter surface and the pill bar shows the
   // inert roadmap chip rows.
   const pillBarLive = PILL_BAR_ONLY_FILTERS && !!values && !!onValuesChange;
+
+  // ADR-023 §7.2 — detach-on-edit. When exactly one saved filter is active
+  // and the pill bar has since been edited away from its stored criteria,
+  // the filter is "dirty": its pill renders deactivated and a save-changes
+  // affordance appears.
+  const dirtyFilterId = useMemo<string | null>(() => {
+    if (!pillBarLive || !savedFilters || !activeSavedFilterIds || activeSavedFilterIds.size !== 1) {
+      return null;
+    }
+    const id = [...activeSavedFilterIds][0];
+    const sf = savedFilters.find((f) => f.id === id);
+    if (!sf) return null;
+    const stored = JSON.stringify(valuesToSavedFilterDto(savedFilterToValues(sf)));
+    const current = JSON.stringify(valuesToSavedFilterDto(values!));
+    return stored !== current ? id : null;
+  }, [pillBarLive, savedFilters, activeSavedFilterIds, values]);
 
   // Modal state — owned internally so each parent doesn't need to plumb it.
   const [modalOpen, setModalOpen] = useState(false);
@@ -390,6 +411,7 @@ export default function PresetFilters({
             id={sf.id}
             name={sf.name}
             isActive={isActive}
+            dirty={dirtyFilterId === sf.id}
             compact={compact}
             onClick={() => handleFilterClick(sf)}
             onEdit={() => handleEdit(sf.id)}
@@ -404,6 +426,28 @@ export default function PresetFilters({
       >
         {t('createFilter')}
       </button>
+
+      {/* ADR-023 §7.2 — detach-on-edit save prompt. Appears next to the
+          deactivated filter pill: save the edits back into it, or discard. */}
+      {dirtyFilterId && (
+        <>
+          <button
+            onClick={() => handleEdit(dirtyFilterId)}
+            className={`${pillSize} bg-teal-600 text-white border-teal-600 hover:bg-teal-700 transition-colors whitespace-nowrap`}
+          >
+            {t('saveChanges')}
+          </button>
+          <button
+            onClick={() => {
+              const sf = savedFilters?.find((f) => f.id === dirtyFilterId);
+              if (sf && onValuesChange) onValuesChange(savedFilterToValues(sf));
+            }}
+            className={`${compact ? 'text-[10px]' : 'text-xs'} text-gray-400 hover:text-gray-600 underline-offset-2 hover:underline px-1 whitespace-nowrap`}
+          >
+            {t('discardChanges')}
+          </button>
+        </>
+      )}
 
       {hasAnyActive && (
         <button
