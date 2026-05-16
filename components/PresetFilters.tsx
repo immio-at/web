@@ -46,6 +46,22 @@ import UserFilterPill from '@/components/filters/UserFilterPill';
 import FilterModal from '@/components/filters/FilterModal';
 import ComingSoonRow from '@/components/filters/ComingSoonRow';
 import MoreFiltersPrompt from '@/components/filters/MoreFiltersPrompt';
+import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
+import RangeSlider from '@/components/filters/RangeSlider';
+import TomFilter from '@/components/filters/TomFilter';
+import PropertyTypeChips from '@/components/filters/PropertyTypeChips';
+import RentRegulationChips from '@/components/filters/RentRegulationChips';
+import PostcodeEntry from '@/components/filters/PostcodeEntry';
+import SortDropdown from '@/components/filters/SortDropdown';
+
+// ADR-023 §2.2 — hard slider bounds (working values; a future job tunes
+// them to the 95th-percentile distribution).
+const SLIDER_BOUNDS = {
+  price: { min: 0, max: 5_000_000, step: 1000 },
+  size: { min: 0, max: 500, step: 1 },
+  pricePerSqm: { min: 0, max: 15_000, step: 100 },
+  rooms: { min: 0, max: 10, step: 0.5 },
+} as const;
 
 // ADR-008 PT2 — two coming-soon chip rows. Static config so the chip
 // list is greppable and easy to expand when wiring goes live.
@@ -81,6 +97,14 @@ interface Props {
   showStages?: boolean;
   /** Smaller pills + tighter spacing — used on the Dashboard Discover tile. */
   compact?: boolean;
+  /**
+   * ADR-023 — live filter state for the consolidated pill bar (R4–R9).
+   * Only consumed when `PILL_BAR_ONLY_FILTERS` is on; while the flag is
+   * off the legacy `FilterBar` owns these criteria and the pill bar shows
+   * the inert `ComingSoonRow`s instead.
+   */
+  values?: FilterValues;
+  onValuesChange?: (next: FilterValues) => void;
 }
 
 export default function PresetFilters({
@@ -95,8 +119,16 @@ export default function PresetFilters({
   align = 'left',
   showStages = false,
   compact = false,
+  values,
+  onValuesChange,
 }: Props) {
   const t = useTranslations('presetFilters');
+
+  // ADR-023 — the consolidated pill bar (R4–R9) is live only when the flag
+  // is on AND the parent supplied filter state. Otherwise the legacy
+  // `FilterBar` remains the filter surface and the pill bar shows the
+  // inert roadmap chip rows.
+  const pillBarLive = PILL_BAR_ONLY_FILTERS && !!values && !!onValuesChange;
 
   // Modal state — owned internally so each parent doesn't need to plumb it.
   const [modalOpen, setModalOpen] = useState(false);
@@ -389,6 +421,91 @@ export default function PresetFilters({
     </div>
   );
 
+  // ── ADR-023 R4–R9 — consolidated pill bar filter rows ────────────────────
+  // Rendered only when `pillBarLive`. `values` / `onValuesChange` are
+  // guaranteed non-null inside this branch.
+  function patchValues(p: Partial<FilterValues>) {
+    onValuesChange!({ ...values!, ...p });
+  }
+
+  const pillBarRows = pillBarLive ? (
+    <>
+      {/* R4 — property type chips */}
+      <PropertyTypeChips
+        value={values!.propertyType}
+        onChange={(pt) => patchValues({ propertyType: pt })}
+        compact={compact}
+      />
+      {/* R5 — rent regulation chips */}
+      <RentRegulationChips
+        value={values!.rentRegulationCategory}
+        onChange={(rr) => patchValues({ rentRegulationCategory: rr })}
+        compact={compact}
+      />
+      {/* R6 — range sliders: Price, Size, €/m², Rooms */}
+      <RangeSlider
+        label={t('rangePrice')}
+        unit="€"
+        {...SLIDER_BOUNDS.price}
+        minValue={values!.minPrice}
+        maxValue={values!.maxPrice}
+        onChange={(r) => patchValues({ minPrice: r.min, maxPrice: r.max })}
+        compact={compact}
+      />
+      <RangeSlider
+        label={t('rangeSize')}
+        {...SLIDER_BOUNDS.size}
+        minValue={values!.minSize}
+        maxValue={values!.maxSize}
+        onChange={(r) => patchValues({ minSize: r.min, maxSize: r.max })}
+        compact={compact}
+      />
+      <RangeSlider
+        label={t('rangePricePerSqm')}
+        unit="€"
+        {...SLIDER_BOUNDS.pricePerSqm}
+        minValue={values!.minPricePerSqm}
+        maxValue={values!.maxPricePerSqm}
+        onChange={(r) => patchValues({ minPricePerSqm: r.min, maxPricePerSqm: r.max })}
+        compact={compact}
+      />
+      <RangeSlider
+        label={t('rangeRooms')}
+        {...SLIDER_BOUNDS.rooms}
+        minValue={values!.minRooms}
+        maxValue={values!.maxRooms}
+        onChange={(r) => patchValues({ minRooms: r.min, maxRooms: r.max })}
+        compact={compact}
+      />
+      {/* R7 — time on market */}
+      <TomFilter
+        value={values!.tomMaxDays}
+        onChange={(d) => patchValues({ tomMaxDays: d })}
+        compact={compact}
+      />
+      {/* R8 — sort */}
+      <SortDropdown
+        sortBy={values!.sortBy}
+        sortOrder={values!.sortOrder}
+        onChange={(s) => patchValues({ sortBy: s.sortBy, sortOrder: s.sortOrder })}
+        compact={compact}
+      />
+      {/* R9 — postcode entry */}
+      <PostcodeEntry
+        value={values!.location}
+        onChange={(loc) => patchValues({ location: loc })}
+        compact={compact}
+      />
+    </>
+  ) : (
+    <>
+      {/* ADR-008 PT2 — inert roadmap chip rows. Shown while the pill bar
+          is not yet the canonical filter UI (PILL_BAR_ONLY_FILTERS off). */}
+      <ComingSoonRow labelKey="propertyType.label" chips={PROPERTY_TYPE_CHIPS} compact={compact} />
+      <ComingSoonRow labelKey="classification.label" chips={CLASSIFICATION_CHIPS} compact={compact} />
+    </>
+  );
+
   // Row order:
   //   - Discover (showStages): Bundesland → Stages → Source
   //   - everywhere else:        Bundesland → Source
@@ -398,21 +515,10 @@ export default function PresetFilters({
         {bundeslandRow}
         {showStages && stagesRow}
         {sourceRow}
-        {/* ADR-008 PT2 — disabled roadmap chip rows. Same compact-prop
-            pass-through as the rest of the bar. Not shown in the
-            Filter Modal or Settings → Filters because PresetFilters
-            isn't mounted there. */}
-        <ComingSoonRow
-          labelKey="propertyType.label"
-          chips={PROPERTY_TYPE_CHIPS}
-          compact={compact}
-        />
-        <ComingSoonRow
-          labelKey="classification.label"
-          chips={CLASSIFICATION_CHIPS}
-          compact={compact}
-        />
-        {/* ADR-008 PT3 — invite tester feedback on the next filter
+        {/* R4–R9 — the consolidated pill bar when PILL_BAR_ONLY_FILTERS is
+            on; the inert ADR-008 roadmap chip rows otherwise. */}
+        {pillBarRows}
+        {/* R10 / ADR-008 PT3 — invite tester feedback on the next filter
             axes. Opens the FeedbackButton drawer with the feature_request
             type and a prefilled body via window CustomEvent. */}
         <MoreFiltersPrompt compact={compact} />

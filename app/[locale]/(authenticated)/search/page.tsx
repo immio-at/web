@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useProperties, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import FilterBar from '@/components/FilterBar';
+import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
 import {
   FilterValues,
   EMPTY_FILTERS,
@@ -971,14 +972,18 @@ export default function EntdeckenPage() {
         <h1 className="text-2xl font-light text-gray-900 tracking-tight">{t('title')}</h1>
       </div>
 
-      {/* Filter bar */}
-      <FilterBar
-        values={filterValues}
-        onChange={setFilterValues}
-        onSearch={handleSearch}
-        onReset={handleReset}
-        onSave={handleSaveFilter}
-      />
+      {/* Filter bar — ADR-023 C2/C3: the legacy FilterBar form renders only
+          while PILL_BAR_ONLY_FILTERS is off. When the flag flips, the
+          consolidated pill bar below (R4–R9) is the sole filter surface. */}
+      {!PILL_BAR_ONLY_FILTERS && (
+        <FilterBar
+          values={filterValues}
+          onChange={setFilterValues}
+          onSearch={handleSearch}
+          onReset={handleReset}
+          onSave={handleSaveFilter}
+        />
+      )}
 
       <PresetFilters
         active={activePresets}
@@ -988,6 +993,8 @@ export default function EntdeckenPage() {
         onToggleSavedFilter={toggleSavedFilter}
         onDeleteFilter={removeFilter}
         showStages
+        values={filterValues}
+        onValuesChange={setFilterValues}
       />
 
       {/* Save filter feedback */}
