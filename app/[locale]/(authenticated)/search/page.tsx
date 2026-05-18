@@ -979,7 +979,7 @@ export default function EntdeckenPage() {
 
       {/* Prominent sort + view toggle + results count */}
       {!loading && (
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-6 mb-4">
           <div className="flex items-center gap-3 flex-wrap">
             <p className="text-sm text-gray-500">
               {listings.length === 0

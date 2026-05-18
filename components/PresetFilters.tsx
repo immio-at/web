@@ -569,7 +569,7 @@ export default function PresetFilters({
         {/* Range sliders (§2.6): two per row — Price + €/m², then
             Size + Rooms. `px-2` insets the pair from the box edges and
             `gap-x-8` opens the gap between the two columns. */}
-        <div className="flex flex-wrap items-start gap-x-8 gap-y-2 px-2">
+        <div className="flex flex-wrap items-start gap-x-12 gap-y-3 px-4 py-1">
           <div className="flex-1 min-w-[200px]">
             <RangeSlider
               label={t('rangePrice')}
@@ -591,7 +591,7 @@ export default function PresetFilters({
             />
           </div>
         </div>
-        <div className="flex flex-wrap items-start gap-x-8 gap-y-2 px-2">
+        <div className="flex flex-wrap items-start gap-x-12 gap-y-3 px-4 py-1">
           <div className="flex-1 min-w-[200px]">
             <RangeSlider
               label={t('rangeSize')}
