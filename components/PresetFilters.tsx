@@ -641,14 +641,14 @@ export default function PresetFilters({
     </>
   ) : null;
 
-  // Row order: smart search → "Your filters" → Location → Property source
-  //   → type → regulation → TOM → sliders → sort. "Your filters" sits
-  //   directly below the search bar so all the pill rows cluster together,
-  //   and the TOM ("listed within") chip row sits just above the slider
-  //   section. Stage pills (the old pre-amendment row) render only on
-  //   Funnel, never on Discover. `groupSpacing` separates the conceptual
-  //   groups; rows inside a group are packed tighter via `innerSpacing`.
-  //   (NOTE: ADR-023 §1.1 not yet updated for this order — pending.)
+  // Row order (ADR-023 §1.1): R1 smart search → R2 "Your filters" →
+  //   R3 Location → R4 source → R5 type → R6 regulation → R7 TOM →
+  //   R8 sliders → R9 sort. "Your filters" sits directly below the search
+  //   bar and the TOM chip row above the sliders so all the pill rows
+  //   cluster together. Stage pills (the old pre-amendment row) render
+  //   only on Funnel, never on Discover. `groupSpacing` separates the
+  //   conceptual groups; rows inside a group are packed tighter via
+  //   `innerSpacing`.
   const bar = (
     <div className={groupSpacing}>
         {/* ADR-024 smart-search field. Renders only when the pill bar is
