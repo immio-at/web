@@ -46,9 +46,8 @@ export const PILL_BAR_ONLY_FILTERS = true;
  * tokenises Austrian property vocabulary into chip / slider / postcode
  * suggestions; when `false` the R3 slot collapses (R2 → R4 directly).
  *
- * Flipped to `true` at ADR-024 step C5 — the public release — after the
- * C4 tester walkthrough. While `false`, all of C1–C3 (token vocabulary,
- * tokeniser, UI components, the rewired `keyword` backend param) is built
- * and shippable but produces zero user-visible change.
+ * Flipped to `true` at ADR-024 step C5 — the public release (Session 54,
+ * 2026-05-18). Still flag-gated and fully reversible: flip back to `false`
+ * to collapse the R3 slot if tester feedback surfaces a problem.
  */
-export const SMART_SEARCH_ENABLED = false;
+export const SMART_SEARCH_ENABLED = true;

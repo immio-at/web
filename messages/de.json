@@ -1808,6 +1808,8 @@
     "substringFallback": "Titel und Beschreibung nach „{text}\" durchsuchen",
     "substringHint": "— passt zu keinem Filterkriterium",
     "applyAll": "Alle {count} anwenden",
+    "toastNew": "Neu: Du kannst jetzt durch Tippen suchen — probier „Altbau Wien 1060\" im Suchfeld.",
+    "toastDismiss": "Schließen",
     "kind": {
       "propertyType": "Objekttyp",
       "rentRegulation": "Mietrecht",

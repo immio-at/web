@@ -1808,6 +1808,8 @@
     "substringFallback": "Search title and description for “{text}”",
     "substringHint": "— doesn't match any explicit filter criteria",
     "applyAll": "Apply all {count}",
+    "toastNew": "New — you can now search by typing. Try “Altbau Vienna 1060” in the search field.",
+    "toastDismiss": "Dismiss",
     "kind": {
       "propertyType": "Property type",
       "rentRegulation": "Rent regulation",

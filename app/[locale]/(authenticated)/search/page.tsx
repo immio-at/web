@@ -17,6 +17,7 @@ import {
   resolvePostcodes,
 } from '@/lib/filter-values';
 import PresetFilters from '@/components/PresetFilters';
+import SmartSearchToast from '@/components/filters/SmartSearchToast';
 import UndoToastStack, { type UndoToastEntry } from '@/components/UndoToastStack';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
@@ -963,6 +964,9 @@ export default function EntdeckenPage() {
         onValuesChange={setFilterValues}
         showSmartSearch={SMART_SEARCH_ENABLED}
       />
+
+      {/* ADR-024 §12.4 — one-time "what's new" toast on first Discover visit. */}
+      {SMART_SEARCH_ENABLED && <SmartSearchToast />}
 
       {/* Error */}
       {error && (
