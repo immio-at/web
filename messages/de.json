@@ -1798,5 +1798,34 @@
       "parse_empty": "IMMIO hat diese E-Mail erhalten, konnte aber kein Inserat extrahieren. Wenn du hier eine Immobilie erwartest, melde dich über den Feedback-Button.",
       "parse_error": "IMMIO hat diese E-Mail erhalten, konnte aber kein Inserat extrahieren. Wenn du hier eine Immobilie erwartest, melde dich über den Feedback-Button."
     }
+  },
+  "smartSearch": {
+    "ariaLabel": "Intelligente Suche",
+    "placeholder1": "Suchen — z.B. \"Altbau Wien 1060\"",
+    "placeholder2": "Suchen — z.B. \"Haus mit Balkon >200m²\"",
+    "applyFilter": "Filter anwenden: {label}",
+    "didYouMean": "Meintest du: {label}?",
+    "substringFallback": "Titel und Beschreibung nach „{text}\" durchsuchen",
+    "substringHint": "— passt zu keinem Filterkriterium",
+    "applyAll": "Alle {count} anwenden",
+    "kind": {
+      "propertyType": "Objekttyp",
+      "rentRegulation": "Mietrecht",
+      "bundesland": "Bundesland",
+      "district": "Wiener Bezirk",
+      "postcode": "PLZ",
+      "numeric": "Bereich",
+      "substring": "Textsuche"
+    },
+    "numeric": {
+      "minPrice": "Preis ab {value} €",
+      "maxPrice": "Preis bis {value} €",
+      "minSize": "Fläche ab {value} m²",
+      "maxSize": "Fläche bis {value} m²",
+      "minPricePerSqm": "€/m² ab {value}",
+      "maxPricePerSqm": "€/m² bis {value}",
+      "minRooms": "ab {value} Zimmer",
+      "maxRooms": "bis {value} Zimmer"
+    }
   }
 }

@@ -39,3 +39,16 @@ export const SEARCH_INPUT_ENABLED = false;
  *     become the active filter controls.
  */
 export const PILL_BAR_ONLY_FILTERS = true;
+
+/**
+ * ADR-024 — Smart Search Field. The R3 pill-bar slot reserved by ADR-023
+ * v1.1. When `true`, Discover renders the smart-search text field that
+ * tokenises Austrian property vocabulary into chip / slider / postcode
+ * suggestions; when `false` the R3 slot collapses (R2 → R4 directly).
+ *
+ * Flipped to `true` at ADR-024 step C5 — the public release — after the
+ * C4 tester walkthrough. While `false`, all of C1–C3 (token vocabulary,
+ * tokeniser, UI components, the rewired `keyword` backend param) is built
+ * and shippable but produces zero user-visible change.
+ */
+export const SMART_SEARCH_ENABLED = false;

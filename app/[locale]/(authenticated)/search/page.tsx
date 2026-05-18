@@ -10,7 +10,7 @@ import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractio
 import { useAuth } from '@/context/AuthContext';
 import { useProperties, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
-import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
+import { PILL_BAR_ONLY_FILTERS, SMART_SEARCH_ENABLED } from '@/config/feature-flags';
 import {
   FilterValues,
   savedFilterToValues,
@@ -961,6 +961,7 @@ export default function EntdeckenPage() {
         onDeleteFilter={removeFilter}
         values={filterValues}
         onValuesChange={setFilterValues}
+        showSmartSearch={SMART_SEARCH_ENABLED}
       />
 
       {/* Error */}

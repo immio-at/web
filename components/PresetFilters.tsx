@@ -57,6 +57,8 @@ import PropertyTypeChips from '@/components/filters/PropertyTypeChips';
 import RentRegulationChips from '@/components/filters/RentRegulationChips';
 import PostcodeEntry from '@/components/filters/PostcodeEntry';
 import SortDropdown from '@/components/filters/SortDropdown';
+import SmartSearchField from '@/components/filters/SmartSearchField';
+import type { Suggestion } from '@/lib/smart-search/types';
 
 // ADR-023 §2.2 — hard slider bounds (working values; a future job tunes
 // them to the 95th-percentile distribution).
@@ -92,6 +94,13 @@ interface Props {
    */
   values?: FilterValues;
   onValuesChange?: (next: FilterValues) => void;
+  /**
+   * ADR-024 — render the smart-search field in the R3 slot. The Discover
+   * page passes `SMART_SEARCH_ENABLED`; every other page leaves it false.
+   * The field only renders when the pill bar itself is live (it routes
+   * into the pill bar's chip/slider state).
+   */
+  showSmartSearch?: boolean;
 }
 
 export default function PresetFilters({
@@ -108,6 +117,7 @@ export default function PresetFilters({
   compact = false,
   values,
   onValuesChange,
+  showSmartSearch = false,
 }: Props) {
   const t = useTranslations('presetFilters');
 
@@ -465,6 +475,49 @@ export default function PresetFilters({
     onValuesChange!({ ...values!, ...p });
   }
 
+  // ── ADR-024 §6.2 — apply a smart-search suggestion ───────────────────────
+  // Routes the suggestion's structured `target` into the pill bar's state:
+  // chip targets union into the relevant array, Bundesland targets activate
+  // the preset chip, location targets append postcodes, range targets set a
+  // slider bound, the substring fallback sets `keyword`. Only reachable when
+  // `pillBarLive` (the smart-search field renders only then).
+  function applySuggestion(s: Suggestion) {
+    const tgt = s.target;
+    switch (tgt.field) {
+      case 'propertyType': {
+        if (!values!.propertyType.includes(tgt.value)) {
+          patchValues({ propertyType: [...values!.propertyType, tgt.value] });
+        }
+        break;
+      }
+      case 'rentRegulationCategory': {
+        if (!values!.rentRegulationCategory.includes(tgt.value)) {
+          patchValues({ rentRegulationCategory: [...values!.rentRegulationCategory, tgt.value] });
+        }
+        break;
+      }
+      case 'bundesland': {
+        const key = tgt.presetKey as PresetFilterKey;
+        if (!active.has(key)) onChange(togglePreset(active, key));
+        break;
+      }
+      case 'location': {
+        const existing = values!.location.split(',').map((p) => p.trim()).filter(Boolean);
+        const merged = [...new Set([...existing, ...tgt.postcodes])];
+        patchValues({ location: merged.join(', ') });
+        break;
+      }
+      case 'range': {
+        patchValues({ [tgt.key]: tgt.value } as Partial<FilterValues>);
+        break;
+      }
+      case 'keyword': {
+        patchValues({ keyword: tgt.value });
+        break;
+      }
+    }
+  }
+
   const pillBarRows = pillBarLive ? (
     <>
       {/* R4 — property type chips */}
@@ -553,6 +606,10 @@ export default function PresetFilters({
         {bundeslandRow}
         {showStages && stagesRow}
         {sourceRow}
+        {/* R3 — ADR-024 smart-search field. Renders only when the pill bar
+            is live and the Discover page passed `showSmartSearch`; the slot
+            collapses with no gap otherwise. */}
+        {pillBarLive && showSmartSearch && <SmartSearchField onApply={applySuggestion} />}
         {/* R4–R9 — the consolidated pill bar when PILL_BAR_ONLY_FILTERS is
             on; the inert ADR-008 roadmap chip rows otherwise. */}
         {pillBarRows}

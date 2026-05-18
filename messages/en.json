@@ -1798,5 +1798,34 @@
       "parse_empty": "IMMIO received this email but couldn't extract a property listing. If you expected a listing here, contact us via the Feedback button so we can investigate.",
       "parse_error": "IMMIO received this email but couldn't extract a property listing. If you expected a listing here, contact us via the Feedback button so we can investigate."
     }
+  },
+  "smartSearch": {
+    "ariaLabel": "Smart search",
+    "placeholder1": "Search — e.g. \"Altbau Vienna 1060\"",
+    "placeholder2": "Search — e.g. \"house with balcony >200m²\"",
+    "applyFilter": "Apply filter: {label}",
+    "didYouMean": "Did you mean: {label}?",
+    "substringFallback": "Search title and description for “{text}”",
+    "substringHint": "— doesn't match any explicit filter criteria",
+    "applyAll": "Apply all {count}",
+    "kind": {
+      "propertyType": "Property type",
+      "rentRegulation": "Rent regulation",
+      "bundesland": "State",
+      "district": "Vienna district",
+      "postcode": "Postcode",
+      "numeric": "Range",
+      "substring": "Text search"
+    },
+    "numeric": {
+      "minPrice": "Price from {value} €",
+      "maxPrice": "Price up to {value} €",
+      "minSize": "Size from {value} m²",
+      "maxSize": "Size up to {value} m²",
+      "minPricePerSqm": "€/m² from {value}",
+      "maxPricePerSqm": "€/m² up to {value}",
+      "minRooms": "From {value} rooms",
+      "maxRooms": "Up to {value} rooms"
+    }
   }
 }
