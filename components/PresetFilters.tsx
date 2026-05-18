@@ -352,15 +352,19 @@ export default function PresetFilters({
     && !hasAnySavedActive
     && (hasStatePresetActive || hasSourcePresetActive);
 
-  // R1 (ADR-023 §10.5.4) — Bundesland multi-select dropdown. `selected`
-  // combines saved-filter-implied states with the active state presets;
-  // the whole control is disabled when a saved filter supplies location.
+  // R3 (ADR-023 §10.5.4) — Location row: the Bundesland and Postcode
+  // multi-select dropdowns side by side, below the smart-search bar.
+  // `stateSelected` combines saved-filter-implied states with the active
+  // state presets; the State control is disabled when a saved filter
+  // supplies the location. `allPostcodes` feeds the postcode typeahead.
+  const allPostcodes = useMemo(() => getAllPostcodes(), []);
   const stateSelected = new Set<string>(impliedPresets);
   if (!locationOverride) {
     for (const f of stateFilters) if (active.has(f.key)) stateSelected.add(f.key);
   }
-  const bundeslandRow = (
-    <div className={`flex ${rowGap} ${justify}`}>
+  const locationRow = (
+    <div className={`flex flex-wrap items-center ${rowGap} ${justify}`}>
+      <span className={rowLabelClass}>{t('locationLabel')}</span>
       <StateDropdown
         options={stateFilters.map((f) => ({ key: f.key, label: t(f.labelKey) }))}
         selected={stateSelected}
@@ -371,6 +375,18 @@ export default function PresetFilters({
         disabledTitle={t('locationFromFilter')}
         compact={compact}
       />
+      {pillBarLive && (
+        <PostcodeDropdown
+          value={values!.location}
+          onChange={(loc) => patchValues({ location: loc })}
+          allPostcodes={allPostcodes}
+          placeholder={t('postcodeDropdownPlaceholder')}
+          searchPlaceholder={t('postcodeSearchPlaceholder')}
+          searchHint={t('postcodeSearchHint')}
+          moreLabel={(n) => t('moreCount', { count: n })}
+          compact={compact}
+        />
+      )}
     </div>
   );
 
@@ -517,12 +533,9 @@ export default function PresetFilters({
     }
   }
 
-  // R9 typeahead source — every Austrian postcode, computed once.
-  const allPostcodes = useMemo(() => getAllPostcodes(), []);
-
   const pillBarRows = pillBarLive ? (
     <>
-      {/* Categorisation group (§10.5.7) — R4 property type + R5 regulation. */}
+      {/* Categorisation group (§10.5.7) — R5 property type + R6 regulation. */}
       <div className={innerSpacing}>
         <PropertyTypeChips
           value={values!.propertyType}
@@ -535,9 +548,9 @@ export default function PresetFilters({
           compact={compact}
         />
       </div>
-      {/* Ranges / TOM / sort group (§10.5.7) — R6, R7, R8. */}
+      {/* Ranges / TOM / sort group (§10.5.7) — R7, R8, R9. */}
       <div className={innerSpacing}>
-        {/* R6 — range sliders (§2.6): two per row — Price + €/m², then
+        {/* R7 — range sliders (§2.6): two per row — Price + €/m², then
             Size + Rooms. Each pair shares the row via flex-1. */}
         <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
           <div className="flex-1 min-w-[200px]">
@@ -585,13 +598,13 @@ export default function PresetFilters({
             />
           </div>
         </div>
-        {/* R7 — time on market ("listed within") */}
+        {/* R8 — time on market ("listed within") */}
         <TomFilter
           value={values!.tomMaxDays}
           onChange={(d) => patchValues({ tomMaxDays: d })}
           compact={compact}
         />
-        {/* R8 — sort */}
+        {/* R9 — sort */}
         <SortDropdown
           sortBy={values!.sortBy}
           sortOrder={values!.sortOrder}
@@ -599,42 +612,30 @@ export default function PresetFilters({
           compact={compact}
         />
       </div>
-      {/* Postcode group (§10.5.7) — R9 multi-select dropdown with typeahead. */}
-      <div className={`flex ${rowGap} ${justify}`}>
-        <PostcodeDropdown
-          value={values!.location}
-          onChange={(loc) => patchValues({ location: loc })}
-          allPostcodes={allPostcodes}
-          placeholder={t('postcodeDropdownPlaceholder')}
-          searchPlaceholder={t('postcodeSearchPlaceholder')}
-          searchHint={t('postcodeSearchHint')}
-          moreLabel={(n) => t('moreCount', { count: n })}
-          compact={compact}
-        />
-      </div>
     </>
   ) : null;
 
-  // Row order (ADR-023 §1.1): R1 Bundesland dropdown → R2 "Your filters" →
-  //   R3 smart search → R4 Property source → R5 type → R6 regulation →
-  //   R7 sliders → R8 TOM → R9 sort → R10 postcode dropdown. "More filters?"
-  //   lives in R2 (§10.5.3). Stage pills (the old pre-amendment R3) render
-  //   only on Funnel, never on Discover. `groupSpacing` separates the
-  //   conceptual groups; rows inside a group are packed tighter via
-  //   `innerSpacing`.
+  // Row order (ADR-023 §1.1): R1 "Your filters" → R2 smart search →
+  //   R3 Location (State + Postcode dropdowns) → R4 Property source →
+  //   R5 type → R6 regulation → R7 sliders → R8 TOM → R9 sort.
+  //   "More filters?" lives in R1 (§10.5.3). Stage pills (the old
+  //   pre-amendment row) render only on Funnel, never on Discover.
+  //   `groupSpacing` separates the conceptual groups; rows inside a group
+  //   are packed tighter via `innerSpacing`.
   return (
     <>
       <div className={groupSpacing}>
-        {bundeslandRow}
-        {showStages && stagesRow}
         {savedFiltersRow}
-        {/* R3 — ADR-024 smart-search field. Renders only when the pill bar
+        {showStages && stagesRow}
+        {/* R2 — ADR-024 smart-search field. Renders only when the pill bar
             is live and the Discover page passed `showSmartSearch`; the slot
             collapses with no gap otherwise. */}
         {pillBarLive && showSmartSearch && <SmartSearchField onApply={applySuggestion} />}
-        {/* R4 — Property source, below the search bar, above the chips. */}
+        {/* R3 — Location: State + Postcode dropdowns, below the search bar. */}
+        {locationRow}
+        {/* R4 — Property source, above the criteria chips. */}
         {sourceRow}
-        {/* R4–R9 — the consolidated pill bar (three §10.5.7 groups) when
+        {/* R5–R9 — the consolidated pill bar (two §10.5.7 groups) when
             PILL_BAR_ONLY_FILTERS is on; null otherwise. */}
         {pillBarRows}
         {canSaveSearch && (

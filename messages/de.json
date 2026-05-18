@@ -1404,6 +1404,7 @@
     "rangeAll": "Alle",
     "yourFiltersLabel": "Deine Filter",
     "sourceLabel": "Quelle",
+    "locationLabel": "Standort",
     "stateDropdownPlaceholder": "Bundesländer",
     "postcodeDropdownPlaceholder": "Postleitzahlen",
     "postcodeSearchPlaceholder": "PLZ suchen…",

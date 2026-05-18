@@ -1404,6 +1404,7 @@
     "rangeAll": "All",
     "yourFiltersLabel": "Your filters",
     "sourceLabel": "Property source",
+    "locationLabel": "Location",
     "stateDropdownPlaceholder": "States",
     "postcodeDropdownPlaceholder": "Postcodes",
     "postcodeSearchPlaceholder": "Search postcode…",
