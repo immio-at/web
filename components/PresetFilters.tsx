@@ -47,6 +47,7 @@ import {
   type FilterValues,
   savedFilterToValues,
   valuesToSavedFilterDto,
+  isFilterActive,
 } from '@/lib/filter-values';
 import UserFilterPill from '@/components/filters/UserFilterPill';
 import FilterModal from '@/components/filters/FilterModal';
@@ -344,11 +345,14 @@ export default function PresetFilters({
 
   const justify = align === 'center' ? 'justify-center' : 'justify-start';
 
-  // Active selection state for the optional clear-all link
+  // Active selection state for the optional clear-all link. Includes the
+  // pill-bar `values` (price, size, postcode, chips, TOM …) so the
+  // clear-all link still shows when only a values-based filter is set.
   const hasAnySavedActive = !dashboardMode
     && activeSavedFilterIds
     && activeSavedFilterIds.size > 0;
-  const hasAnyActive = active.size > 0 || hasAnySavedActive;
+  const hasAnyActive =
+    active.size > 0 || !!hasAnySavedActive || (pillBarLive && isFilterActive(values!));
 
   // FU4 — "Suche als Filter speichern" visibility: at least one Bundesland
   // or source preset is active, no saved filter is active, and we're not
@@ -471,6 +475,16 @@ export default function PresetFilters({
             onChange(new Set());
             if (!dashboardMode && activeSavedFilterIds && onToggleSavedFilter) {
               for (const id of activeSavedFilterIds) onToggleSavedFilter(id);
+            }
+            // Also reset the pill-bar `values` — price, size, rooms, €/m²,
+            // postcode (`location`), type/regulation chips, TOM, keyword.
+            // Sort is a display preference, not a filter, so it is kept.
+            if (pillBarLive) {
+              onValuesChange!({
+                ...EMPTY_FILTERS,
+                sortBy: values!.sortBy,
+                sortOrder: values!.sortOrder,
+              });
             }
           }}
           className={`${compact ? 'text-[10px]' : 'text-xs'} text-gray-400 hover:text-gray-600 underline-offset-2 hover:underline ml-auto px-1 whitespace-nowrap`}
