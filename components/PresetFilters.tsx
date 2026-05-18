@@ -233,7 +233,9 @@ export default function PresetFilters({
   const innerSpacing = compact ? 'space-y-1' : 'space-y-1.5';
   // §10.5.5 — the small-grey left-aligned row label, used across every
   // labelled row so source / type / classification read consistently.
-  const rowLabelClass = `${compact ? 'text-[10px]' : 'text-xs'} text-gray-400 font-medium mr-1`;
+  // Fixed width so the differing label texts all reserve the same column
+  // and every row's pills/controls start at the same left point.
+  const rowLabelClass = `${compact ? 'text-[10px] w-24' : 'text-xs w-28'} text-gray-400 font-medium shrink-0 whitespace-nowrap`;
 
   function PresetPill({ filterKey, labelKey, tone = 'blue' }: {
     filterKey: PresetFilterKey;
@@ -535,7 +537,7 @@ export default function PresetFilters({
 
   const pillBarRows = pillBarLive ? (
     <>
-      {/* Categorisation group (§10.5.7) — R5 property type + R6 regulation. */}
+      {/* Categorisation group — property type + rent regulation chips. */}
       <div className={innerSpacing}>
         <PropertyTypeChips
           value={values!.propertyType}
@@ -548,15 +550,21 @@ export default function PresetFilters({
           compact={compact}
         />
       </div>
-      {/* Ranges / TOM / sort group (§10.5.7) — R7, R8, R9. */}
+      {/* TOM / ranges / sort group — the TOM ("listed within") chip row
+          sits above the slider section so the pill rows stay together. */}
       <div className={innerSpacing}>
-        {/* R7 — range sliders (§2.6): two per row — Price + €/m², then
+        {/* Time on market ("listed within") */}
+        <TomFilter
+          value={values!.tomMaxDays}
+          onChange={(d) => patchValues({ tomMaxDays: d })}
+          compact={compact}
+        />
+        {/* Range sliders (§2.6): two per row — Price + €/m², then
             Size + Rooms. Each pair shares the row via flex-1. */}
         <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
           <div className="flex-1 min-w-[200px]">
             <RangeSlider
               label={t('rangePrice')}
-              unit="€"
               {...SLIDER_BOUNDS.price}
               minValue={values!.minPrice}
               maxValue={values!.maxPrice}
@@ -567,7 +575,6 @@ export default function PresetFilters({
           <div className="flex-1 min-w-[200px]">
             <RangeSlider
               label={t('rangePricePerSqm')}
-              unit="€"
               {...SLIDER_BOUNDS.pricePerSqm}
               minValue={values!.minPricePerSqm}
               maxValue={values!.maxPricePerSqm}
@@ -598,13 +605,7 @@ export default function PresetFilters({
             />
           </div>
         </div>
-        {/* R8 — time on market ("listed within") */}
-        <TomFilter
-          value={values!.tomMaxDays}
-          onChange={(d) => patchValues({ tomMaxDays: d })}
-          compact={compact}
-        />
-        {/* R9 — sort */}
+        {/* Sort */}
         <SortDropdown
           sortBy={values!.sortBy}
           sortOrder={values!.sortOrder}
@@ -615,28 +616,29 @@ export default function PresetFilters({
     </>
   ) : null;
 
-  // Row order (ADR-023 §1.1): R1 "Your filters" → R2 smart search →
-  //   R3 Location (State + Postcode dropdowns) → R4 Property source →
-  //   R5 type → R6 regulation → R7 sliders → R8 TOM → R9 sort.
-  //   "More filters?" lives in R1 (§10.5.3). Stage pills (the old
-  //   pre-amendment row) render only on Funnel, never on Discover.
-  //   `groupSpacing` separates the conceptual groups; rows inside a group
-  //   are packed tighter via `innerSpacing`.
+  // Row order: smart search → "Your filters" → Location → Property source
+  //   → type → regulation → TOM → sliders → sort. "Your filters" sits
+  //   directly below the search bar so all the pill rows cluster together,
+  //   and the TOM ("listed within") chip row sits just above the slider
+  //   section. Stage pills (the old pre-amendment row) render only on
+  //   Funnel, never on Discover. `groupSpacing` separates the conceptual
+  //   groups; rows inside a group are packed tighter via `innerSpacing`.
+  //   (NOTE: ADR-023 §1.1 not yet updated for this order — pending.)
   return (
     <>
       <div className={groupSpacing}>
-        {savedFiltersRow}
-        {showStages && stagesRow}
-        {/* R2 — ADR-024 smart-search field. Renders only when the pill bar
-            is live and the Discover page passed `showSmartSearch`; the slot
+        {/* ADR-024 smart-search field. Renders only when the pill bar is
+            live and the Discover page passed `showSmartSearch`; the slot
             collapses with no gap otherwise. */}
         {pillBarLive && showSmartSearch && <SmartSearchField onApply={applySuggestion} />}
-        {/* R3 — Location: State + Postcode dropdowns, below the search bar. */}
+        {/* "Your filters" — directly below the search bar. */}
+        {savedFiltersRow}
+        {showStages && stagesRow}
+        {/* Location: State + Postcode dropdowns. */}
         {locationRow}
-        {/* R4 — Property source, above the criteria chips. */}
+        {/* Property source, above the criteria chips. */}
         {sourceRow}
-        {/* R5–R9 — the consolidated pill bar (two §10.5.7 groups) when
-            PILL_BAR_ONLY_FILTERS is on; null otherwise. */}
+        {/* The consolidated pill bar (categorisation + ranges groups). */}
         {pillBarRows}
         {canSaveSearch && (
           <div className={`flex ${justify}`}>

@@ -39,7 +39,7 @@ export default function PropertyTypeChips({ value, onChange, compact = false }: 
 
   return (
     <div className={`flex flex-wrap items-center ${compact ? 'gap-1' : 'gap-1.5'}`}>
-      <span className={`${compact ? 'text-[10px]' : 'text-xs'} text-gray-400 font-medium mr-1`}>
+      <span className={`${compact ? 'text-[10px] w-24' : 'text-xs w-28'} text-gray-400 font-medium shrink-0 whitespace-nowrap`}>
         {t('propertyType.label')}
       </span>
       {TYPE_CHIPS.map((key) => {
