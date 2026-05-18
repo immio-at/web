@@ -366,23 +366,13 @@ export default function PresetFilters({
     && !hasAnySavedActive
     && (hasStatePresetActive || hasSourcePresetActive);
 
-  // Bundesland row — the postcode entry (ADR-023 R9) sits alongside the
-  // state pills so all location controls are on one line.
+  // Bundesland row (ADR-023 R1) — state chips only. The postcode entry is
+  // its own row R9 at the bottom of the pill bar, per ADR-023 §1.1.
   const bundeslandRow = (
     <div className={`flex flex-wrap items-center ${rowGap} ${justify}`}>
       {stateFilters.map(f => (
         <StatePill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
       ))}
-      {pillBarLive && (
-        <>
-          <span className={`w-px ${dividerHeight} bg-gray-200 mx-1`} />
-          <PostcodeEntry
-            value={values!.location}
-            onChange={(loc) => onValuesChange!({ ...values!, location: loc })}
-            compact={compact}
-          />
-        </>
-      )}
     </div>
   );
 
@@ -532,15 +522,9 @@ export default function PresetFilters({
         onChange={(rr) => patchValues({ rentRegulationCategory: rr })}
         compact={compact}
       />
-      {/* R7 — time on market ("listed within") */}
-      <TomFilter
-        value={values!.tomMaxDays}
-        onChange={(d) => patchValues({ tomMaxDays: d })}
-        compact={compact}
-      />
-      {/* R6 — range sliders (Price, Size, €/m², Rooms) — all on one line,
-          below the TOM ("listed within") pills. Each takes an equal share
-          of the row via flex-1 and wraps on narrow viewports. */}
+      {/* R6 — range sliders (ADR-023 §2.6): two per row — Price + €/m² on
+          the first row, Size + Rooms on the second. Each pair shares the
+          row via flex-1; a narrow viewport wraps each pair to one column. */}
       <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
         <div className="flex-1 min-w-[200px]">
           <RangeSlider
@@ -555,22 +539,24 @@ export default function PresetFilters({
         </div>
         <div className="flex-1 min-w-[200px]">
           <RangeSlider
-            label={t('rangeSize')}
-            {...SLIDER_BOUNDS.size}
-            minValue={values!.minSize}
-            maxValue={values!.maxSize}
-            onChange={(r) => patchValues({ minSize: r.min, maxSize: r.max })}
-            compact={compact}
-          />
-        </div>
-        <div className="flex-1 min-w-[200px]">
-          <RangeSlider
             label={t('rangePricePerSqm')}
             unit="€"
             {...SLIDER_BOUNDS.pricePerSqm}
             minValue={values!.minPricePerSqm}
             maxValue={values!.maxPricePerSqm}
             onChange={(r) => patchValues({ minPricePerSqm: r.min, maxPricePerSqm: r.max })}
+            compact={compact}
+          />
+        </div>
+      </div>
+      <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+        <div className="flex-1 min-w-[200px]">
+          <RangeSlider
+            label={t('rangeSize')}
+            {...SLIDER_BOUNDS.size}
+            minValue={values!.minSize}
+            maxValue={values!.maxSize}
+            onChange={(r) => patchValues({ minSize: r.min, maxSize: r.max })}
             compact={compact}
           />
         </div>
@@ -585,6 +571,12 @@ export default function PresetFilters({
           />
         </div>
       </div>
+      {/* R7 — time on market ("listed within") */}
+      <TomFilter
+        value={values!.tomMaxDays}
+        onChange={(d) => patchValues({ tomMaxDays: d })}
+        compact={compact}
+      />
       {/* R8 — sort */}
       <SortDropdown
         sortBy={values!.sortBy}
@@ -592,14 +584,19 @@ export default function PresetFilters({
         onChange={(s) => patchValues({ sortBy: s.sortBy, sortOrder: s.sortOrder })}
         compact={compact}
       />
-      {/* R9 — postcode entry now renders next to the Bundesland row. */}
+      {/* R9 — postcode entry */}
+      <PostcodeEntry
+        value={values!.location}
+        onChange={(loc) => patchValues({ location: loc })}
+        compact={compact}
+      />
     </>
   ) : null;
 
-  // Row order:
-  //   - Bundesland (+ postcode entry when the pill bar is live)
-  //   - Stages (Discover only) → Source
-  //   - pill bar: type chips → regulation chips → TOM → sliders → sort
+  // Row order (ADR-023 §1.1): R1 Bundesland → R2 source/saved →
+  //   R3 smart search → R4 type → R5 regulation → R6 sliders → R7 TOM →
+  //   R8 sort → R9 postcode → R10 "more filters". Stage pills (the old
+  //   pre-amendment R3) render only on Funnel, never on Discover.
   return (
     <>
       <div className={rowSpacing}>
