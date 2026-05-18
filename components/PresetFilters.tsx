@@ -103,6 +103,12 @@ interface Props {
    * into the pill bar's chip/slider state).
    */
   showSmartSearch?: boolean;
+  /**
+   * Whether to render the sort dropdown inside the pill bar. Default true.
+   * Discover passes `false` — it renders its own sort next to the results
+   * count instead, outside the filter box.
+   */
+  showSort?: boolean;
 }
 
 export default function PresetFilters({
@@ -120,6 +126,7 @@ export default function PresetFilters({
   values,
   onValuesChange,
   showSmartSearch = false,
+  showSort = true,
 }: Props) {
   const t = useTranslations('presetFilters');
 
@@ -560,8 +567,9 @@ export default function PresetFilters({
           compact={compact}
         />
         {/* Range sliders (§2.6): two per row — Price + €/m², then
-            Size + Rooms. Each pair shares the row via flex-1. */}
-        <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+            Size + Rooms. `px-2` insets the pair from the box edges and
+            `gap-x-8` opens the gap between the two columns. */}
+        <div className="flex flex-wrap items-start gap-x-8 gap-y-2 px-2">
           <div className="flex-1 min-w-[200px]">
             <RangeSlider
               label={t('rangePrice')}
@@ -583,7 +591,7 @@ export default function PresetFilters({
             />
           </div>
         </div>
-        <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-start gap-x-8 gap-y-2 px-2">
           <div className="flex-1 min-w-[200px]">
             <RangeSlider
               label={t('rangeSize')}
@@ -605,13 +613,16 @@ export default function PresetFilters({
             />
           </div>
         </div>
-        {/* Sort */}
-        <SortDropdown
-          sortBy={values!.sortBy}
-          sortOrder={values!.sortOrder}
-          onChange={(s) => patchValues({ sortBy: s.sortBy, sortOrder: s.sortOrder })}
-          compact={compact}
-        />
+        {/* Sort — omitted when `showSort` is false (Discover renders its
+            own sort next to the results count, outside the filter box). */}
+        {showSort && (
+          <SortDropdown
+            sortBy={values!.sortBy}
+            sortOrder={values!.sortOrder}
+            onChange={(s) => patchValues({ sortBy: s.sortBy, sortOrder: s.sortOrder })}
+            compact={compact}
+          />
+        )}
       </div>
     </>
   ) : null;
@@ -624,9 +635,8 @@ export default function PresetFilters({
   //   Funnel, never on Discover. `groupSpacing` separates the conceptual
   //   groups; rows inside a group are packed tighter via `innerSpacing`.
   //   (NOTE: ADR-023 §1.1 not yet updated for this order — pending.)
-  return (
-    <>
-      <div className={groupSpacing}>
+  const bar = (
+    <div className={groupSpacing}>
         {/* ADR-024 smart-search field. Renders only when the pill bar is
             live and the Discover page passed `showSmartSearch`; the slot
             collapses with no gap otherwise. */}
@@ -650,7 +660,17 @@ export default function PresetFilters({
             </button>
           </div>
         )}
-      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* All filters sit in a card on the full-size surfaces (Discover,
+          Funnel) to separate them from the listings. The compact tile and
+          Finder are already inside their own chrome — no extra box there. */}
+      {compact ? bar : (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-2">{bar}</div>
+      )}
       <FilterModal
         open={modalOpen}
         mode={modalMode}

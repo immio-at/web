@@ -14,18 +14,28 @@ interface Props {
   sortOrder: string;
   onChange: (next: { sortBy: string; sortOrder: string }) => void;
   compact?: boolean;
+  /**
+   * Standalone usage (outside the pill bar — e.g. next to the results
+   * count). Drops the fixed-width label column the pill-bar rows use for
+   * left-alignment, so the label sits naturally next to the selects.
+   */
+  bare?: boolean;
 }
 
-export default function SortDropdown({ sortBy, sortOrder, onChange, compact = false }: Props) {
+export default function SortDropdown({ sortBy, sortOrder, onChange, compact = false, bare = false }: Props) {
   const t = useTranslations('presetFilters');
 
   const select = `${
     compact ? 'text-[10px] py-0.5 px-1.5' : 'text-xs py-1 px-2'
   } border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`;
 
+  const labelClass = bare
+    ? `${compact ? 'text-[10px]' : 'text-xs'} text-gray-400 font-medium mr-1`
+    : `${compact ? 'text-[10px] w-24' : 'text-xs w-28'} text-gray-400 font-medium shrink-0 whitespace-nowrap`;
+
   return (
     <div className={`flex flex-wrap items-center ${compact ? 'gap-1' : 'gap-1.5'}`}>
-      <span className={`${compact ? 'text-[10px] w-24' : 'text-xs w-28'} text-gray-400 font-medium shrink-0 whitespace-nowrap`}>
+      <span className={labelClass}>
         {t('sortLabel')}
       </span>
       <select

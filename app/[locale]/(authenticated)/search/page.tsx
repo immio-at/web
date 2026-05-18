@@ -18,6 +18,7 @@ import {
 } from '@/lib/filter-values';
 import PresetFilters from '@/components/PresetFilters';
 import SmartSearchToast from '@/components/filters/SmartSearchToast';
+import SortDropdown from '@/components/filters/SortDropdown';
 import UndoToastStack, { type UndoToastEntry } from '@/components/UndoToastStack';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
@@ -963,6 +964,7 @@ export default function EntdeckenPage() {
         values={filterValues}
         onValuesChange={setFilterValues}
         showSmartSearch={SMART_SEARCH_ENABLED}
+        showSort={false}
       />
 
       {/* ADR-024 §12.4 — one-time "what's new" toast on first Discover visit. */}
@@ -978,13 +980,23 @@ export default function EntdeckenPage() {
       {/* Prominent sort + view toggle + results count */}
       {!loading && (
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* ADR-023 §4 — sort lives in the pill bar's SortDropdown now. */}
+          <div className="flex items-center gap-3 flex-wrap">
             <p className="text-sm text-gray-500">
               {listings.length === 0
                 ? t('noListingsFound')
                 : t('listingsFound', { count: totalResults.toLocaleString('de-AT') })}
             </p>
+            {/* Sort sits next to the results count, outside the filter box,
+                with a thin divider as demarcation. */}
+            <span className="h-5 w-px bg-gray-200" />
+            <SortDropdown
+              sortBy={filterValues.sortBy}
+              sortOrder={filterValues.sortOrder}
+              onChange={(s) =>
+                setFilterValues({ ...filterValues, sortBy: s.sortBy, sortOrder: s.sortOrder })
+              }
+              bare
+            />
           </div>
           <div className="flex gap-1">
             {(['grid', 'table'] as ViewMode[]).map(v => (

@@ -1342,7 +1342,7 @@
     "comingSoon": "Kommt bald",
     "comingSoonTooltip": "Dieser Filter ist in Vorbereitung — bald verfügbar",
     "propertyType": {
-      "label": "Immobilientyp",
+      "label": "Typ",
       "haus": "Haus",
       "wohnung": "Wohnung",
       "zinshaus": "Zinshaus",

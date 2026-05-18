@@ -1342,7 +1342,7 @@
     "comingSoon": "Coming soon",
     "comingSoonTooltip": "This filter is coming soon",
     "propertyType": {
-      "label": "Property type",
+      "label": "Type",
       "haus": "House",
       "wohnung": "Apartment",
       "zinshaus": "Zinshaus",
@@ -1351,7 +1351,7 @@
       "grundstueck": "Land"
     },
     "classification": {
-      "label": "Property classification",
+      "label": "Classification",
       "altbau": "Altbau",
       "neubau": "Neubau",
       "wiederaufbau": "Wiederaufbau"
@@ -1403,7 +1403,7 @@
     "rangeRooms": "Rooms",
     "rangeAll": "All",
     "yourFiltersLabel": "Your filters",
-    "sourceLabel": "Property source",
+    "sourceLabel": "Source",
     "locationLabel": "Location",
     "stateDropdownPlaceholder": "States",
     "postcodeDropdownPlaceholder": "Postcodes",
