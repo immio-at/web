@@ -385,12 +385,10 @@ export default function PresetFilters({
     </div>
   );
 
-  // R2 (ADR-023 §10.5.1–§10.5.3 / §10.5.5) — a "Your filters" section
-  // (saved-filter pills + dashed Create button + the "More filters?" link)
-  // and a "Property source" toggle, each introduced by a small-grey label.
-  const sourceRow = (
+  // R2 (ADR-023 §10.5.1–§10.5.3 / §10.5.5) — the "Your filters" row:
+  // saved-filter pills + dashed Create button + the "More filters?" link.
+  const savedFiltersRow = (
     <div className={`flex flex-wrap items-center ${rowGap} ${justify}`}>
-      {/* ── "Your filters" ── */}
       <span className={rowLabelClass}>{t('yourFiltersLabel')}</span>
 
       {savedFilters && savedFilters.map(sf => {
@@ -442,14 +440,6 @@ export default function PresetFilters({
           tertiary text link (moved here from the former standalone R10). */}
       <MoreFiltersPrompt compact={compact} />
 
-      <span className={`w-px ${dividerHeight} bg-gray-200 mx-1`} />
-
-      {/* ── "Property source" ── */}
-      <span className={rowLabelClass}>{t('sourceLabel')}</span>
-      {sourceFilters.map(f => (
-        <PresetPill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
-      ))}
-
       {hasAnyActive && (
         <button
           onClick={() => {
@@ -463,6 +453,17 @@ export default function PresetFilters({
           {t('clearAll')}
         </button>
       )}
+    </div>
+  );
+
+  // Property source row — its own labelled row, positioned below the
+  // smart-search bar and above the property-type chips.
+  const sourceRow = (
+    <div className={`flex flex-wrap items-center ${rowGap} ${justify}`}>
+      <span className={rowLabelClass}>{t('sourceLabel')}</span>
+      {sourceFilters.map(f => (
+        <PresetPill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
+      ))}
     </div>
   );
 
@@ -614,23 +615,25 @@ export default function PresetFilters({
     </>
   ) : null;
 
-  // Row order (ADR-023 §1.1): R1 Bundesland dropdown → R2 "Your filters" +
-  //   source → R3 smart search → R4 type → R5 regulation → R6 sliders →
-  //   R7 TOM → R8 sort → R9 postcode dropdown. "More filters?" lives in R2
-  //   (§10.5.3 — the former standalone R10 is removed). Stage pills (the
-  //   old pre-amendment R3) render only on Funnel, never on Discover.
-  //   `groupSpacing` separates the conceptual groups; rows inside a group
-  //   (R4/R5, the R6–R8 block) are packed tighter via `innerSpacing`.
+  // Row order (ADR-023 §1.1): R1 Bundesland dropdown → R2 "Your filters" →
+  //   R3 smart search → R4 Property source → R5 type → R6 regulation →
+  //   R7 sliders → R8 TOM → R9 sort → R10 postcode dropdown. "More filters?"
+  //   lives in R2 (§10.5.3). Stage pills (the old pre-amendment R3) render
+  //   only on Funnel, never on Discover. `groupSpacing` separates the
+  //   conceptual groups; rows inside a group are packed tighter via
+  //   `innerSpacing`.
   return (
     <>
       <div className={groupSpacing}>
         {bundeslandRow}
         {showStages && stagesRow}
-        {sourceRow}
+        {savedFiltersRow}
         {/* R3 — ADR-024 smart-search field. Renders only when the pill bar
             is live and the Discover page passed `showSmartSearch`; the slot
             collapses with no gap otherwise. */}
         {pillBarLive && showSmartSearch && <SmartSearchField onApply={applySuggestion} />}
+        {/* R4 — Property source, below the search bar, above the chips. */}
+        {sourceRow}
         {/* R4–R9 — the consolidated pill bar (three §10.5.7 groups) when
             PILL_BAR_ONLY_FILTERS is on; null otherwise. */}
         {pillBarRows}
