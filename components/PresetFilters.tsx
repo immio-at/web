@@ -39,6 +39,7 @@ import {
 import {
   type BundeslandAbbreviation,
   getPostcodesByBundesland,
+  getAllPostcodes,
   BUNDESLAND_ABBREVIATIONS,
 } from '@/lib/austria-plz-bundesland';
 import {
@@ -55,7 +56,8 @@ import RangeSlider from '@/components/filters/RangeSlider';
 import TomFilter from '@/components/filters/TomFilter';
 import PropertyTypeChips from '@/components/filters/PropertyTypeChips';
 import RentRegulationChips from '@/components/filters/RentRegulationChips';
-import PostcodeEntry from '@/components/filters/PostcodeEntry';
+import StateDropdown from '@/components/filters/StateDropdown';
+import PostcodeDropdown from '@/components/filters/PostcodeDropdown';
 import SortDropdown from '@/components/filters/SortDropdown';
 import SmartSearchField from '@/components/filters/SmartSearchField';
 import type { Suggestion } from '@/lib/smart-search/types';
@@ -225,29 +227,13 @@ export default function PresetFilters({
     : 'rounded-full px-3 py-1 text-xs font-medium border border-dashed';
   const dividerHeight = compact ? 'h-4' : 'h-5';
   const rowGap = compact ? 'gap-1' : 'gap-1.5';
-  const rowSpacing = compact ? 'space-y-1 py-1' : 'space-y-1.5 py-2';
-
-  function StatePill({ filterKey, labelKey }: { filterKey: PresetFilterKey; labelKey: string }) {
-    const implied = impliedPresets.has(filterKey);
-    const isActive = implied || (!locationOverride && active.has(filterKey));
-    const disabled = locationOverride;
-    return (
-      <button
-        onClick={() => !disabled && handleToggle(filterKey)}
-        disabled={disabled}
-        title={disabled ? t('locationFromFilter') : undefined}
-        className={`${pillSize} transition-colors whitespace-nowrap ${
-          isActive
-            ? `bg-blue-600 text-white border-blue-600${disabled ? ' cursor-not-allowed' : ''}`
-            : disabled
-              ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
-              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-        }`}
-      >
-        {t(labelKey)}
-      </button>
-    );
-  }
+  // §10.5.7 — `groupSpacing` separates conceptual groups; `innerSpacing`
+  // packs rows within a group tighter so proximity does the grouping.
+  const groupSpacing = compact ? 'space-y-1.5 py-1' : 'space-y-2.5 py-2';
+  const innerSpacing = compact ? 'space-y-1' : 'space-y-1.5';
+  // §10.5.5 — the small-grey left-aligned row label, used across every
+  // labelled row so source / type / classification read consistently.
+  const rowLabelClass = `${compact ? 'text-[10px]' : 'text-xs'} text-gray-400 font-medium mr-1`;
 
   function PresetPill({ filterKey, labelKey, tone = 'blue' }: {
     filterKey: PresetFilterKey;
@@ -366,13 +352,25 @@ export default function PresetFilters({
     && !hasAnySavedActive
     && (hasStatePresetActive || hasSourcePresetActive);
 
-  // Bundesland row (ADR-023 R1) — state chips only. The postcode entry is
-  // its own row R9 at the bottom of the pill bar, per ADR-023 §1.1.
+  // R1 (ADR-023 §10.5.4) — Bundesland multi-select dropdown. `selected`
+  // combines saved-filter-implied states with the active state presets;
+  // the whole control is disabled when a saved filter supplies location.
+  const stateSelected = new Set<string>(impliedPresets);
+  if (!locationOverride) {
+    for (const f of stateFilters) if (active.has(f.key)) stateSelected.add(f.key);
+  }
   const bundeslandRow = (
-    <div className={`flex flex-wrap items-center ${rowGap} ${justify}`}>
-      {stateFilters.map(f => (
-        <StatePill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
-      ))}
+    <div className={`flex ${rowGap} ${justify}`}>
+      <StateDropdown
+        options={stateFilters.map((f) => ({ key: f.key, label: t(f.labelKey) }))}
+        selected={stateSelected}
+        onToggle={(k) => handleToggle(k as PresetFilterKey)}
+        placeholder={t('stateDropdownPlaceholder')}
+        moreLabel={(n) => t('moreCount', { count: n })}
+        disabled={locationOverride}
+        disabledTitle={t('locationFromFilter')}
+        compact={compact}
+      />
     </div>
   );
 
@@ -387,14 +385,13 @@ export default function PresetFilters({
     </div>
   );
 
-  // Source toggle · | · user filter pills · `+` row
+  // R2 (ADR-023 §10.5.1–§10.5.3 / §10.5.5) — a "Your filters" section
+  // (saved-filter pills + dashed Create button + the "More filters?" link)
+  // and a "Property source" toggle, each introduced by a small-grey label.
   const sourceRow = (
     <div className={`flex flex-wrap items-center ${rowGap} ${justify}`}>
-      {sourceFilters.map(f => (
-        <PresetPill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
-      ))}
-
-      <span className={`w-px ${dividerHeight} bg-gray-200 mx-1`} />
+      {/* ── "Your filters" ── */}
+      <span className={rowLabelClass}>{t('yourFiltersLabel')}</span>
 
       {savedFilters && savedFilters.map(sf => {
         const isActive = !dashboardMode && (activeSavedFilterIds?.has(sf.id) ?? false);
@@ -413,15 +410,7 @@ export default function PresetFilters({
         );
       })}
 
-      <button
-        onClick={handleCreate}
-        className={`${createBtnSize} border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap`}
-      >
-        {t('createFilter')}
-      </button>
-
-      {/* ADR-023 §7.2 — detach-on-edit save prompt. Appears next to the
-          deactivated filter pill: save the edits back into it, or discard. */}
+      {/* ADR-023 §7.2 — detach-on-edit save prompt, next to the pills. */}
       {dirtyFilterId && (
         <>
           <button
@@ -441,6 +430,25 @@ export default function PresetFilters({
           </button>
         </>
       )}
+
+      <button
+        onClick={handleCreate}
+        className={`${createBtnSize} border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap`}
+      >
+        {t('createFilter')}
+      </button>
+
+      {/* §10.5.3 — "More filters? Tell us →" sits next to Create as a
+          tertiary text link (moved here from the former standalone R10). */}
+      <MoreFiltersPrompt compact={compact} />
+
+      <span className={`w-px ${dividerHeight} bg-gray-200 mx-1`} />
+
+      {/* ── "Property source" ── */}
+      <span className={rowLabelClass}>{t('sourceLabel')}</span>
+      {sourceFilters.map(f => (
+        <PresetPill key={f.key} filterKey={f.key} labelKey={f.labelKey} />
+      ))}
 
       {hasAnyActive && (
         <button
@@ -508,98 +516,114 @@ export default function PresetFilters({
     }
   }
 
+  // R9 typeahead source — every Austrian postcode, computed once.
+  const allPostcodes = useMemo(() => getAllPostcodes(), []);
+
   const pillBarRows = pillBarLive ? (
     <>
-      {/* R4 — property type chips */}
-      <PropertyTypeChips
-        value={values!.propertyType}
-        onChange={(pt) => patchValues({ propertyType: pt })}
-        compact={compact}
-      />
-      {/* R5 — rent regulation chips */}
-      <RentRegulationChips
-        value={values!.rentRegulationCategory}
-        onChange={(rr) => patchValues({ rentRegulationCategory: rr })}
-        compact={compact}
-      />
-      {/* R6 — range sliders (ADR-023 §2.6): two per row — Price + €/m² on
-          the first row, Size + Rooms on the second. Each pair shares the
-          row via flex-1; a narrow viewport wraps each pair to one column. */}
-      <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
-        <div className="flex-1 min-w-[200px]">
-          <RangeSlider
-            label={t('rangePrice')}
-            unit="€"
-            {...SLIDER_BOUNDS.price}
-            minValue={values!.minPrice}
-            maxValue={values!.maxPrice}
-            onChange={(r) => patchValues({ minPrice: r.min, maxPrice: r.max })}
-            compact={compact}
-          />
-        </div>
-        <div className="flex-1 min-w-[200px]">
-          <RangeSlider
-            label={t('rangePricePerSqm')}
-            unit="€"
-            {...SLIDER_BOUNDS.pricePerSqm}
-            minValue={values!.minPricePerSqm}
-            maxValue={values!.maxPricePerSqm}
-            onChange={(r) => patchValues({ minPricePerSqm: r.min, maxPricePerSqm: r.max })}
-            compact={compact}
-          />
-        </div>
+      {/* Categorisation group (§10.5.7) — R4 property type + R5 regulation. */}
+      <div className={innerSpacing}>
+        <PropertyTypeChips
+          value={values!.propertyType}
+          onChange={(pt) => patchValues({ propertyType: pt })}
+          compact={compact}
+        />
+        <RentRegulationChips
+          value={values!.rentRegulationCategory}
+          onChange={(rr) => patchValues({ rentRegulationCategory: rr })}
+          compact={compact}
+        />
       </div>
-      <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
-        <div className="flex-1 min-w-[200px]">
-          <RangeSlider
-            label={t('rangeSize')}
-            {...SLIDER_BOUNDS.size}
-            minValue={values!.minSize}
-            maxValue={values!.maxSize}
-            onChange={(r) => patchValues({ minSize: r.min, maxSize: r.max })}
-            compact={compact}
-          />
+      {/* Ranges / TOM / sort group (§10.5.7) — R6, R7, R8. */}
+      <div className={innerSpacing}>
+        {/* R6 — range sliders (§2.6): two per row — Price + €/m², then
+            Size + Rooms. Each pair shares the row via flex-1. */}
+        <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+          <div className="flex-1 min-w-[200px]">
+            <RangeSlider
+              label={t('rangePrice')}
+              unit="€"
+              {...SLIDER_BOUNDS.price}
+              minValue={values!.minPrice}
+              maxValue={values!.maxPrice}
+              onChange={(r) => patchValues({ minPrice: r.min, maxPrice: r.max })}
+              compact={compact}
+            />
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <RangeSlider
+              label={t('rangePricePerSqm')}
+              unit="€"
+              {...SLIDER_BOUNDS.pricePerSqm}
+              minValue={values!.minPricePerSqm}
+              maxValue={values!.maxPricePerSqm}
+              onChange={(r) => patchValues({ minPricePerSqm: r.min, maxPricePerSqm: r.max })}
+              compact={compact}
+            />
+          </div>
         </div>
-        <div className="flex-1 min-w-[200px]">
-          <RangeSlider
-            label={t('rangeRooms')}
-            {...SLIDER_BOUNDS.rooms}
-            minValue={values!.minRooms}
-            maxValue={values!.maxRooms}
-            onChange={(r) => patchValues({ minRooms: r.min, maxRooms: r.max })}
-            compact={compact}
-          />
+        <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+          <div className="flex-1 min-w-[200px]">
+            <RangeSlider
+              label={t('rangeSize')}
+              {...SLIDER_BOUNDS.size}
+              minValue={values!.minSize}
+              maxValue={values!.maxSize}
+              onChange={(r) => patchValues({ minSize: r.min, maxSize: r.max })}
+              compact={compact}
+            />
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <RangeSlider
+              label={t('rangeRooms')}
+              {...SLIDER_BOUNDS.rooms}
+              minValue={values!.minRooms}
+              maxValue={values!.maxRooms}
+              onChange={(r) => patchValues({ minRooms: r.min, maxRooms: r.max })}
+              compact={compact}
+            />
+          </div>
         </div>
+        {/* R7 — time on market ("listed within") */}
+        <TomFilter
+          value={values!.tomMaxDays}
+          onChange={(d) => patchValues({ tomMaxDays: d })}
+          compact={compact}
+        />
+        {/* R8 — sort */}
+        <SortDropdown
+          sortBy={values!.sortBy}
+          sortOrder={values!.sortOrder}
+          onChange={(s) => patchValues({ sortBy: s.sortBy, sortOrder: s.sortOrder })}
+          compact={compact}
+        />
       </div>
-      {/* R7 — time on market ("listed within") */}
-      <TomFilter
-        value={values!.tomMaxDays}
-        onChange={(d) => patchValues({ tomMaxDays: d })}
-        compact={compact}
-      />
-      {/* R8 — sort */}
-      <SortDropdown
-        sortBy={values!.sortBy}
-        sortOrder={values!.sortOrder}
-        onChange={(s) => patchValues({ sortBy: s.sortBy, sortOrder: s.sortOrder })}
-        compact={compact}
-      />
-      {/* R9 — postcode entry */}
-      <PostcodeEntry
-        value={values!.location}
-        onChange={(loc) => patchValues({ location: loc })}
-        compact={compact}
-      />
+      {/* Postcode group (§10.5.7) — R9 multi-select dropdown with typeahead. */}
+      <div className={`flex ${rowGap} ${justify}`}>
+        <PostcodeDropdown
+          value={values!.location}
+          onChange={(loc) => patchValues({ location: loc })}
+          allPostcodes={allPostcodes}
+          placeholder={t('postcodeDropdownPlaceholder')}
+          searchPlaceholder={t('postcodeSearchPlaceholder')}
+          searchHint={t('postcodeSearchHint')}
+          moreLabel={(n) => t('moreCount', { count: n })}
+          compact={compact}
+        />
+      </div>
     </>
   ) : null;
 
-  // Row order (ADR-023 §1.1): R1 Bundesland → R2 source/saved →
-  //   R3 smart search → R4 type → R5 regulation → R6 sliders → R7 TOM →
-  //   R8 sort → R9 postcode → R10 "more filters". Stage pills (the old
-  //   pre-amendment R3) render only on Funnel, never on Discover.
+  // Row order (ADR-023 §1.1): R1 Bundesland dropdown → R2 "Your filters" +
+  //   source → R3 smart search → R4 type → R5 regulation → R6 sliders →
+  //   R7 TOM → R8 sort → R9 postcode dropdown. "More filters?" lives in R2
+  //   (§10.5.3 — the former standalone R10 is removed). Stage pills (the
+  //   old pre-amendment R3) render only on Funnel, never on Discover.
+  //   `groupSpacing` separates the conceptual groups; rows inside a group
+  //   (R4/R5, the R6–R8 block) are packed tighter via `innerSpacing`.
   return (
     <>
-      <div className={rowSpacing}>
+      <div className={groupSpacing}>
         {bundeslandRow}
         {showStages && stagesRow}
         {sourceRow}
@@ -607,13 +631,9 @@ export default function PresetFilters({
             is live and the Discover page passed `showSmartSearch`; the slot
             collapses with no gap otherwise. */}
         {pillBarLive && showSmartSearch && <SmartSearchField onApply={applySuggestion} />}
-        {/* R4–R9 — the consolidated pill bar when PILL_BAR_ONLY_FILTERS is
-            on; the inert ADR-008 roadmap chip rows otherwise. */}
+        {/* R4–R9 — the consolidated pill bar (three §10.5.7 groups) when
+            PILL_BAR_ONLY_FILTERS is on; null otherwise. */}
         {pillBarRows}
-        {/* R10 / ADR-008 PT3 — invite tester feedback on the next filter
-            axes. Opens the FeedbackButton drawer with the feature_request
-            type and a prefilled body via window CustomEvent. */}
-        <MoreFiltersPrompt compact={compact} />
         {canSaveSearch && (
           <div className={`flex ${justify}`}>
             <button

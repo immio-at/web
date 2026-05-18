@@ -122,6 +122,14 @@ export function getAllBundeslaender(): BundeslandInfo[] {
 }
 
 /**
+ * Every Austrian postcode, ascending. Used by the R9 postcode dropdown's
+ * typeahead (ADR-023 §10.5.4).
+ */
+export function getAllPostcodes(): string[] {
+  return Object.keys(postcodeToBundesland).sort();
+}
+
+/**
  * All Bundesland abbreviations.
  */
 export const BUNDESLAND_ABBREVIATIONS: BundeslandAbbreviation[] = [

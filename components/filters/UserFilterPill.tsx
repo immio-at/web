@@ -16,6 +16,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
+/** Small bookmark glyph — ADR-023 §10.5.2: marks a pill as a user-saved
+ *  filter, distinct from the criteria chips (which carry no icon). */
+function BookmarkIcon() {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="shrink-0"
+      aria-hidden="true"
+    >
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
 interface Props {
   id: string;
   name: string;
@@ -73,13 +94,14 @@ export default function UserFilterPill({ id, name, isActive, dirty = false, onCl
       <button
         onClick={onClick}
         title={name}
-        className={`${labelClass} transition-colors whitespace-nowrap truncate ${
+        className={`${labelClass} inline-flex items-center gap-1 transition-colors whitespace-nowrap ${
           isActive && !dirty
             ? 'bg-amber-500 text-white border-amber-500'
             : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
         }`}
       >
-        {name}
+        <BookmarkIcon />
+        <span className="truncate">{name}</span>
       </button>
       <button
         onClick={() => setMenuOpen(o => !o)}
