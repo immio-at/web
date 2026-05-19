@@ -2,10 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
-  BarChart, Bar,
-} from 'recharts';
+import dynamic from 'next/dynamic';
 import {
   Property,
   PropertyAnalysis,
@@ -54,6 +51,18 @@ import {
   formatPct,
   formatFaktor,
 } from '@/lib/calculators';
+
+// recharts is heavy — keep it out of the modal's own chunk. These load only
+// when an Owner / Rental result section with chart data actually renders,
+// so a dossier-mode modal open never downloads recharts at all.
+const OwnerWealthChart = dynamic(
+  () => import('@/components/analysis/AnalysisCharts').then(m => m.OwnerWealthChart),
+  { ssr: false },
+);
+const RentalProjectionChart = dynamic(
+  () => import('@/components/analysis/AnalysisCharts').then(m => m.RentalProjectionChart),
+  { ssr: false },
+);
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -1290,16 +1299,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
                 {ownerResults.yearlyData.length > 0 && (
                   <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
                     <p className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide mb-3">{t('owner.wealthChart')}</p>
-                    <ResponsiveContainer width="100%" height={220}>
-                      <BarChart data={ownerResults.yearlyData} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
-                        <XAxis dataKey="year" tick={{ fontSize: 11 }} tickFormatter={v => t('owner.chartYearShort', { year: v })} />
-                        <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${Math.round(v / 1000)}k`} />
-                        <Tooltip formatter={(v) => formatEuro(Number(v ?? 0))} labelFormatter={l => t('owner.chartYear', { year: l })} />
-                        <Legend wrapperStyle={{ fontSize: 12 }} />
-                        <Bar dataKey="equity" name={t('owner.chartEquity')} stackId="a" fill="#16a34a" radius={[0, 0, 0, 0]} />
-                        <Bar dataKey="loanRemaining" name={t('owner.chartLoanRemaining')} stackId="a" fill="#e2e6ed" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <OwnerWealthChart data={ownerResults.yearlyData} />
                   </div>
                 )}
               </div>
@@ -1365,19 +1365,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
                 {rentalResults.yearlyData.length > 0 && (
                   <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
                     <p className="text-xs font-medium text-[#6b7a99] uppercase tracking-wide mb-3">{t('rental.projectionTitle', { years: rentalResults.yearlyData.length })}</p>
-                    <ResponsiveContainer width="100%" height={240}>
-                      <LineChart data={rentalResults.yearlyData} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
-                        <XAxis dataKey="year" tick={{ fontSize: 11 }} tickFormatter={v => t('rental.chartYearShort', { year: v })} />
-                        <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${Math.round(v / 1000)}k`} />
-                        <Tooltip formatter={(v) => formatEuro(Number(v ?? 0))} labelFormatter={l => t('rental.chartYear', { year: l })} />
-                        <Legend wrapperStyle={{ fontSize: 12 }} />
-                        <Line dataKey="propertyValue" name={t('rental.chartPropertyValue')} stroke="#0F1F3D" strokeWidth={2} dot={false} />
-                        <Line dataKey="loanRemaining" name={t('rental.chartLoanRemaining')} stroke="#6b7a99" strokeWidth={2} dot={false} strokeDasharray="4 2" />
-                        <Line dataKey="yearlyRentIncome" name={t('rental.chartYearlyRent')} stroke="#16a34a" strokeWidth={2} dot={false} />
-                        <Line dataKey="yearlyOutgoings" name={t('rental.chartYearlyOutgoings')} stroke="#dc2626" strokeWidth={2} dot={false} />
-                        <Line dataKey="cashflow" name={t('rental.chartCashflow')} stroke="#F5A623" strokeWidth={2} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <RentalProjectionChart data={rentalResults.yearlyData} />
                   </div>
                 )}
               </div>

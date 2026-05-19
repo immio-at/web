@@ -19,6 +19,11 @@ let analyticsCache: AnalyticsSummary | null = null;
 let analyticsCacheTimestamp = 0;
 const ANALYTICS_CACHE_TTL_MS = 300_000; // 5 minutes
 
+// Mounted tiles subscribe here so an SSE 'analytics' event can push fresh
+// data straight into them. Clearing the cache alone never re-rendered
+// anything — the tile only refetched on mount / userId change.
+const listeners = new Set<(d: AnalyticsSummary) => void>();
+
 /**
  * Wipe the analytics cache. Called by AuthContext on sign-out and
  * session-change to prevent the previous user's analytics from leaking.
@@ -28,12 +33,36 @@ export function clearAnalyticsCache(): void {
   analyticsCacheTimestamp = 0;
 }
 
+/**
+ * SSE 'analytics' handler — refetch the summary and push it into every
+ * mounted tile. Unlike clearAnalyticsCache (sign-out), this keeps the UI
+ * live: a mutation elsewhere now reflects in the dashboard snapshot without
+ * waiting for a remount or the 5-minute TTL.
+ */
+export async function refreshAnalyticsFromServer(): Promise<void> {
+  try {
+    const d = await getAnalyticsSummary();
+    analyticsCache = d;
+    analyticsCacheTimestamp = Date.now();
+    listeners.forEach(fn => fn(d));
+  } catch {
+    // Leave the existing cache in place — the TTL path retries on next mount.
+  }
+}
+
 export default function AnalyticsSnapshotTile({ properties }: { properties: Property[] }) {
   const t = useTranslations('dashboard.analyticsTile');
   const ta = useTranslations('analytics');
   const { session, loading: authLoading } = useAuth();
 
   const [data, setData] = useState<AnalyticsSummary | null>(analyticsCache);
+
+  // Subscribe so refreshAnalyticsFromServer (SSE 'analytics' event) can push
+  // fresh data into this tile without a remount.
+  useEffect(() => {
+    listeners.add(setData);
+    return () => { listeners.delete(setData); };
+  }, []);
 
   useEffect(() => {
     if (authLoading || !session) return;

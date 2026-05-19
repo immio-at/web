@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { refreshPropertiesFromServer } from './useProperties';
 import { refreshSavedFiltersFromServer } from './useSavedFilters';
-import { clearAnalyticsCache } from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
+import { refreshAnalyticsFromServer } from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
 import { clearRecommendedCache } from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
 
 const API_URL =
@@ -76,7 +76,7 @@ export function useSSEInvalidation(): void {
               refreshSavedFiltersFromServer();
               break;
             case 'analytics':
-              clearAnalyticsCache();
+              refreshAnalyticsFromServer();
               break;
             case 'inbox':
               // ADR-020 v1.1 II8 — broadcast so the Sources tile +
