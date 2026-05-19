@@ -64,13 +64,37 @@ const PropertyAnalysisModal = dynamic(
 // Stages excluded from New Arrivals carousel — terminal + completed stages
 const EXCLUDED_FROM_ARRIVALS = new Set(['not_relevant', 'delisted', 'won', 'parked']);
 
+// Carousel placeholder shown while the property list is still loading — the
+// carousels genuinely need `properties`, so they skeleton rather than flash
+// a "locked" / "empty" state. The summary tiles below mount regardless.
+function CarouselSkeleton() {
+  return (
+    <div className="mb-6">
+      <div className="h-4 bg-gray-100 rounded w-32 mb-3 animate-pulse" />
+      <div className="flex gap-3">
+        {[0, 1, 2, 3, 4].map(i => (
+          <div key={i} className="flex-shrink-0 w-48 bg-white rounded-lg border border-gray-200 overflow-hidden animate-pulse">
+            <div className="h-28 bg-gray-100" />
+            <div className="p-2 space-y-2">
+              <div className="h-3 bg-gray-100 rounded w-3/4" />
+              <div className="h-3 bg-gray-100 rounded w-1/2" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardClient({
   properties,
+  propertiesLoading = false,
   recentlyViewed,
   immioEmail,
   savedFilters,
 }: {
   properties: Property[];
+  propertiesLoading?: boolean;
   recentlyViewed?: RecentlyViewedItem[];
   immioEmail: string | null;
   savedFilters: SavedFilter[];
@@ -183,6 +207,10 @@ export default function DashboardClient({
 
   useEffect(() => {
     if (authLoading || !session) return;
+    // Wait for the real property list before deciding on the fallback —
+    // firing while `properties` is still [] would trigger a wasted scraped
+    // fetch that gets discarded the moment search-agent arrivals load.
+    if (propertiesLoading) return;
     if (searchAgentArrivals.length > 0) { setScrapedFallback(null); return; }
     if (scrapedFallback !== null) return; // already fetched
     getScrapedListings({
@@ -196,7 +224,7 @@ export default function DashboardClient({
     // session?.user?.id is stable across token refresh; the full `session`
     // object reference changes on each refresh and would refetch the
     // fallback every time the tab regained focus.
-  }, [authLoading, session?.user?.id, searchAgentArrivals.length, scrapedFallback]);
+  }, [authLoading, session?.user?.id, propertiesLoading, searchAgentArrivals.length, scrapedFallback]);
 
   const newArrivalCards = searchAgentArrivals.length > 0
     ? searchAgentArrivals
@@ -217,8 +245,9 @@ export default function DashboardClient({
     <div>
       {/* ADR-021 HH9 — empty-state forwarding-setup link. Surfaces when the
           user has zero properties; routes to the Help page's email forwarding
-          section so a fresh tester has a clear next-action. */}
-      {hasNoOwnProperties && (
+          section so a fresh tester has a clear next-action. Suppressed while
+          the property list is still loading so it doesn't flash on every load. */}
+      {!propertiesLoading && hasNoOwnProperties && (
         <div className="mb-6 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 flex items-center justify-between flex-wrap gap-3">
           <p className="text-sm text-teal-900">{tEmpty('noPropertiesYet')}</p>
           <Link
@@ -235,28 +264,40 @@ export default function DashboardClient({
           the id to its first card; `document.querySelector` matches the first
           one in document order (Recommended → Recently Viewed → New Arrivals)
           so the spotlight follows the topmost non-empty carousel without
-          coordination state between sibling components. */}
-      <RecommendedCarousel
-        properties={properties}
-        actions={cardActions}
-        firstCardTourId="dashboard-first-card"
-      />
+          coordination state between sibling components.
+          While the property list loads the carousels skeleton — they all
+          depend on `properties` so there is nothing meaningful to show yet. */}
+      {propertiesLoading ? (
+        <>
+          <CarouselSkeleton />
+          <CarouselSkeleton />
+          <CarouselSkeleton />
+        </>
+      ) : (
+        <>
+          <RecommendedCarousel
+            properties={properties}
+            actions={cardActions}
+            firstCardTourId="dashboard-first-card"
+          />
 
-      <PropertyCarousel
-        title={t('recentlyViewed')}
-        cards={recentlyViewedCards}
-        emptyMessage={t('recentlyViewedEmpty')}
-        actions={cardActions}
-        firstCardTourId="dashboard-first-card"
-      />
+          <PropertyCarousel
+            title={t('recentlyViewed')}
+            cards={recentlyViewedCards}
+            emptyMessage={t('recentlyViewedEmpty')}
+            actions={cardActions}
+            firstCardTourId="dashboard-first-card"
+          />
 
-      <PropertyCarousel
-        title={t('newArrivals')}
-        cards={newArrivalCards}
-        emptyMessage={t('newArrivalsEmpty')}
-        actions={cardActions}
-        firstCardTourId="dashboard-first-card"
-      />
+          <PropertyCarousel
+            title={t('newArrivals')}
+            cards={newArrivalCards}
+            emptyMessage={t('newArrivalsEmpty')}
+            actions={cardActions}
+            firstCardTourId="dashboard-first-card"
+          />
+        </>
+      )}
 
       {/* Summary tiles — 2×2 grid below the carousels. */}
       <div className="grid grid-cols-1 lg:grid-cols-2 lg:auto-rows-fr gap-4 mt-8 mb-8">

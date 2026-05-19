@@ -102,6 +102,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       setLoading(false);
 
+      // Prefetch core data as soon as the restored session is available —
+      // warms the module caches before any page component mounts, so
+      // useProperties/useSavedFilters read warm caches on first render.
+      // This MUST run inside the getSession() callback: on a cold load the
+      // `session` *state* is still null when the effect body runs, so the
+      // old check below the listener never fired the prefetch. The resolved
+      // session from getSession() is the only one carrying the token here.
+      if (session?.access_token) {
+        prefetchProperties();
+        prefetchSavedFilters();
+      }
+
       // If any app-specific field is missing from localStorage but we have a
       // session, fetch them from the backend. This handles cases where
       // localStorage was cleared or the login flow didn't populate everything
@@ -166,14 +178,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data } = await supabase.auth.getSession();
       return data.session?.access_token ?? null;
     });
-
-    // Prefetch core data as soon as token is available — starts loading
-    // before any page component mounts, so caches are warm by the time
-    // useProperties/useSavedFilters first read them.
-    if (session?.access_token) {
-      prefetchProperties();
-      prefetchSavedFilters();
-    }
 
     return () => subscription.unsubscribe();
   }, []);
