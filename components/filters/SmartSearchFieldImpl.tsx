@@ -21,6 +21,7 @@ import { tokenise } from '@/lib/smart-search/tokeniser';
 import { normaliseForTokenisation } from '@/lib/smart-search/normalise';
 import type { Suggestion } from '@/lib/smart-search/types';
 import SmartSearchDropdown from './SmartSearchDropdown';
+import { useShortcutLabel } from './useShortcutLabel';
 
 interface Props {
   /** Apply one suggestion's structured target to the filter state. */
@@ -65,6 +66,7 @@ function SearchIcon() {
 
 export default function SmartSearchFieldImpl({ onApply, autoFocus = false }: Props) {
   const t = useTranslations('smartSearch');
+  const shortcut = useShortcutLabel();
   const [draft, setDraft] = useState('');
   const [debounced, setDebounced] = useState('');
   const [open, setOpen] = useState(false);
@@ -165,7 +167,7 @@ export default function SmartSearchFieldImpl({ onApply, autoFocus = false }: Pro
           className="min-w-0 flex-1 bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none"
         />
         <kbd className="hidden shrink-0 rounded border border-gray-200 px-1 py-0.5 text-[10px] text-gray-400 sm:inline">
-          ⌘K
+          {shortcut}
         </kbd>
       </div>
       {showDropdown && (

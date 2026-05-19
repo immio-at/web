@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import type { Suggestion } from '@/lib/smart-search/types';
+import { useShortcutLabel } from './useShortcutLabel';
 
 interface Props {
   onApply: (s: Suggestion) => void;
@@ -52,6 +53,7 @@ function RestingShell({
   ariaLabel: string;
   onFocus?: () => void;
 }) {
+  const shortcut = useShortcutLabel();
   return (
     <div className="relative">
       <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500">
@@ -65,7 +67,7 @@ function RestingShell({
           className="min-w-0 flex-1 cursor-text bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none"
         />
         <kbd className="hidden shrink-0 rounded border border-gray-200 px-1 py-0.5 text-[10px] text-gray-400 sm:inline">
-          ⌘K
+          {shortcut}
         </kbd>
       </div>
     </div>
