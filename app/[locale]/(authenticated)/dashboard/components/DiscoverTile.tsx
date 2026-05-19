@@ -36,18 +36,43 @@ export default function DiscoverTile({
 
   useEffect(() => {
     if (authLoading || !session) return;
-    // Fetch global total
-    getScrapedListings({ page: 1, hideNullPrice: true } as any)
-      .then(data => setScrapedGlobal(data.total))
-      .catch(() => {});
-    // Fetch per-state counts in parallel
-    for (const abbr of STATE_KEYS) {
-      const postcodes = getPostcodesByBundesland(abbr) ?? [];
-      if (postcodes.length === 0) continue;
-      getScrapedListings({ page: 1, hideNullPrice: true, postcodes } as any)
-        .then(data => setScrapedByState(prev => ({ ...prev, [abbr]: data.total })))
+
+    // This fan-out is 10 queries against the (large) scraped_listings table
+    // — purely a nicety so the state-pill toggle can show an instant count.
+    // It must NOT race the dashboard's critical fetches (/properties + the
+    // carousels): with only 5 pgbouncer connections, firing it on mount
+    // queues /properties behind 10 full scans. Defer it until the browser
+    // is idle (3s hard cap) so the carousels paint first.
+    const run = () => {
+      // Global total
+      getScrapedListings({ page: 1, hideNullPrice: true } as any)
+        .then(data => setScrapedGlobal(data.total))
         .catch(() => {});
+      // Per-state counts in parallel
+      for (const abbr of STATE_KEYS) {
+        const postcodes = getPostcodesByBundesland(abbr) ?? [];
+        if (postcodes.length === 0) continue;
+        getScrapedListings({ page: 1, hideNullPrice: true, postcodes } as any)
+          .then(data => setScrapedByState(prev => ({ ...prev, [abbr]: data.total })))
+          .catch(() => {});
+      }
+    };
+
+    const ric = (window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    });
+    let idleId: number | undefined;
+    let timerId: ReturnType<typeof setTimeout> | undefined;
+    if (ric.requestIdleCallback) {
+      idleId = ric.requestIdleCallback(run, { timeout: 3000 });
+    } else {
+      timerId = setTimeout(run, 1500);
     }
+    return () => {
+      if (idleId !== undefined) ric.cancelIdleCallback?.(idleId);
+      if (timerId !== undefined) clearTimeout(timerId);
+    };
     // session?.user?.id stable across token refresh.
   }, [authLoading, session?.user?.id]);
 

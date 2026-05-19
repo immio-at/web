@@ -168,6 +168,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Warm the core caches on sign-in too. The getSession() block above
+        // only covers the cold page-load path — a same-tab sign-out →
+        // sign-in never re-runs this effect, so without this the dashboard's
+        // /properties fetch wouldn't start until the page component mounted,
+        // by which point the tile fan-out is already contending for the DB
+        // connection pool. Both prefetch fns are TTL-guarded, so the
+        // token-refresh firings of this listener are no-ops.
+        if (session?.access_token) {
+          prefetchProperties();
+          prefetchSavedFilters();
+        }
       }
     );
 
