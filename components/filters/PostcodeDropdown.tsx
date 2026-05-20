@@ -31,6 +31,8 @@ interface Props {
   searchPlaceholder: string;
   searchHint: string;
   moreLabel: (n: number) => string;
+  /** Footer button label — e.g. "Clear selection". */
+  clearAllLabel?: string;
   compact?: boolean;
 }
 
@@ -71,6 +73,7 @@ export default function PostcodeDropdown({
   searchPlaceholder,
   searchHint,
   moreLabel,
+  clearAllLabel,
   compact = false,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -99,14 +102,17 @@ export default function PostcodeDropdown({
     };
   }, [open]);
 
-  // Typeahead matches — numeric prefix match, capped, excluding already-selected.
+  // Typeahead matches — numeric prefix match, capped. Selected codes ARE
+  // included in the result so a tick appears in place when the user toggles
+  // them, instead of the row vanishing into a separate "pinned" list above;
+  // multi-select reads as multi-select.
   const matches = useMemo(() => {
     const q = query.trim();
     if (!q) return [];
     return allPostcodes
-      .filter((pc) => pc.startsWith(q) && !codeSet.has(pc))
+      .filter((pc) => pc.startsWith(q))
       .slice(0, MAX_MATCHES);
-  }, [query, allPostcodes, codeSet]);
+  }, [query, allPostcodes]);
 
   function toggle(pc: string) {
     if (codeSet.has(pc)) onChange(codes.filter((c) => c !== pc).join(', '));
@@ -179,14 +185,25 @@ export default function PostcodeDropdown({
               className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          {/* Selected codes pinned at the top so they can always be removed. */}
-          {codes.map((pc) => row(pc, true))}
-          {matches.length > 0 && matches.map((pc) => row(pc, false))}
+          {/* With no query: pin the current selection so it can be unchecked.
+              With a query: render the matches inline, each carrying its real
+              check state so the toggle is visually a tick, not a row move. */}
+          {!query.trim() && codes.map((pc) => row(pc, true))}
+          {matches.length > 0 && matches.map((pc) => row(pc, codeSet.has(pc)))}
           {query.trim() && matches.length === 0 && (
             <p className="px-3 py-1.5 text-xs text-gray-400">—</p>
           )}
-          {!query.trim() && (
+          {!query.trim() && codes.length === 0 && (
             <p className="px-3 py-1.5 text-[11px] text-gray-400">{searchHint}</p>
+          )}
+          {codes.length > 0 && (
+            <button
+              type="button"
+              onClick={() => { onChange(''); setQuery(''); setOpen(false); }}
+              className="mt-1 flex w-full items-center justify-center border-t border-gray-100 px-3 py-1.5 text-left text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+            >
+              {clearAllLabel ?? 'Clear'}
+            </button>
           )}
         </div>
       )}

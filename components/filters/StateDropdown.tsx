@@ -23,6 +23,12 @@ interface Props {
   /** Keys shown checked — active selections plus saved-filter-implied ones. */
   selected: Set<string>;
   onToggle: (key: string) => void;
+  /** Clears every option-controlled selection in one shot (the parent
+   *  decides what "all" means — for State this excludes saved-filter
+   *  implied entries, which the parent leaves out of the panel anyway). */
+  onClearAll?: () => void;
+  /** Label for the footer Clear button. */
+  clearAllLabel?: string;
   /** Trigger placeholder when nothing is selected. */
   placeholder: string;
   /** Builds the "+N mehr" overflow label. */
@@ -55,6 +61,8 @@ export default function StateDropdown({
   options,
   selected,
   onToggle,
+  onClearAll,
+  clearAllLabel,
   placeholder,
   moreLabel,
   disabled = false,
@@ -144,6 +152,17 @@ export default function StateDropdown({
               </button>
             );
           })}
+          {/* Footer Clear — visible only when there is something to clear,
+              keeps the empty-state panel uncluttered. */}
+          {onClearAll && selected.size > 0 && (
+            <button
+              type="button"
+              onClick={() => { onClearAll(); setOpen(false); }}
+              className="mt-1 flex w-full items-center justify-center border-t border-gray-100 px-3 py-1.5 text-left text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+            >
+              {clearAllLabel ?? 'Clear'}
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -1427,6 +1427,7 @@
     "V": "Vorarlberg",
     "B": "Burgenland",
     "clearAll": "Clear all filters",
+    "dropdownClearAll": "Clear selection",
     "saveSearch": "Save search as filter"
   },
   "undoToast": {

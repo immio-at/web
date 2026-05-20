@@ -1427,6 +1427,7 @@
     "V": "Vbg",
     "B": "Bgld",
     "clearAll": "Alle Filter löschen",
+    "dropdownClearAll": "Auswahl löschen",
     "saveSearch": "Suche als Filter speichern"
   },
   "undoToast": {

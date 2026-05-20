@@ -382,6 +382,14 @@ export default function PresetFilters({
         options={stateFilters.map((f) => ({ key: f.key, label: t(f.labelKey) }))}
         selected={stateSelected}
         onToggle={(k) => handleToggle(k as PresetFilterKey)}
+        onClearAll={() => {
+          // Drop every state-group key from `active` in one shot — set
+          // difference rather than per-key toggle so it's a single render.
+          const next = new Set(active);
+          for (const f of stateFilters) next.delete(f.key);
+          onChange(next);
+        }}
+        clearAllLabel={t('dropdownClearAll')}
         placeholder={t('stateDropdownPlaceholder')}
         moreLabel={(n) => t('moreCount', { count: n })}
         disabled={locationOverride}
@@ -397,6 +405,7 @@ export default function PresetFilters({
           searchPlaceholder={t('postcodeSearchPlaceholder')}
           searchHint={t('postcodeSearchHint')}
           moreLabel={(n) => t('moreCount', { count: n })}
+          clearAllLabel={t('dropdownClearAll')}
           compact={compact}
         />
       )}
