@@ -299,7 +299,7 @@ export default function FinderClient({
     }
 
     if (action === 'analyse') {
-      void openAnalyseFor(finderCardToCardProperty(card));
+      void openAnalyseFor(finderCardToListingCard(card));
       setDragX(0);
       setDragY(0);
       return;
@@ -384,7 +384,7 @@ export default function FinderClient({
   );
 
   // Convert FinderCard to ListingCard for PropertyCard component
-  function finderCardToCardProperty(c: FinderCard): ListingCard {
+  function finderCardToListingCard(c: FinderCard): ListingCard {
     return {
       id: c.userListing != null && c.propertyId ? c.propertyId : c.id,
       title: c.title,
@@ -621,7 +621,7 @@ export default function FinderClient({
 
         {/* PropertyCard with stage dropdown, analyse, report, dismiss */}
         <div className="pointer-events-auto">
-          <PropertyCard item={finderCardToCardProperty(card)} actions={cardActions} />
+          <PropertyCard item={finderCardToListingCard(card)} actions={cardActions} />
         </div>
       </div>
 
