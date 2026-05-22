@@ -23,7 +23,7 @@ import UndoToastStack, { type UndoToastEntry } from '@/components/UndoToastStack
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
 import dynamic from 'next/dynamic';
-import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
+import PropertyCard, { type ListingCard, type CardActions } from '@/components/PropertyCard';
 import { updateProperty, reportUnavailable } from '@/lib/api';
 
 const PropertyAnalysisModal = dynamic(
@@ -685,8 +685,8 @@ export default function EntdeckenPage() {
   const hasClientOnlyPresets = activePresets.has('searchAgents') || activePresets.has('excludeSearchAgents') ||
     Array.from(activePresets).some(k => k.startsWith('stage_'));
   const presetsActive = hasClientOnlyPresets || activeSavedFilterIds.size > 0;
-  // ── Convert UnifiedListing to CardProperty ──
-  function listingToCard(l: UnifiedListing): CardProperty {
+  // ── Convert UnifiedListing to ListingCard ──
+  function listingToCard(l: UnifiedListing): ListingCard {
     // For scraped, derive savedByUser AND content counts from current
     // cache so (a) an own-UserListing at not_relevant / delisted doesn't
     // keep forcing the heart filled, and (b) a scraped tile that maps
@@ -736,7 +736,7 @@ export default function EntdeckenPage() {
   // Shared instant-hide helper for both ⚠ report-dead and ✕ dismiss.
   // Adds the card to dismissedIds (zero-lag local filter), snapshots
   // enough state for undo, and pushes an undo toast entry.
-  function hideCard(listingId: string, item: CardProperty) {
+  function hideCard(listingId: string, item: ListingCard) {
     setDismissedIds(prev => {
       const next = new Set(prev);
       next.add(listingId);
@@ -765,7 +765,7 @@ export default function EntdeckenPage() {
   }
 
   const cardActions: CardActions = useMemo(() => ({
-    onSaveToFunnel: async (item: CardProperty) => {
+    onSaveToFunnel: async (item: ListingCard) => {
       // Own at status 'new' → promote to 'investigating'. The card stays
       // visible because the id gets added to locallyPromotedIds; next mount
       // recomputes from current data and the now-investigating row drops.
@@ -815,7 +815,7 @@ export default function EntdeckenPage() {
     // but the DB record (and any analyses/notes) survive — the user can
     // recover via Funnel's not_relevant column or by re-clicking the
     // heart on the same Discover tile (re-promotes to investigating).
-    onUndoSave: async (item: CardProperty) => {
+    onUndoSave: async (item: ListingCard) => {
       if (item.source === 'own') {
         setLocallyPromotedIds(prev => {
           const next = new Set(prev);
@@ -844,7 +844,7 @@ export default function EntdeckenPage() {
         movedToStageAt: new Date().toISOString(),
       });
     },
-    onAnalyse: async (item: CardProperty) => {
+    onAnalyse: async (item: ListingCard) => {
       if (item.source === 'own') {
         trackInteraction(item.id, 'analysis');
         const prop = cachedProperties.find(p => p.id === item.id);
@@ -882,7 +882,7 @@ export default function EntdeckenPage() {
         // path; user can re-click. Silent.
       }
     },
-    onReportDead: (item: CardProperty) => {
+    onReportDead: (item: ListingCard) => {
       const listingId = item.source === 'own'
         ? `prop-${item.id}`
         : `scraped-${item.scrapedListingId}`;
@@ -895,7 +895,7 @@ export default function EntdeckenPage() {
           .finally(() => markMutationEnd());
       }
     },
-    onDismiss: (item: CardProperty) => {
+    onDismiss: (item: ListingCard) => {
       const listingId = item.source === 'own'
         ? `prop-${item.id}`
         : `scraped-${item.scrapedListingId}`;
@@ -904,7 +904,7 @@ export default function EntdeckenPage() {
         updateProp(item.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() });
       }
     },
-    onUrlClick: (item: CardProperty) => {
+    onUrlClick: (item: ListingCard) => {
       if (item.source === 'own') {
         trackInteraction(item.id, 'url_click');
       } else if (item.scrapedListingId) {

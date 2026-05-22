@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export interface CardProperty {
+export interface ListingCard {
   id: string;
   title: string | null;
   price: number | null;
@@ -42,7 +42,7 @@ export interface CardProperty {
 }
 
 export interface CardActions {
-  onSaveToFunnel?: (item: CardProperty) => void | Promise<void>;
+  onSaveToFunnel?: (item: ListingCard) => void | Promise<void>;
   /**
    * Re-click-undo on a filled heart. ADR-012 v1.2 — when provided AND
    * onMoveStage is not, clicking the filled house reverses the recent save:
@@ -50,17 +50,17 @@ export interface CardActions {
    *   - scraped → DELETE the just-created UserListing and clear savedByUser
    * Used by Discover only. Funnel takes onMoveStage and ignores this.
    */
-  onUndoSave?: (item: CardProperty) => void | Promise<void>;
+  onUndoSave?: (item: ListingCard) => void | Promise<void>;
   /**
    * Own-card override. When provided, clicking the heart on an own
    * property fires this callback instead of being a no-op. Used by the
    * Funnel to open a stage-picker dropdown anchored to the heart.
    */
-  onMoveStage?: (item: CardProperty, anchor: DOMRect) => void;
-  onAnalyse?: (item: CardProperty) => void;
-  onReportDead?: (item: CardProperty) => void;
-  onDismiss: (item: CardProperty) => void;
-  onUrlClick?: (item: CardProperty) => void;
+  onMoveStage?: (item: ListingCard, anchor: DOMRect) => void;
+  onAnalyse?: (item: ListingCard) => void;
+  onReportDead?: (item: ListingCard) => void;
+  onDismiss: (item: ListingCard) => void;
+  onUrlClick?: (item: ListingCard) => void;
 }
 
 // ─── Magnifying-glass icon (lucide-style, no extra dep) ──────────────────────
@@ -157,7 +157,7 @@ export default function PropertyCard({
   draggable,
   dataTourId,
 }: {
-  item: CardProperty;
+  item: ListingCard;
   actions: CardActions;
   compact?: boolean;
   /** Use 100% width of the parent instead of the default fixed w-48 (compact). */

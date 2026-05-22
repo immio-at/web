@@ -11,7 +11,7 @@ import { type PresetFilterKey, passesPresetFilters, passesSavedFilters, passesFi
 import { type FilterValues } from '@/lib/filter-values';
 import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
-import PropertyCard, { type CardActions, type CardProperty } from '@/components/PropertyCard';
+import PropertyCard, { type CardActions, type ListingCard } from '@/components/PropertyCard';
 
 const PropertyAnalysisModal = dynamic(
   () => import('@/components/PropertyAnalysisModal'),
@@ -283,7 +283,7 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
   // we render a DropdownPortal anchored there with the available stages.
   const [heartMenu, setHeartMenu] = useState<{ propertyId: string; anchor: DOMRect } | null>(null);
 
-  function propertyToCard(p: UserListing): CardProperty {
+  function propertyToCard(p: UserListing): ListingCard {
     return {
       id: p.id,
       title: p.title,
@@ -555,7 +555,7 @@ function ZoomedStageView({
   stageProps: UserListing[];
   isDragOver: boolean;
   cardActions: CardActions;
-  toCard: (p: UserListing) => CardProperty;
+  toCard: (p: UserListing) => ListingCard;
   onBack: () => void;
   onDragStart: (id: string) => void;
   onDragEnd: () => void;

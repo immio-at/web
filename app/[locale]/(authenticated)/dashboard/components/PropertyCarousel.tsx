@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
+import PropertyCard, { type ListingCard, type CardActions } from '@/components/PropertyCard';
 
 export default function PropertyCarousel({
   title,
@@ -11,7 +11,7 @@ export default function PropertyCarousel({
   firstCardTourId,
 }: {
   title: string;
-  cards: CardProperty[];
+  cards: ListingCard[];
   emptyMessage?: string;
   actions: CardActions;
   /** ADR-021 HH8 — applied as data-tour-id on the first rendered card. */

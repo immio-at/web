@@ -9,7 +9,7 @@ import { UserListing, getScrapedListings, saveScrapedListing, Listing, reportUna
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
 import PresetFilters from '@/components/PresetFilters';
-import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
+import PropertyCard, { type ListingCard, type CardActions } from '@/components/PropertyCard';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters, passesFilterValues } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
 import { EMPTY_FILTERS, type FilterValues } from '@/lib/filter-values';
@@ -380,8 +380,8 @@ export default function FinderClient({
     0.85
   );
 
-  // Convert FinderCard to CardProperty for PropertyCard component
-  function finderCardToCardProperty(c: FinderCard): CardProperty {
+  // Convert FinderCard to ListingCard for PropertyCard component
+  function finderCardToCardProperty(c: FinderCard): ListingCard {
     return {
       id: c.source === 'own' && c.propertyId ? c.propertyId : c.id,
       title: c.title,
@@ -406,7 +406,7 @@ export default function FinderClient({
   // landing) and opens on the freshly-created UserListing. Re-using an
   // existing UserListing (saved-then-undone, or saved from another surface)
   // is preferred to a duplicate POST.
-  async function openAnalyseFor(item: CardProperty): Promise<void> {
+  async function openAnalyseFor(item: ListingCard): Promise<void> {
     if (item.source === 'own') {
       const prop = allOwn.find(p => p.id === item.id);
       if (!prop) return;
@@ -436,7 +436,7 @@ export default function FinderClient({
 
   // Card actions for the PropertyCard component
   const cardActions: CardActions = useMemo(() => ({
-    onSaveToFunnel: async (item: CardProperty) => {
+    onSaveToFunnel: async (item: ListingCard) => {
       // Own at 'new' → promote to investigating (ADR-012 v1.2). Finder's
       // existing swipe-right behaviour already does this — this path is the
       // heart-icon variant and uses the same update call. We DON'T advance
@@ -459,11 +459,11 @@ export default function FinderClient({
         optimisticInsert(property);
       } catch { /* 409 */ }
     },
-    onAnalyse: (item: CardProperty) => {
+    onAnalyse: (item: ListingCard) => {
       void openAnalyseFor(item);
       setDragX(0); setDragY(0);
     },
-    onReportDead: (item: CardProperty) => {
+    onReportDead: (item: ListingCard) => {
       if (item.source === 'own') {
         optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
         markMutationStart();
@@ -476,7 +476,7 @@ export default function FinderClient({
         setDismissedIds(prev => new Set(prev).add(`scraped-${item.scrapedListingId}`));
       }
     },
-    onDismiss: (item: CardProperty) => {
+    onDismiss: (item: ListingCard) => {
       setLastAction('not_relevant');
       setCurrent(c => c + 1);
       setDragX(0); setDragY(0);
@@ -488,7 +488,7 @@ export default function FinderClient({
         setDismissedIds(prev => new Set(prev).add(`scraped-${item.scrapedListingId}`));
       }
     },
-    onUrlClick: (item: CardProperty) => {
+    onUrlClick: (item: ListingCard) => {
       if (item.source === 'own') {
         trackInteraction(item.id, 'url_click');
       } else if (item.scrapedListingId) {

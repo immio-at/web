@@ -5,20 +5,20 @@ import { useTranslations } from 'next-intl';
 import { UserListing, getScrapedListings, Listing } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { deriveCriteria, scoreProperty, type DerivedCriteria } from '@/lib/recommendations';
-import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
+import PropertyCard, { type ListingCard, type CardActions } from '@/components/PropertyCard';
 import { useProperties } from '@/hooks/useProperties';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { useRef } from 'react';
 
 // ─── Module-level cache ──────────────────────────────────────────────────────
-type ScoredCard = { card: CardProperty; score: number; sourceUrl: string };
+type ScoredCard = { card: ListingCard; score: number; sourceUrl: string };
 let recommendedCache: ScoredCard[] | null = null;
 
 export function clearRecommendedCache(): void {
   recommendedCache = null;
 }
 
-function propertyToCard(p: UserListing): CardProperty {
+function propertyToCard(p: UserListing): ListingCard {
   // Prisma serializes Decimal columns as strings — coerce so any downstream
   // sort/compare op behaves numerically.
   return {
@@ -41,7 +41,7 @@ function propertyToCard(p: UserListing): CardProperty {
   };
 }
 
-function scrapedToCard(s: Listing): CardProperty {
+function scrapedToCard(s: Listing): ListingCard {
   return {
     id: s.id,
     title: s.title,
