@@ -324,6 +324,7 @@ export default function PropertyCard({
     <div
       {...draggableProps}
       data-tour-id={dataTourId}
+      data-testid="listing-card"
       className={`group relative bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col ${widthClass} hover:shadow-md transition-shadow ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
       {/* Image — ADR-012 v1.1 PC5: tapping opens the modal (was: link to source).
