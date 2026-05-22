@@ -295,9 +295,10 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
       imageUrl: p.imageUrl,
       sourceUrl: p.sourceUrl,
       platform: p.platform,
-      status: p.status,
-      listingStatus: p.listingStatus,
-      source: 'own',
+      // Funnel cards are always in the funnel — the UserListing carries the
+      // stage + listing-availability the card reads. Own listings are private.
+      userListing: p,
+      listing: { visibility: 'private' },
       emailReceivedAt: p.emailReceivedAt,
       analysisCount: p.analysisCount ?? 0,
       documentCount: p.documentCount ?? 0,

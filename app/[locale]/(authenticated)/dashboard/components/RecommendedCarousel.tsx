@@ -32,9 +32,8 @@ function propertyToCard(p: UserListing): ListingCard {
     imageUrl: p.imageUrl,
     sourceUrl: p.sourceUrl,
     platform: p.platform,
-    status: p.status,
-    listingStatus: p.listingStatus,
-    source: 'own',
+    userListing: p,
+    listing: { visibility: 'private' },
     emailReceivedAt: p.emailReceivedAt,
     analysisCount: p.analysisCount ?? 0,
     documentCount: p.documentCount ?? 0,
@@ -53,7 +52,8 @@ function scrapedToCard(s: Listing): ListingCard {
     imageUrl: s.imageUrl,
     sourceUrl: s.sourceUrl,
     platform: s.platform,
-    source: 'scraped',
+    userListing: null,
+    listing: { visibility: 'public' },
     scrapedListingId: s.id,
   };
 }

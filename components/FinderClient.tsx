@@ -34,7 +34,10 @@ interface FinderCard {
   imageUrl: string | null;
   sourceUrl: string;
   platform: string;
-  source: 'own' | 'scraped';
+  // ADR-025 M2b — funnel membership replaces the old source discriminator.
+  // Present ⇒ the listing is in the user's funnel ("own"); null ⇒ a public
+  // (scraped) listing not yet saved.
+  userListing: UserListing | null;
   // For own properties — needed for update/track
   propertyId?: string;
   // For scraped — needed for save
@@ -64,7 +67,7 @@ function propertyToCard(p: UserListing): FinderCard {
     imageUrl: p.imageUrl,
     sourceUrl: p.sourceUrl,
     platform: p.platform,
-    source: 'own',
+    userListing: p,
     propertyId: p.id,
     emailReceivedAt: p.emailReceivedAt,
     createdAt: p.createdAt,
@@ -130,7 +133,7 @@ function scrapedToCard(s: Listing): FinderCard {
     imageUrl: s.imageUrl,
     sourceUrl: s.sourceUrl,
     platform: s.platform,
-    source: 'scraped',
+    userListing: null,
     scrapedListingId: s.id,
     firstSeenAt: s.firstSeenAt,
   };
@@ -296,7 +299,7 @@ export default function FinderClient({
     }
 
     if (action === 'analyse') {
-      void openAnalyseFor(card);
+      void openAnalyseFor(finderCardToCardProperty(card));
       setDragX(0);
       setDragY(0);
       return;
@@ -308,7 +311,7 @@ export default function FinderClient({
     setDragY(0);
     setTimeout(() => setLastAction(null), 300);
 
-    if (card.source === 'own' && card.propertyId) {
+    if (card.userListing != null && card.propertyId) {
       // Own property — update status
       if (action !== 'not_relevant') trackInteraction(card.propertyId, 'status_change');
       setCurrent(c => c + 1);
@@ -316,7 +319,7 @@ export default function FinderClient({
         status: action === 'interested' ? 'investigating' : action,
         movedToStageAt: new Date().toISOString(),
       });
-    } else if (card.source === 'scraped' && card.scrapedListingId) {
+    } else if (card.userListing == null && card.scrapedListingId) {
       if (action === 'investigating') {
         // Scraped — save to funnel
         setCurrent(c => c + 1);
@@ -369,8 +372,8 @@ export default function FinderClient({
       : dragY < -50 ? 'open' : dragY > 50 ? 'analyse' : null;
 
   const overlayConfig: Record<string, { bg: string; label: string }> = {
-    investigating:  { bg: 'bg-emerald-500', label: card?.source === 'scraped' ? t('overlay.save') : t('overlay.investigating') },
-    not_relevant:   { bg: 'bg-rose-500',    label: card?.source === 'scraped' ? t('overlay.skip') : t('overlay.notRelevant') },
+    investigating:  { bg: 'bg-emerald-500', label: card?.userListing == null ? t('overlay.save') : t('overlay.investigating') },
+    not_relevant:   { bg: 'bg-rose-500',    label: card?.userListing == null ? t('overlay.skip') : t('overlay.notRelevant') },
     open:           { bg: 'bg-blue-500',    label: t('overlay.openListing') },
     analyse:        { bg: 'bg-amber-500',   label: t('overlay.analyse') },
   };
@@ -383,7 +386,7 @@ export default function FinderClient({
   // Convert FinderCard to ListingCard for PropertyCard component
   function finderCardToCardProperty(c: FinderCard): ListingCard {
     return {
-      id: c.source === 'own' && c.propertyId ? c.propertyId : c.id,
+      id: c.userListing != null && c.propertyId ? c.propertyId : c.id,
       title: c.title,
       price: c.price,
       sizeSqm: c.sizeSqm,
@@ -393,7 +396,8 @@ export default function FinderClient({
       imageUrl: c.imageUrl,
       sourceUrl: c.sourceUrl,
       platform: c.platform,
-      source: c.source,
+      userListing: c.userListing,
+      listing: { visibility: c.userListing != null ? 'private' : 'public' },
       scrapedListingId: c.scrapedListingId,
       emailReceivedAt: c.emailReceivedAt,
       analysisCount: c.analysisCount ?? 0,
@@ -407,7 +411,7 @@ export default function FinderClient({
   // existing UserListing (saved-then-undone, or saved from another surface)
   // is preferred to a duplicate POST.
   async function openAnalyseFor(item: ListingCard): Promise<void> {
-    if (item.source === 'own') {
+    if (item.userListing != null) {
       const prop = allOwn.find(p => p.id === item.id);
       if (!prop) return;
       trackInteraction(prop.id, 'analysis');
@@ -442,14 +446,14 @@ export default function FinderClient({
       // heart-icon variant and uses the same update call. We DON'T advance
       // `current` here: the card stays put under the user's pointer like a
       // confirmation, mirroring Discover's "remove only on next page load".
-      if (item.source === 'own' && item.status === 'new') {
+      if (item.userListing != null && item.userListing.status === 'new') {
         update(item.id, {
           status: 'investigating',
           movedToStageAt: new Date().toISOString(),
         });
         return;
       }
-      if (item.source !== 'scraped' || !item.scrapedListingId) return;
+      if (item.userListing != null || !item.scrapedListingId) return;
       setLastAction('investigating');
       setCurrent(c => c + 1);
       setDragX(0); setDragY(0);
@@ -464,7 +468,7 @@ export default function FinderClient({
       setDragX(0); setDragY(0);
     },
     onReportDead: (item: ListingCard) => {
-      if (item.source === 'own') {
+      if (item.userListing != null) {
         optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
         markMutationStart();
         reportUnavailable(item.id)
@@ -482,14 +486,14 @@ export default function FinderClient({
       setDragX(0); setDragY(0);
       setTimeout(() => setLastAction(null), 300);
 
-      if (item.source === 'own') {
+      if (item.userListing != null) {
         update(item.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() });
       } else {
         setDismissedIds(prev => new Set(prev).add(`scraped-${item.scrapedListingId}`));
       }
     },
     onUrlClick: (item: ListingCard) => {
-      if (item.source === 'own') {
+      if (item.userListing != null) {
         trackInteraction(item.id, 'url_click');
       } else if (item.scrapedListingId) {
         trackScrapedInteraction(item.scrapedListingId, 'url_click');
@@ -623,10 +627,10 @@ export default function FinderClient({
 
       {/* Swipe directions hint */}
       <div className="flex gap-6 text-xs text-gray-400 text-center mt-3">
-        <span>{card.source === 'scraped' ? t('directions.leftScraped') : t('directions.left')}</span>
+        <span>{card.userListing == null ? t('directions.leftScraped') : t('directions.left')}</span>
         <span>{t('directions.up')}</span>
         <span>{t('directions.down')}</span>
-        <span>{card.source === 'scraped' ? t('directions.rightScraped') : t('directions.right')}</span>
+        <span>{card.userListing == null ? t('directions.rightScraped') : t('directions.right')}</span>
       </div>
 
       {/* Progress count */}

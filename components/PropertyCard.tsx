@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import type { UserListing } from '@/lib/api';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -16,9 +17,14 @@ export interface ListingCard {
   imageUrl: string | null;
   sourceUrl: string;
   platform: string;
-  status?: string;
-  listingStatus?: string;
-  source: 'own' | 'scraped';
+  // ADR-025 M2b — unified-schema replacement for the old own-vs-scraped
+  // `source` discriminator. Funnel membership is signalled
+  // by the *presence* of a UserListing (stage + listing-availability are read
+  // from it); the listing's `visibility` distinguishes a discoverable public
+  // listing from the user's own private one. The card branches on funnel
+  // membership, never on origin.
+  userListing: UserListing | null;
+  listing: { visibility: 'public' | 'private' };
   scrapedListingId?: string;
   emailReceivedAt?: string | null;
   savedByUser?: boolean;
@@ -179,18 +185,23 @@ export default function PropertyCard({
   // by a stale-state initializer. Reset when the rendered item changes so
   // Finder / Discover callers that reuse the component across swipes don't
   // inherit the previous card's filled state.
+  // A public listing (no UserListing) is the only place the optimistic
+  // save-fill applies — an in-funnel card already reads its filled state from
+  // userListing.status below.
+  const inFunnel = item.userListing != null;
   const [scrapedSaved, setScrapedSaved] = useState<boolean>(
-    item.source === 'scraped' && !!item.savedByUser,
+    !inFunnel && !!item.savedByUser,
   );
   useEffect(() => {
-    setScrapedSaved(item.source === 'scraped' && !!item.savedByUser);
-  }, [item.id, item.source, item.savedByUser]);
+    setScrapedSaved(item.userListing == null && !!item.savedByUser);
+  }, [item.id, item.userListing, item.savedByUser]);
 
+  const ownStatus = item.userListing?.status;
   const priceText = formatPrice(item.price);
   const ppsmText = !compact ? formatPricePerSqm(item.price, item.sizeSqm) : null;
-  const isExpired = item.listingStatus === 'expired';
-  const currentStageLabel = item.status && STAGE_I18N_KEY[item.status]
-    ? tStages(STAGE_I18N_KEY[item.status])
+  const isExpired = item.userListing?.listingStatus === 'expired';
+  const currentStageLabel = ownStatus && STAGE_I18N_KEY[ownStatus]
+    ? tStages(STAGE_I18N_KEY[ownStatus])
     : null;
 
   function handleLink() {
@@ -236,17 +247,18 @@ export default function PropertyCard({
   // funnel at `investigating`. Status `investigating` and beyond renders
   // filled. Re-clicking a filled heart fires onUndoSave when provided
   // (Discover-only) for symmetry — toggle.
-  const isOwn = item.source === 'own';
-  const isOwnAtNew = isOwn && item.status === 'new';
-  const heartFilled = (isOwn && !isOwnAtNew) || scrapedSaved;
+  // `inFunnel` (computed above) is the new own/scraped discriminant:
+  // userListing present ⇒ the listing is in the user's funnel ("own").
+  const isOwnAtNew = inFunnel && ownStatus === 'new';
+  const heartFilled = (inFunnel && !isOwnAtNew) || scrapedSaved;
   // Funnel page passes onMoveStage; own-at-new opens it (gray + actionable)
   // exactly like own-past-new (filled + actionable).
-  const ownCanMoveStage = isOwn && !!actions.onMoveStage;
+  const ownCanMoveStage = inFunnel && !!actions.onMoveStage;
   // Discover/Dashboard surfaces don't pass onMoveStage. There the gray
   // house's click promotes via onSaveToFunnel; the filled house's click
   // (when onUndoSave is provided) reverses that save.
   const isPromotePath = isOwnAtNew && !ownCanMoveStage;
-  const isScrapedSavePath = !isOwn && !scrapedSaved;
+  const isScrapedSavePath = !inFunnel && !scrapedSaved;
   const isUndoPath = heartFilled && !ownCanMoveStage && !!actions.onUndoSave;
   const heartActionable =
     ownCanMoveStage || isPromotePath || isScrapedSavePath || isUndoPath;
@@ -281,11 +293,11 @@ export default function PropertyCard({
       // Filled scraped → call undo (parent deletes UserListing + flips
       // savedByUser). Filled own → call undo (parent reverts status `new`).
       // Local scrapedSaved snaps back so the UI flips outline immediately.
-      if (!isOwn) setScrapedSaved(false);
+      if (!inFunnel) setScrapedSaved(false);
       try {
         await actions.onUndoSave!(item);
       } catch {
-        if (!isOwn) setScrapedSaved(true);
+        if (!inFunnel) setScrapedSaved(true);
       }
       return;
     }
@@ -406,7 +418,7 @@ export default function PropertyCard({
               heartFilled
                 ? `text-teal-600${ownCanMoveStage ? ' hover:scale-110' : ''}`
                 : 'text-gray-400 hover:text-teal-600 hover:scale-110'
-            } ${isOwn && !ownCanMoveStage ? 'cursor-default' : ''}`}
+            } ${inFunnel && !ownCanMoveStage ? 'cursor-default' : ''}`}
           >
             <svg
               viewBox="0 0 24 24"
@@ -523,7 +535,7 @@ export default function PropertyCard({
             />
           )}
           {/* Current stage indicator */}
-          {currentStageLabel && isOwn && item.status !== 'new' && (
+          {currentStageLabel && inFunnel && ownStatus !== 'new' && (
             <div className="text-[10px] text-teal-600 font-medium mt-1">{currentStageLabel}</div>
           )}
         </div>

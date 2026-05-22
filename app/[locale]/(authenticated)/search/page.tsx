@@ -33,7 +33,7 @@ const PropertyAnalysisModal = dynamic(
 
 // ─── Unified listing type ────────────────────────────────────────────────────
 
-interface UnifiedListing {
+interface DiscoverListing {
   id: string;
   title: string | null;
   price: number | null;
@@ -44,11 +44,14 @@ interface UnifiedListing {
   imageUrl: string | null;
   sourceUrl: string;
   platform: string;
-  source: 'email' | 'scraped';
+  // ADR-025 M2b — funnel membership replaces the old 'email' | 'scraped'
+  // discriminator. Present ⇒ the listing is in the user's funnel (was
+  // source 'email'); null ⇒ a public scraped listing (was 'scraped').
+  userListing: UserListing | null;
   savedByUser: boolean;
   // Only present for scraped listings (needed for save action)
   scrapedListingId?: string;
-  // Only present for email properties
+  // Only present for own (in-funnel) properties
   status?: string;
   // ADR-022 §7.5 — effective rent-regulation state (own properties only).
   rentRegulationCategory?: string | null;
@@ -68,7 +71,7 @@ interface UnifiedListing {
   documentCount?: number;
 }
 
-function propertyToUnified(p: UserListing): UnifiedListing {
+function propertyToUnified(p: UserListing): DiscoverListing {
   // Prisma serializes Decimal columns as strings even though the TS type
   // says number — coerce here so sort/compare ops behave numerically.
   return {
@@ -82,7 +85,7 @@ function propertyToUnified(p: UserListing): UnifiedListing {
     imageUrl: p.imageUrl,
     sourceUrl: p.sourceUrl,
     platform: p.platform,
-    source: 'email',
+    userListing: p,
     savedByUser: true, // already in user's funnel
     status: p.status,
     createdAt: p.createdAt,
@@ -96,7 +99,7 @@ function propertyToUnified(p: UserListing): UnifiedListing {
   };
 }
 
-function scrapedToUnified(s: Listing): UnifiedListing {
+function scrapedToUnified(s: Listing): DiscoverListing {
   return {
     id: `scraped-${s.id}`,
     title: s.title,
@@ -108,7 +111,7 @@ function scrapedToUnified(s: Listing): UnifiedListing {
     imageUrl: s.imageUrl,
     sourceUrl: s.sourceUrl,
     platform: s.platform,
-    source: 'scraped',
+    userListing: null,
     savedByUser: s.savedByUser,
     scrapedListingId: s.id,
     firstSeenAt: s.firstSeenAt,
@@ -158,7 +161,7 @@ function num(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function sortKey(l: UnifiedListing, sortBy: string): number | null {
+function sortKey(l: DiscoverListing, sortBy: string): number | null {
   switch (sortBy) {
     case 'price':
       return num(l.price);
@@ -181,10 +184,10 @@ function sortKey(l: UnifiedListing, sortBy: string): number | null {
 }
 
 function sortMergedListings(
-  listings: UnifiedListing[],
+  listings: DiscoverListing[],
   sortBy: string,
   sortOrder: string,
-): UnifiedListing[] {
+): DiscoverListing[] {
   const dir = sortOrder === 'asc' ? 1 : -1;
   // Copy so we don't mutate the source arrays the useMemo depends on.
   return [...listings].sort((a, b) => {
@@ -239,8 +242,8 @@ type ViewMode = 'grid' | 'table';
 // Fires url_click on the listing the user clicked through to, regardless of
 // source. Own properties hit /properties/:id/interactions; scraped listings
 // hit /scraped-listings/:id/interactions. Both feed Recently Viewed.
-function trackListingClick(listing: UnifiedListing) {
-  if (listing.source === 'email') {
+function trackListingClick(listing: DiscoverListing) {
+  if (listing.userListing != null) {
     const propertyId = listing.id.replace('prop-', '');
     trackInteraction(propertyId, 'url_click');
     return;
@@ -258,8 +261,8 @@ function ListingTableRow({
   saving,
   odd,
 }: {
-  listing: UnifiedListing;
-  onSave: (listing: UnifiedListing) => void;
+  listing: DiscoverListing;
+  onSave: (listing: DiscoverListing) => void;
   saving: boolean;
   odd: boolean;
 }) {
@@ -402,7 +405,7 @@ export default function EntdeckenPage() {
   }
 
   // Data state — scraped and user properties tracked separately for progressive rendering
-  const [scrapedListings, setScrapedListings] = useState<UnifiedListing[]>([]);
+  const [scrapedListings, setScrapedListings] = useState<DiscoverListing[]>([]);
   const [scrapedTotal, setScrapedTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [scrapedLoading, setScrapedLoading] = useState(true);
@@ -413,16 +416,16 @@ export default function EntdeckenPage() {
   // Keep dismissed listing ids in a synchronous local set so the card hides
   // instantly even when a filter-active refetch is in flight. `undoSnapshots`
   // stores enough state to restore each entry — own properties remember their
-  // prior status; scraped listings remember the UnifiedListing itself.
+  // prior status; scraped listings remember the DiscoverListing itself.
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(
     () => cached ? new Set(cached.dismissedIds) : new Set(),
   );
   const [undoEntries, setUndoEntries] = useState<UndoToastEntry[]>([]);
   const undoSnapshotsRef = useRef<Map<string, {
-    source: 'own' | 'scraped';
+    kind: 'own' | 'scraped';
     ownId?: string;
     previousStatus?: string;
-    scrapedListing?: UnifiedListing;
+    scrapedListing?: DiscoverListing;
   }>>(new Map());
   const [savingId, setSavingId] = useState<string | null>(null);
 
@@ -636,7 +639,7 @@ export default function EntdeckenPage() {
     merged = sortMergedListings(merged, applied.sortBy, applied.sortOrder);
 
     const userCount = page === 1
-      ? merged.filter(l => l.source === 'email').length
+      ? merged.filter(l => l.userListing != null).length
       : 0;
 
     return { listings: merged, mergedUserCount: userCount };
@@ -662,7 +665,7 @@ export default function EntdeckenPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  async function handleSave(listing: UnifiedListing) {
+  async function handleSave(listing: DiscoverListing) {
     if (!listing.scrapedListingId) return; // can't save email properties (already saved)
     setSavingId(listing.id);
     try {
@@ -685,8 +688,8 @@ export default function EntdeckenPage() {
   const hasClientOnlyPresets = activePresets.has('searchAgents') || activePresets.has('excludeSearchAgents') ||
     Array.from(activePresets).some(k => k.startsWith('stage_'));
   const presetsActive = hasClientOnlyPresets || activeSavedFilterIds.size > 0;
-  // ── Convert UnifiedListing to ListingCard ──
-  function listingToCard(l: UnifiedListing): ListingCard {
+  // ── Convert DiscoverListing to ListingCard ──
+  function listingToCard(l: DiscoverListing): ListingCard {
     // For scraped, derive savedByUser AND content counts from current
     // cache so (a) an own-UserListing at not_relevant / delisted doesn't
     // keep forcing the heart filled, and (b) a scraped tile that maps
@@ -695,7 +698,8 @@ export default function EntdeckenPage() {
     let derivedSavedByUser = l.savedByUser;
     let analysisCount = l.analysisCount ?? 0;
     let documentCount = l.documentCount ?? 0;
-    if (l.source === 'scraped') {
+    const isOwn = l.userListing != null;
+    if (!isOwn) {
       const own = cachedProperties.find(p => p.sourceUrl === l.sourceUrl);
       derivedSavedByUser = !!own && !TERMINAL_STAGES.has(own.status);
       if (own) {
@@ -704,7 +708,7 @@ export default function EntdeckenPage() {
       }
     }
     return {
-      id: l.source === 'email' ? l.id.replace('prop-', '') : l.id,
+      id: isOwn ? l.id.replace('prop-', '') : l.id,
       title: l.title,
       price: l.price,
       sizeSqm: l.sizeSqm,
@@ -714,8 +718,8 @@ export default function EntdeckenPage() {
       imageUrl: l.imageUrl,
       sourceUrl: l.sourceUrl,
       platform: l.platform,
-      status: l.status,
-      source: l.source === 'email' ? 'own' : 'scraped',
+      userListing: l.userListing,
+      listing: { visibility: isOwn ? 'private' : 'public' },
       scrapedListingId: l.scrapedListingId,
       emailReceivedAt: l.emailReceivedAt,
       savedByUser: derivedSavedByUser,
@@ -724,10 +728,10 @@ export default function EntdeckenPage() {
       // ADR-022 §7.5 — regulation badge fields are only meaningful for own
       // properties (heuristic needs a Dossier baujahr). Scraped tiles omit
       // them so the "Baujahr unbekannt" badge doesn't fire on every row.
-      rentRegulationCategory: l.source === 'email' ? l.rentRegulationCategory : undefined,
-      rentRegulationSource: l.source === 'email' ? l.rentRegulationSource : undefined,
-      baujahr: l.source === 'email' ? l.baujahr : undefined,
-      propertyType: l.source === 'email' ? l.propertyType : undefined,
+      rentRegulationCategory: isOwn ? l.rentRegulationCategory : undefined,
+      rentRegulationSource: isOwn ? l.rentRegulationSource : undefined,
+      baujahr: isOwn ? l.baujahr : undefined,
+      propertyType: isOwn ? l.propertyType : undefined,
     };
   }
 
@@ -742,10 +746,10 @@ export default function EntdeckenPage() {
       next.add(listingId);
       return next;
     });
-    if (item.source === 'own') {
+    if (item.userListing != null) {
       const prev = cachedProperties.find(p => p.id === item.id);
       undoSnapshotsRef.current.set(listingId, {
-        source: 'own',
+        kind: 'own',
         ownId: item.id,
         previousStatus: prev?.status ?? 'new',
       });
@@ -753,7 +757,7 @@ export default function EntdeckenPage() {
       const existing = scrapedListings.find(l => l.id === listingId);
       if (existing) {
         undoSnapshotsRef.current.set(listingId, {
-          source: 'scraped',
+          kind: 'scraped',
           scrapedListing: existing,
         });
       }
@@ -769,7 +773,7 @@ export default function EntdeckenPage() {
       // Own at status 'new' → promote to 'investigating'. The card stays
       // visible because the id gets added to locallyPromotedIds; next mount
       // recomputes from current data and the now-investigating row drops.
-      if (item.source === 'own' && item.status === 'new') {
+      if (item.userListing != null && item.userListing.status === 'new') {
         setLocallyPromotedIds(prev => {
           const next = new Set(prev);
           next.add(item.id);
@@ -781,7 +785,7 @@ export default function EntdeckenPage() {
         });
         return;
       }
-      if (item.source !== 'scraped' || !item.scrapedListingId) return;
+      if (item.userListing != null || !item.scrapedListingId) return;
       const scraped = scrapedListings.find(l => l.id === `scraped-${item.scrapedListingId}`);
       // If the user already has a UserListing for this listing (from a prior
       // save+undo cycle), re-promote it instead of POSTing a new save —
@@ -816,7 +820,7 @@ export default function EntdeckenPage() {
     // recover via Funnel's not_relevant column or by re-clicking the
     // heart on the same Discover tile (re-promotes to investigating).
     onUndoSave: async (item: ListingCard) => {
-      if (item.source === 'own') {
+      if (item.userListing != null) {
         setLocallyPromotedIds(prev => {
           const next = new Set(prev);
           next.delete(item.id);
@@ -845,7 +849,7 @@ export default function EntdeckenPage() {
       });
     },
     onAnalyse: async (item: ListingCard) => {
-      if (item.source === 'own') {
+      if (item.userListing != null) {
         trackInteraction(item.id, 'analysis');
         const prop = cachedProperties.find(p => p.id === item.id);
         if (prop) setAnalyseProperty(prop);
@@ -883,11 +887,11 @@ export default function EntdeckenPage() {
       }
     },
     onReportDead: (item: ListingCard) => {
-      const listingId = item.source === 'own'
+      const listingId = item.userListing != null
         ? `prop-${item.id}`
         : `scraped-${item.scrapedListingId}`;
       hideCard(listingId, item);
-      if (item.source === 'own') {
+      if (item.userListing != null) {
         optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
         markMutationStart();
         reportUnavailable(item.id)
@@ -896,16 +900,16 @@ export default function EntdeckenPage() {
       }
     },
     onDismiss: (item: ListingCard) => {
-      const listingId = item.source === 'own'
+      const listingId = item.userListing != null
         ? `prop-${item.id}`
         : `scraped-${item.scrapedListingId}`;
       hideCard(listingId, item);
-      if (item.source === 'own') {
+      if (item.userListing != null) {
         updateProp(item.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() });
       }
     },
     onUrlClick: (item: ListingCard) => {
-      if (item.source === 'own') {
+      if (item.userListing != null) {
         trackInteraction(item.id, 'url_click');
       } else if (item.scrapedListingId) {
         trackScrapedInteraction(item.scrapedListingId, 'url_click');
@@ -923,14 +927,14 @@ export default function EntdeckenPage() {
     setUndoEntries(entries => entries.filter(e => e.id !== listingId));
     undoSnapshotsRef.current.delete(listingId);
     if (!snapshot) return;
-    if (snapshot.source === 'own' && snapshot.ownId) {
+    if (snapshot.kind === 'own' && snapshot.ownId) {
       updateProp(snapshot.ownId, {
         status: snapshot.previousStatus ?? 'new',
         movedToStageAt: new Date().toISOString(),
       });
     }
     // Scraped listings auto-restore via the dismissedIds filter — no state
-    // mutation needed since the UnifiedListing stays in scrapedListings.
+    // mutation needed since the DiscoverListing stays in scrapedListings.
   }, [updateProp]);
 
   const handleUndoExpire = useCallback((listingId: string) => {

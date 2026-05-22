@@ -29,9 +29,8 @@ function ownPropertyToCard(p: UserListing): ListingCard {
     imageUrl: p.imageUrl,
     sourceUrl: p.sourceUrl,
     platform: p.platform,
-    status: p.status,
-    listingStatus: p.listingStatus,
-    source: 'own',
+    userListing: p,
+    listing: { visibility: 'private' },
     emailReceivedAt: p.emailReceivedAt,
     analysisCount: p.analysisCount ?? 0,
     documentCount: p.documentCount ?? 0,
@@ -50,7 +49,8 @@ function scrapedListingToCard(s: Listing): ListingCard {
     imageUrl: s.imageUrl,
     sourceUrl: s.sourceUrl,
     platform: s.platform,
-    source: 'scraped',
+    userListing: null,
+    listing: { visibility: 'public' },
     scrapedListingId: s.id,
     savedByUser: s.savedByUser,
   };
@@ -111,21 +111,21 @@ export default function DashboardClient({
       // Own at status 'new' → promote to 'investigating' (the new house-icon
       // semantic per ADR-012 v1.2: gray = pre-funnel, click moves into the
       // active funnel).
-      if (item.source === 'own' && item.status === 'new') {
+      if (item.userListing != null && item.userListing.status === 'new') {
         update(item.id, {
           status: 'investigating',
           movedToStageAt: new Date().toISOString(),
         });
         return;
       }
-      if (item.source !== 'scraped' || !item.scrapedListingId) return;
+      if (item.userListing != null || !item.scrapedListingId) return;
       try {
         const { property } = await saveScrapedListing(item.scrapedListingId);
         optimisticInsert(property);
       } catch { /* 409 = already saved */ }
     },
     onAnalyse: async (item: ListingCard) => {
-      if (item.source === 'own') {
+      if (item.userListing != null) {
         trackInteraction(item.id, 'analysis');
         const prop = properties.find(p => p.id === item.id);
         if (prop) setAnalyseProperty(prop);
@@ -157,7 +157,7 @@ export default function DashboardClient({
     onReportDead: (item: ListingCard) => {
       // Listing-expiry signal only applies to own properties — the scraper
       // pipeline has its own soft-delete mechanism.
-      if (item.source !== 'own') return;
+      if (item.userListing == null) return;
       optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
       markMutationStart();
       reportUnavailable(item.id)
@@ -168,11 +168,11 @@ export default function DashboardClient({
       // Own → mark not_relevant. Scraped dismissal isn't persisted from
       // the dashboard for now (the search page has its own dismissedIds
       // local-state pattern); leave as a soft no-op so the X is harmless.
-      if (item.source !== 'own') return;
+      if (item.userListing == null) return;
       update(item.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() });
     },
     onUrlClick: (item: ListingCard) => {
-      if (item.source === 'own') {
+      if (item.userListing != null) {
         trackInteraction(item.id, 'url_click');
       } else if (item.scrapedListingId) {
         trackScrapedInteraction(item.scrapedListingId, 'url_click');

@@ -495,7 +495,7 @@ export interface Listing {
   zipCode: string | null;
   imageUrl: string | null;
   // ADR-025 M2b — unified-schema discriminator replacing the old
-  // ListingCard `source: 'own' | 'scraped'`. 'public' = a discoverable
+  // ListingCard own-vs-scraped `source` field. 'public' = a discoverable
   // (scraped) listing; 'private' = the user's own listing (email-parsed or
   // manually added). The card no longer branches on origin — funnel
   // membership is signalled by the presence of a UserListing instead.
