@@ -435,7 +435,7 @@ export async function trackScrapedInteraction(
 
 export type RecentlyViewedItem =
   | { kind: 'own'; lastAt: string; property: Property }
-  | { kind: 'scraped'; lastAt: string; listing: ScrapedListing };
+  | { kind: 'scraped'; lastAt: string; listing: Listing };
 
 export async function getRecentlyViewed(limit: number = 20): Promise<RecentlyViewedItem[]> {
   const token = await getAuthToken();
@@ -482,7 +482,7 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
 
 // ─── Scraped Listings ─────────────────────────────────────────────────────────
 
-export interface ScrapedListing {
+export interface Listing {
   id: string;
   adId: string;
   platform: string;
@@ -494,6 +494,14 @@ export interface ScrapedListing {
   location: string | null;
   zipCode: string | null;
   imageUrl: string | null;
+  // ADR-025 M2b — unified-schema discriminator replacing the old
+  // CardProperty `source: 'own' | 'scraped'`. 'public' = a discoverable
+  // (scraped) listing; 'private' = the user's own listing (email-parsed or
+  // manually added). The card no longer branches on origin — funnel
+  // membership is signalled by the presence of a UserListing instead.
+  // Optional because the legacy /scraped-listings response doesn't carry it
+  // yet; mappers set it explicitly when building a ListingCard.
+  visibility?: 'public' | 'private';
   firstSeenAt: string;
   lastSeenAt: string;
   savedByUser: boolean;
@@ -504,7 +512,7 @@ export interface ScrapedListing {
 }
 
 export interface ScrapedListingsResponse {
-  data: ScrapedListing[];
+  data: Listing[];
   total: number;
   page: number;
   pageSize: number;

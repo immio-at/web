@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Property, ScrapedListing, SavedFilter, RecentlyViewedItem, reportUnavailable, saveScrapedListing, getScrapedListings } from '@/lib/api';
+import { Property, Listing, SavedFilter, RecentlyViewedItem, reportUnavailable, saveScrapedListing, getScrapedListings } from '@/lib/api';
 import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { useAuth } from '@/context/AuthContext';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
@@ -38,7 +38,7 @@ function ownPropertyToCard(p: Property): CardProperty {
   };
 }
 
-function scrapedListingToCard(s: ScrapedListing): CardProperty {
+function scrapedListingToCard(s: Listing): CardProperty {
   return {
     id: `scraped-${s.id}`,
     title: s.title,

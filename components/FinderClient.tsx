@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useProperties, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
-import { Property, getScrapedListings, saveScrapedListing, ScrapedListing, reportUnavailable } from '@/lib/api';
+import { Property, getScrapedListings, saveScrapedListing, Listing, reportUnavailable } from '@/lib/api';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
 import PresetFilters from '@/components/PresetFilters';
@@ -118,7 +118,7 @@ function sortFinderCards(cards: FinderCard[], sortBy: string, sortOrder: string)
   });
 }
 
-function scrapedToCard(s: ScrapedListing): FinderCard {
+function scrapedToCard(s: Listing): FinderCard {
   return {
     id: `scraped-${s.id}`,
     title: s.title,

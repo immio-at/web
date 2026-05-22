@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, ScrapedListing, Property, SavedFilter } from '@/lib/api';
+import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, Listing, Property, SavedFilter } from '@/lib/api';
 import { TERMINAL_STAGES } from '@/lib/constants';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
@@ -96,7 +96,7 @@ function propertyToUnified(p: Property): UnifiedListing {
   };
 }
 
-function scrapedToUnified(s: ScrapedListing): UnifiedListing {
+function scrapedToUnified(s: Listing): UnifiedListing {
   return {
     id: `scraped-${s.id}`,
     title: s.title,

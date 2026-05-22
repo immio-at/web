@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { Property, getScrapedListings, ScrapedListing } from '@/lib/api';
+import { Property, getScrapedListings, Listing } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { deriveCriteria, scoreProperty, type DerivedCriteria } from '@/lib/recommendations';
 import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
@@ -41,7 +41,7 @@ function propertyToCard(p: Property): CardProperty {
   };
 }
 
-function scrapedToCard(s: ScrapedListing): CardProperty {
+function scrapedToCard(s: Listing): CardProperty {
   return {
     id: s.id,
     title: s.title,
@@ -59,7 +59,7 @@ function scrapedToCard(s: ScrapedListing): CardProperty {
 }
 
 // Score a scraped listing using a Property-like shape
-function scoreScraped(s: ScrapedListing, criteria: DerivedCriteria): number {
+function scoreScraped(s: Listing, criteria: DerivedCriteria): number {
   // Build a minimal Property-like shape for the scorer
   const proxy = {
     price: s.price ? parseFloat(String(s.price)) : null,
