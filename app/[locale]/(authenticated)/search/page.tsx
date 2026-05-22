@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, Listing, Property, SavedFilter } from '@/lib/api';
+import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, Listing, UserListing, SavedFilter } from '@/lib/api';
 import { TERMINAL_STAGES } from '@/lib/constants';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
@@ -59,8 +59,8 @@ interface UnifiedListing {
   createdAt?: string;
   emailReceivedAt?: string | null;
   firstSeenAt?: string;
-  // Per-Property content counters. Email rows pass through from the
-  // Property; scraped rows default to 0 (no backing Property yet) but
+  // Per-UserListing content counters. Email rows pass through from the
+  // UserListing; scraped rows default to 0 (no backing UserListing yet) but
   // are upgraded in listingToCard when an existing own row matches by
   // sourceUrl — so a "previously engaged" scraped tile still surfaces
   // its analyses/docs indicator.
@@ -68,7 +68,7 @@ interface UnifiedListing {
   documentCount?: number;
 }
 
-function propertyToUnified(p: Property): UnifiedListing {
+function propertyToUnified(p: UserListing): UnifiedListing {
   // Prisma serializes Decimal columns as strings even though the TS type
   // says number — coerce here so sort/compare ops behave numerically.
   return {
@@ -406,7 +406,7 @@ export default function EntdeckenPage() {
   const [scrapedTotal, setScrapedTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [scrapedLoading, setScrapedLoading] = useState(true);
-  const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
+  const [analyseProperty, setAnalyseProperty] = useState<UserListing | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // ── Dismiss UX state ─────────────────────────────────────────────────────
@@ -534,7 +534,7 @@ export default function EntdeckenPage() {
   useEffect(() => { fetchScraped(); }, [fetchScraped]);
 
   // ── User properties for page 1 — from cache or filtered API call ──
-  const [filteredUserProps, setFilteredUserProps] = useState<Property[]>([]);
+  const [filteredUserProps, setFilteredUserProps] = useState<UserListing[]>([]);
 
   useEffect(() => {
     if (page !== 1) { setFilteredUserProps([]); return; }
@@ -603,7 +603,7 @@ export default function EntdeckenPage() {
     // the user explicitly moved to not_relevant / delisted shouldn't keep
     // suppressing its scraped twin, otherwise an "undo save" leaves the
     // listing permanently invisible on Discover with no path back.
-    const activeOwnByUrl = new Map<string, Property>();
+    const activeOwnByUrl = new Map<string, UserListing>();
     for (const p of cachedProperties) {
       if (!TERMINAL_STAGES.has(p.status)) activeOwnByUrl.set(p.sourceUrl, p);
     }
@@ -688,9 +688,9 @@ export default function EntdeckenPage() {
   // ── Convert UnifiedListing to CardProperty ──
   function listingToCard(l: UnifiedListing): CardProperty {
     // For scraped, derive savedByUser AND content counts from current
-    // cache so (a) an own-Property at not_relevant / delisted doesn't
+    // cache so (a) an own-UserListing at not_relevant / delisted doesn't
     // keep forcing the heart filled, and (b) a scraped tile that maps
-    // to an existing own Property still surfaces the analyse-button
+    // to an existing own UserListing still surfaces the analyse-button
     // blue if the user has analyses/docs against the underlying row.
     let derivedSavedByUser = l.savedByUser;
     let analysisCount = l.analysisCount ?? 0;
@@ -783,7 +783,7 @@ export default function EntdeckenPage() {
       }
       if (item.source !== 'scraped' || !item.scrapedListingId) return;
       const scraped = scrapedListings.find(l => l.id === `scraped-${item.scrapedListingId}`);
-      // If the user already has a Property for this listing (from a prior
+      // If the user already has a UserListing for this listing (from a prior
       // save+undo cycle), re-promote it instead of POSTing a new save —
       // the backend would 409 on the duplicate sourceUrl. Treat any
       // existing match (even past 'investigating') as a re-promote: the
@@ -811,7 +811,7 @@ export default function EntdeckenPage() {
     },
     // ADR-012 v1.2 — re-click filled house to undo. Both paths are
     // soft-only: own reverts to status 'new'; scraped sets the matching
-    // Property to 'not_relevant' so the row is out of the active funnel
+    // UserListing to 'not_relevant' so the row is out of the active funnel
     // but the DB record (and any analyses/notes) survive — the user can
     // recover via Funnel's not_relevant column or by re-clicking the
     // heart on the same Discover tile (re-promotes to investigating).
@@ -853,7 +853,7 @@ export default function EntdeckenPage() {
       }
       // Scraped — open the same modal as forwarded properties. The user's
       // mental model is "click any property to see details" regardless of
-      // source. If a Property row already exists for this listing (prior
+      // source. If a UserListing row already exists for this listing (prior
       // save / undo cycle), reuse it; otherwise auto-create at status
       // 'new' — matches where forwarded emails land, doesn't pollute the
       // funnel kanban, and the row stays visible on Discover via the

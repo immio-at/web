@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useProperties, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
-import { Property, getScrapedListings, saveScrapedListing, Listing, reportUnavailable } from '@/lib/api';
+import { UserListing, getScrapedListings, saveScrapedListing, Listing, reportUnavailable } from '@/lib/api';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
 import PresetFilters from '@/components/PresetFilters';
@@ -43,14 +43,14 @@ interface FinderCard {
   emailReceivedAt?: string | null;
   createdAt?: string;
   firstSeenAt?: string;
-  // Per-Property content counters — drives the analyse-button colour on
+  // Per-UserListing content counters — drives the analyse-button colour on
   // PropertyCard. Own rows carry the real counts; scraped rows default
-  // to 0 (no backing Property yet).
+  // to 0 (no backing UserListing yet).
   analysisCount?: number;
   documentCount?: number;
 }
 
-function propertyToCard(p: Property): FinderCard {
+function propertyToCard(p: UserListing): FinderCard {
   // Prisma serializes Decimal columns as strings even though the TS type
   // says number — coerce here so sort/compare ops behave numerically.
   return {
@@ -270,11 +270,11 @@ export default function FinderClient({
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [lastAction, setLastAction] = useState<string | null>(null);
-  // Holds the Property to render in the analyse modal. Set by image-tap
-  // on either an own card (open on the cached Property) or a scraped card
-  // (auto-save at status 'new' first, then open on the new Property —
+  // Holds the UserListing to render in the analyse modal. Set by image-tap
+  // on either an own card (open on the cached UserListing) or a scraped card
+  // (auto-save at status 'new' first, then open on the new UserListing —
   // matches forwarded-email behaviour).
-  const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
+  const [analyseProperty, setAnalyseProperty] = useState<UserListing | null>(null);
   const dragStart = useRef<{ x: number; y: number } | null>(null);
 
   // Reset card index when filters change
@@ -403,8 +403,8 @@ export default function FinderClient({
 
   // Resolve "open the analysis modal for this card" — works for both own
   // and scraped. Scraped auto-saves at status 'new' (matches forwarded
-  // landing) and opens on the freshly-created Property. Re-using an
-  // existing Property (saved-then-undone, or saved from another surface)
+  // landing) and opens on the freshly-created UserListing. Re-using an
+  // existing UserListing (saved-then-undone, or saved from another surface)
   // is preferred to a duplicate POST.
   async function openAnalyseFor(item: CardProperty): Promise<void> {
     if (item.source === 'own') {

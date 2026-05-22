@@ -17,7 +17,7 @@ import { usePortfolioAnalyses } from '@/hooks/usePortfolioAnalyses';
 import { defaultSortFor } from '@/lib/portfolioAnalyses';
 import PortfolioAnalysisTable from '@/components/portfolio/PortfolioAnalysisTable';
 import { Link } from '@/i18n/navigation';
-import type { Property } from '@/lib/api';
+import type { UserListing } from '@/lib/api';
 
 const PropertyAnalysisModal = dynamic(
   () => import('@/components/PropertyAnalysisModal'),
@@ -64,7 +64,7 @@ export default function DashboardAnalysisTile() {
     });
 
   // ── Click-through to modal ─────────────────────────────────────
-  const [modalProperty, setModalProperty] = useState<Property | null>(null);
+  const [modalProperty, setModalProperty] = useState<UserListing | null>(null);
   function handleOpen(propertyId: string, _analysisId: string) {
     void _analysisId;
     const prop = properties.find((p) => p.id === propertyId);

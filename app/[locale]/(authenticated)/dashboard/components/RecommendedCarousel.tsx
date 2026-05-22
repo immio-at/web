@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { Property, getScrapedListings, Listing } from '@/lib/api';
+import { UserListing, getScrapedListings, Listing } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { deriveCriteria, scoreProperty, type DerivedCriteria } from '@/lib/recommendations';
 import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
@@ -18,7 +18,7 @@ export function clearRecommendedCache(): void {
   recommendedCache = null;
 }
 
-function propertyToCard(p: Property): CardProperty {
+function propertyToCard(p: UserListing): CardProperty {
   // Prisma serializes Decimal columns as strings — coerce so any downstream
   // sort/compare op behaves numerically.
   return {
@@ -58,9 +58,9 @@ function scrapedToCard(s: Listing): CardProperty {
   };
 }
 
-// Score a scraped listing using a Property-like shape
+// Score a scraped listing using a UserListing-like shape
 function scoreScraped(s: Listing, criteria: DerivedCriteria): number {
-  // Build a minimal Property-like shape for the scorer
+  // Build a minimal UserListing-like shape for the scorer
   const proxy = {
     price: s.price ? parseFloat(String(s.price)) : null,
     pricePerSqm: s.price && s.sizeSqm && parseFloat(String(s.sizeSqm)) > 0
@@ -68,7 +68,7 @@ function scoreScraped(s: Listing, criteria: DerivedCriteria): number {
       : null,
     sizeSqm: s.sizeSqm ? Math.round(parseFloat(String(s.sizeSqm))) : null,
     zipCode: s.zipCode,
-  } as Property;
+  } as UserListing;
   return scoreProperty(proxy, criteria);
 }
 
@@ -77,7 +77,7 @@ export default function RecommendedCarousel({
   actions,
   firstCardTourId,
 }: {
-  properties: Property[];
+  properties: UserListing[];
   actions: CardActions;
   /** ADR-021 HH8 — `data-tour-id` for the first rendered card. */
   firstCardTourId?: string;

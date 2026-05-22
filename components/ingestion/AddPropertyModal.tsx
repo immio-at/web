@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AddPropertyModal — unified Add Property entry point (ADR-010 I2).
+ * AddPropertyModal — unified Add UserListing entry point (ADR-010 I2).
  *
  * Three tabs across the top: Webseite (URL paste), Exposé (PDF upload,
  * Pro), Manuell (minimal form). A shared funnel-stage selector and a
@@ -16,7 +16,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  Property,
+  UserListing,
   createManualProperty,
   createPropertyFromExpose,
   createPropertyFromUrl,
@@ -42,7 +42,7 @@ interface Props {
   // Defaults to 'created' for the Exposé and Manual paths which don't go
   // through the unified ingest envelope yet.
   onCreated: (
-    property: Property,
+    property: UserListing,
     action?: 'created' | 'updated_existing' | 'inserted_with_soft_suspicion',
   ) => void;
 }
@@ -92,7 +92,7 @@ export default function AddPropertyModal({ open, onClose, onCreated }: Props) {
     if (submitting) return;
     setError(null);
 
-    let property: Property | null = null;
+    let property: UserListing | null = null;
     let createAction: 'created' | 'updated_existing' | 'inserted_with_soft_suspicion' = 'created';
     setSubmitting(true);
     try {

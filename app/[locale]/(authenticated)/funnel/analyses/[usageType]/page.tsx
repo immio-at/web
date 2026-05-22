@@ -21,7 +21,7 @@ import {
 } from '@/lib/portfolioAnalyses';
 import PortfolioAnalysisTable from '@/components/portfolio/PortfolioAnalysisTable';
 import { Link } from '@/i18n/navigation';
-import type { Property } from '@/lib/api';
+import type { UserListing } from '@/lib/api';
 
 const PropertyAnalysisModal = dynamic(
   () => import('@/components/PropertyAnalysisModal'),
@@ -85,7 +85,7 @@ export default function PortfolioAnalysesPage() {
   }
 
   // ── Resolve modal property + initial analysis ──────────────────
-  const modalProperty: Property | null = useMemo(() => {
+  const modalProperty: UserListing | null = useMemo(() => {
     if (!modalAnalysisId) return null;
     const row = rows.find((r) => r.analysis.id === modalAnalysisId);
     if (!row) return null;

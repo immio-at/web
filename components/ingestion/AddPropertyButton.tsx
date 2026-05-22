@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AddPropertyButton — unified Add Property entry point (ADR-010 I2 + I7).
+ * AddPropertyButton — unified Add UserListing entry point (ADR-010 I2 + I7).
  *
  * Replaces the standalone components/property/AddFromExposeButton.tsx
  * from ADR-009 DO8 with a single button that opens the
@@ -16,7 +16,7 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { Property } from '@/lib/api';
+import { UserListing } from '@/lib/api';
 import AddPropertyModal from './AddPropertyModal';
 
 const PropertyAnalysisModal = dynamic(
@@ -27,7 +27,7 @@ const PropertyAnalysisModal = dynamic(
 export default function AddPropertyButton({ size = 'default' }: { size?: 'default' | 'lg' } = {}) {
   const t = useTranslations('addProperty');
   const [modalOpen, setModalOpen] = useState(false);
-  const [createdProperty, setCreatedProperty] = useState<Property | null>(null);
+  const [createdProperty, setCreatedProperty] = useState<UserListing | null>(null);
 
   const sizeClass = size === 'lg'
     ? 'text-sm px-4 py-2'

@@ -12,7 +12,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  Property,
+  UserListing,
   PropertyDocument,
   DueDiligenceRun,
   DueDiligenceCheckResult,
@@ -23,7 +23,7 @@ import { useProperties } from '@/hooks/useProperties';
 import { useAuth } from '@/context/AuthContext';
 
 interface Props {
-  property: Property;
+  property: UserListing;
   documents: PropertyDocument[];
 }
 

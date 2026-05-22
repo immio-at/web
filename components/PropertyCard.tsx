@@ -22,12 +22,12 @@ export interface CardProperty {
   scrapedListingId?: string;
   emailReceivedAt?: string | null;
   savedByUser?: boolean;
-  /** Number of saved analyses on the underlying Property. Drives the
+  /** Number of saved analyses on the underlying UserListing. Drives the
    *  analyse-button colour (gray when both this and documentCount are 0,
-   *  blue otherwise). Optional — scraped tiles without a backing Property
+   *  blue otherwise). Optional — scraped tiles without a backing UserListing
    *  omit it and render gray. */
   analysisCount?: number;
-  /** Number of uploaded documents on the underlying Property. Same role
+  /** Number of uploaded documents on the underlying UserListing. Same role
    *  as analysisCount in the analyse-button colour. */
   documentCount?: number;
   // ADR-022 §7.5 — effective rent-regulation state. `rentRegulationCategory`
@@ -47,7 +47,7 @@ export interface CardActions {
    * Re-click-undo on a filled heart. ADR-012 v1.2 — when provided AND
    * onMoveStage is not, clicking the filled house reverses the recent save:
    *   - own → revert status to 'new' (stays visible until next mount)
-   *   - scraped → DELETE the just-created Property and clear savedByUser
+   *   - scraped → DELETE the just-created UserListing and clear savedByUser
    * Used by Discover only. Funnel takes onMoveStage and ignores this.
    */
   onUndoSave?: (item: CardProperty) => void | Promise<void>;
@@ -278,7 +278,7 @@ export default function PropertyCard({
       return;
     }
     if (isUndoPath) {
-      // Filled scraped → call undo (parent deletes Property + flips
+      // Filled scraped → call undo (parent deletes UserListing + flips
       // savedByUser). Filled own → call undo (parent reverts status `new`).
       // Local scrapedSaved snaps back so the UI flips outline immediately.
       if (!isOwn) setScrapedSaved(false);

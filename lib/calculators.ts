@@ -1,7 +1,7 @@
 /**
  * calculators.ts
  *
- * Pure calculation functions for the IMMIO Property Analysis Calculator.
+ * Pure calculation functions for the IMMIO UserListing Analysis Calculator.
  * No side effects, no UI dependencies, no API calls.
  * All inputs are plain numbers. All outputs are plain numbers.
  *

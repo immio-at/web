@@ -17,13 +17,13 @@ import { useTranslations } from 'next-intl';
 import EditableField from './EditableField';
 import {
   PropertyDetails,
-  Property,
+  UserListing,
   trackInteraction,
   updatePropertyDetails,
 } from '@/lib/api';
 
 interface Props {
-  property: Property;
+  property: UserListing;
   details: PropertyDetails | null;
   /** Passed in from the active analysis tab. Used to enrich the mailto subject. */
   dealId: string | null;

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
-import { Property, SavedFilter, getScrapedListings } from '@/lib/api';
+import { UserListing, SavedFilter, getScrapedListings } from '@/lib/api';
 import { SEARCH_INPUT_ENABLED, PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
 import { FilterValues, EMPTY_FILTERS, savedFilterToValues, resolvePostcodes } from '@/lib/filter-values';
 import { type PresetFilterKey, passesPresetFilters, passesFilterValues } from '@/lib/preset-filters';
@@ -18,7 +18,7 @@ export default function DiscoverTile({
   properties,
 }: {
   savedFilters: SavedFilter[];
-  properties: Property[];
+  properties: UserListing[];
 }) {
   const t = useTranslations('dashboard.discoverTile');
   const router = useRouter();

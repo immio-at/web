@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import {
-  Property,
+  UserListing,
   Analysis,
   PropertyDetailsApplyableField,
   RehabCostItem,
@@ -67,10 +67,10 @@ const RentalProjectionChart = dynamic(
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  property: Property;
+  property: UserListing;
   onClose: () => void;
   /** Initial viewMode — defaults to 'analyses'. ADR-010 I6: the
-   *  unified Add Property modal opens new properties in 'dossier' mode
+   *  unified Add UserListing modal opens new properties in 'dossier' mode
    *  so the user immediately sees the data they just provided. */
   initialViewMode?: 'analyses' | 'dossier';
 }
@@ -148,7 +148,7 @@ function MetricCard({ label, value, sub }: { label: string; value: string; sub?:
 
 // ─── Default blank analysis (client-side shell before backend response) ────────
 
-function blankAnalysis(property: Property): Omit<Analysis, 'id' | 'propertyId' | 'dealId' | 'createdAt' | 'updatedAt'> {
+function blankAnalysis(property: UserListing): Omit<Analysis, 'id' | 'propertyId' | 'dealId' | 'createdAt' | 'updatedAt'> {
   return {
     name: null,
     usageType: 'rental',
@@ -782,7 +782,7 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
         {/* ── PropertyInfoStrip + Makler block — unified card (ADR-003 §10 / ADR-009 v1.1) ── */}
         {propertyInfoStrip}
 
-        {/* ── Property facts (ADR-017) — chips below Makler, visible in both modes ── */}
+        {/* ── UserListing facts (ADR-017) — chips below Makler, visible in both modes ── */}
         <PropertyFactsHeader
           propertyId={property.id}
           details={details}

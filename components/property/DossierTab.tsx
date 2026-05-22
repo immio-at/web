@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * DossierTab — Property Dossier (ADR-009 DO4 + DO5 + DO7).
+ * DossierTab — UserListing Dossier (ADR-009 DO4 + DO5 + DO7).
  *
  * Three sections:
  *   1. Documents      — list + upload + download + delete
@@ -14,7 +14,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  Property,
+  UserListing,
   PropertyDetails,
   PropertyDocument,
   PropertyDetailsApplyableField,
@@ -38,7 +38,7 @@ import EditableField, { type FieldKind } from './EditableField';
 import DueDiligencePanel from '@/components/due-diligence/DueDiligencePanel';
 
 interface Props {
-  property: Property;
+  property: UserListing;
   /** Called immediately after a → Apply click so the parent can sync
    *  open analysis drafts with the new value (analyses keep their own
    *  per-row copies of price / BK / purchaseDate that don't otherwise
@@ -157,7 +157,7 @@ function formatYear(n: number | null): string {
 // Used to optimistically update the useProperties cache so the analyses
 // tab and any other consumers see the new value without waiting for a
 // network round-trip.
-const APPLY_TARGET: Record<PropertyDetailsApplyableField, keyof Property> = {
+const APPLY_TARGET: Record<PropertyDetailsApplyableField, keyof UserListing> = {
   exposePrice: 'price',
   purchaseDate: 'purchaseDate',
   bkUmlagefaehig: 'bkUmlagefaehig',
@@ -325,7 +325,7 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
     // Optimistic cache update — patch the parent property record so
     // analyses re-derive from fresh values on the next render.
     const propertyColumn = APPLY_TARGET[field];
-    optimisticUpdate(property.id, { [propertyColumn]: value } as Partial<Property>);
+    optimisticUpdate(property.id, { [propertyColumn]: value } as Partial<UserListing>);
 
     // Tell the parent so it can sync open analysis drafts that hold
     // their own per-analysis copies of these fields (BK, list price,
@@ -792,7 +792,7 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
       {/* ─── Due Diligence Check Engine (ADR-013) ──────────────────────── */}
       <DueDiligencePanel property={property} documents={documents} />
 
-      {/* ─── Section 3: Structured Property Data ──────────────────────── */}
+      {/* ─── Section 3: Structured UserListing Data ──────────────────────── */}
       <section className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-900">{t('fields.title')}</h3>
@@ -830,7 +830,7 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
                 <RefField field="addressStreet" label={t('fields.addressStreet')} />
                 <RefField field="addressZip"    label={t('fields.addressZip')} />
                 <RefField field="addressCity"   label={t('fields.addressCity')} />
-                {/* Property */}
+                {/* UserListing */}
                 <RefField field="widmung"       label={t('fields.widmung')} />
                 <RefField field="etage"         label={t('fields.etage')} />
                 <RefField field="baujahr"       label={t('fields.baujahr')} />

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Property, Listing, SavedFilter, RecentlyViewedItem, reportUnavailable, saveScrapedListing, getScrapedListings } from '@/lib/api';
+import { UserListing, Listing, SavedFilter, RecentlyViewedItem, reportUnavailable, saveScrapedListing, getScrapedListings } from '@/lib/api';
 import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { useAuth } from '@/context/AuthContext';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
@@ -17,7 +17,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 
 // Prisma serializes Decimal columns as strings — coerce numeric fields here.
-function ownPropertyToCard(p: Property): CardProperty {
+function ownPropertyToCard(p: UserListing): CardProperty {
   return {
     id: p.id,
     title: p.title,
@@ -93,7 +93,7 @@ export default function DashboardClient({
   immioEmail,
   savedFilters,
 }: {
-  properties: Property[];
+  properties: UserListing[];
   propertiesLoading?: boolean;
   recentlyViewed?: RecentlyViewedItem[];
   immioEmail: string | null;
@@ -101,7 +101,7 @@ export default function DashboardClient({
 }) {
   const t = useTranslations('dashboard.carousels');
   const { update, optimisticUpdate, optimisticInsert } = useProperties();
-  const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
+  const [analyseProperty, setAnalyseProperty] = useState<UserListing | null>(null);
 
   // Card actions — shared across all carousels. Carousels can now mix own +
   // scraped cards (Recommended scoring, New Arrivals fallback), so each
@@ -132,7 +132,7 @@ export default function DashboardClient({
         return;
       }
       // Scraped — open the same modal as forwarded properties. Reuse an
-      // existing Property by sourceUrl if present (prior save / undo);
+      // existing UserListing by sourceUrl if present (prior save / undo);
       // otherwise auto-create at status 'new' so it lands where forwarded
       // emails do, without polluting the funnel kanban.
       if (!item.scrapedListingId) return;

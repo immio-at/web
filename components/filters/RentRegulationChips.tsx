@@ -2,7 +2,7 @@
 
 /**
  * RentRegulationChips — ADR-023 R5. Three multi-select chips wired to the
- * `rentRegulationCategory` filter (ADR-022 `Property.rentRegulationCategory`).
+ * `rentRegulationCategory` filter (ADR-022 `UserListing.rentRegulationCategory`).
  *
  * The UI labels are the familiar colloquial construction-era terms
  * (Altbau / Wiederaufbau / Neubau); the underlying values are *regulatory*

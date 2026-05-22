@@ -132,7 +132,7 @@ export default function PortfolioAnalysisRow({ row, compact, locale, onOpen }: P
   // ── Full table row ──────────────────────────────────────────────
   const columns: React.ReactNode[] = [];
 
-  // Property
+  // UserListing
   columns.push(<td key="property" className="px-3 py-2 max-w-xs">{propertyCell}</td>);
   // Stage
   columns.push(<td key="stage" className="px-3 py-2 whitespace-nowrap">{stagePill}</td>);

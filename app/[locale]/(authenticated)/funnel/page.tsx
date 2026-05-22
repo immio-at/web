@@ -10,7 +10,7 @@ import PresetFilters from '@/components/PresetFilters';
 import AddPropertyButton from '@/components/ingestion/AddPropertyButton';
 import { Link } from '@/i18n/navigation';
 import { type PresetFilterKey } from '@/lib/preset-filters';
-import { type Property } from '@/lib/api';
+import { type UserListing } from '@/lib/api';
 import { EMPTY_FILTERS, type FilterValues } from '@/lib/filter-values';
 import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
 
@@ -26,7 +26,7 @@ export default function FunnelPage() {
   const { properties } = useProperties();
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(new Set());
-  const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
+  const [analyseProperty, setAnalyseProperty] = useState<UserListing | null>(null);
   // ADR-023 §5.2 — the consolidated pill bar's live filter state. Inert
   // while PILL_BAR_ONLY_FILTERS is off (FunnelBoard ignores it).
   const [filterValues, setFilterValues] = useState<FilterValues>(EMPTY_FILTERS);

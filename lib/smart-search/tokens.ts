@@ -2,8 +2,8 @@
  * ADR-024 §2.1 — bilingual (DE + EN) Austrian property-vocabulary token
  * maps. Each entry's canonical key is the value the suggestion routes to:
  *
- *  - PROPERTY_TYPE_TOKENS  — canonical `Property.propertyType` chip value
- *  - RENT_REGULATION_TOKENS — canonical `Property.rentRegulationCategory`
+ *  - PROPERTY_TYPE_TOKENS  — canonical `UserListing.propertyType` chip value
+ *  - RENT_REGULATION_TOKENS — canonical `UserListing.rentRegulationCategory`
  *  - BUNDESLAND_TOKENS     — the Bundesland preset key (`W`, `NÖ`, …)
  *
  * The recognised-string lists mix DE, EN and Austrian abbreviations

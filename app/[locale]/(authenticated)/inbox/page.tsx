@@ -2,7 +2,7 @@
  * ADR-020 v1.1 II8 — /inbox route.
  *
  * Authenticated route. Lists inbound_emails captured from allowlisted
- * senders that didn't become a Property row — Gmail forwarding
+ * senders that didn't become a UserListing row — Gmail forwarding
  * confirmations, unknown-platform messages from allowlisted senders,
  * and parser failures. Reached via the Sources tile unread indicator
  * or direct URL. Not in the top nav (see ADR-021 v1.2 cross-ref).

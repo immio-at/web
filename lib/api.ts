@@ -41,9 +41,9 @@ async function handleResponse(response: Response): Promise<any> {
   return response.json();
 }
 
-// ─── Property ─────────────────────────────────────────────────────────────────
+// ─── UserListing ─────────────────────────────────────────────────────────────────
 
-export interface Property {
+export interface UserListing {
   id: string;
   title: string;
   price: number | null;
@@ -100,7 +100,7 @@ export interface Property {
   baujahr?: number | null;
 }
 
-// ─── Property Analysis ────────────────────────────────────────────────────────
+// ─── Analysis ────────────────────────────────────────────────────────
 
 export interface RehabCostItem {
   label: string;
@@ -176,9 +176,9 @@ export type CreateAnalysisDto = {
 
 export type UpdateAnalysisDto = Partial<Omit<Analysis, 'id' | 'propertyId' | 'createdAt' | 'updatedAt'>>;
 
-// ─── Property API ─────────────────────────────────────────────────────────────
+// ─── UserListing API ─────────────────────────────────────────────────────────────
 
-export async function getProperties(): Promise<Property[]> {
+export async function getProperties(): Promise<UserListing[]> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties`, {
     headers: { 'Authorization': `Bearer ${token}` },
@@ -208,7 +208,7 @@ export interface PropertiesFilter {
   sortOrder?: string;
 }
 
-export async function getPropertiesFiltered(filter: PropertiesFilter = {}): Promise<Property[]> {
+export async function getPropertiesFiltered(filter: PropertiesFilter = {}): Promise<UserListing[]> {
   const token = await getAuthToken();
   const params = new URLSearchParams();
   if (filter.keyword) params.set('keyword', filter.keyword);
@@ -318,7 +318,7 @@ export type IngestAction =
 
 export async function importFromUrl(url: string, status?: string): Promise<{
   message: string;
-  property: Property;
+  property: UserListing;
   action: IngestAction;
   suspectedDuplicateOf: string | null;
 }> {
@@ -357,7 +357,7 @@ export async function getListingHistory(propertyId: string): Promise<ListingHist
 export async function applyDuplicateDecision(
   propertyId: string,
   decision: 'keep_both' | 'hide_this',
-): Promise<Property> {
+): Promise<UserListing> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/${propertyId}/duplicate-decision`, {
     method: 'PATCH',
@@ -370,7 +370,7 @@ export async function applyDuplicateDecision(
   return handleResponse(response);
 }
 
-export async function dismissRelistBadge(propertyId: string): Promise<Property> {
+export async function dismissRelistBadge(propertyId: string): Promise<UserListing> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/${propertyId}/dismiss-relist-badge`, {
     method: 'PATCH',
@@ -434,7 +434,7 @@ export async function trackScrapedInteraction(
 }
 
 export type RecentlyViewedItem =
-  | { kind: 'own'; lastAt: string; property: Property }
+  | { kind: 'own'; lastAt: string; property: UserListing }
   | { kind: 'scraped'; lastAt: string; listing: Listing };
 
 export async function getRecentlyViewed(limit: number = 20): Promise<RecentlyViewedItem[]> {
@@ -574,7 +574,7 @@ export async function getScrapedListings(filter: ScrapedListingsFilter = {}): Pr
 export async function saveScrapedListing(
   id: string,
   status: 'new' | 'investigating' = 'investigating',
-): Promise<{ message: string; property: Property }> {
+): Promise<{ message: string; property: UserListing }> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/scraped-listings/${id}/save`, {
     method: 'POST',
@@ -774,7 +774,7 @@ export async function deleteAnalysis(propertyId: string, analysisId: string): Pr
   portfolioAnalysesCache = null;
 }
 
-// ─── Property Documents ─────────────────────────────────────────────────────
+// ─── UserListing Documents ─────────────────────────────────────────────────────
 
 export interface PropertyDocument {
   id: string;
@@ -878,7 +878,7 @@ export async function deleteDocument(propertyId: string, documentId: string): Pr
   return handleResponse(response);
 }
 
-// ─── Property Details (Dossier — ADR-009) ───────────────────────────────────
+// ─── UserListing Details (Dossier — ADR-009) ───────────────────────────────────
 
 export type PropertyDetailsApplyableField =
   | 'exposePrice'
@@ -907,7 +907,7 @@ export interface PropertyDetails {
   addressZip: string | null;
   addressCity: string | null;
 
-  // Property
+  // UserListing
   etage: number | null;
   aufzug: boolean | null;
   keller: boolean | null;
@@ -1014,7 +1014,7 @@ export async function extractPropertyDetails(propertyId: string): Promise<Proper
 export async function createPropertyFromExpose(
   file: File,
   status?: string,
-): Promise<{ property: Property; details: PropertyDetails }> {
+): Promise<{ property: UserListing; details: PropertyDetails }> {
   const token = await getAuthToken();
   const formData = new FormData();
   formData.append('file', file);
@@ -1031,7 +1031,7 @@ export async function createPropertyFromExpose(
   };
 }
 
-// ── ADR-010 unified Add Property modal ───────────────────────────────────────
+// ── ADR-010 unified Add UserListing modal ───────────────────────────────────────
 
 export interface CreateManualPropertyDto {
   title?: string | null;
@@ -1044,7 +1044,7 @@ export interface CreateManualPropertyDto {
   status?: string;
 }
 
-export async function createManualProperty(dto: CreateManualPropertyDto): Promise<Property> {
+export async function createManualProperty(dto: CreateManualPropertyDto): Promise<UserListing> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties`, {
     method: 'POST',
@@ -1059,10 +1059,10 @@ export async function createManualProperty(dto: CreateManualPropertyDto): Promis
 
 // Returns the full ingest envelope (action discriminator + property + suspect ref)
 // so callers can render different toasts for new vs relisted vs soft-suspect
-// per ADR-015 §7.2. Older callers reading just the Property still work because
+// per ADR-015 §7.2. Older callers reading just the UserListing still work because
 // `result.property` carries the same shape.
 export async function createPropertyFromUrl(url: string, status?: string): Promise<{
-  property: Property;
+  property: UserListing;
   action: IngestAction;
   suspectedDuplicateOf: string | null;
 }> {
@@ -1076,7 +1076,7 @@ export async function createPropertyFromUrl(url: string, status?: string): Promi
     body: JSON.stringify({ url, status }),
   });
   const data = await handleResponse(response) as {
-    property: Property;
+    property: UserListing;
     action?: IngestAction;
     suspectedDuplicateOf?: string | null;
   };
@@ -1090,7 +1090,7 @@ export async function createPropertyFromUrl(url: string, status?: string): Promi
 export async function applyPropertyDetailField(
   propertyId: string,
   field: PropertyDetailsApplyableField,
-): Promise<Property> {
+): Promise<UserListing> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/${propertyId}/details/apply-field`, {
     method: 'POST',

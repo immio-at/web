@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { Property, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
+import { UserListing, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
 import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters, passesFilterValues } from '@/lib/preset-filters';
@@ -181,7 +181,7 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
   const t = useTranslations('funnel');
   const { properties: all, loading, error, update, optimisticUpdate } = useProperties();
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
-  const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
+  const [analyseProperty, setAnalyseProperty] = useState<UserListing | null>(null);
   const [zoomedStage, setZoomedStage] = useState<string | null>(null);
   const draggedId = useRef<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
@@ -283,7 +283,7 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
   // we render a DropdownPortal anchored there with the available stages.
   const [heartMenu, setHeartMenu] = useState<{ propertyId: string; anchor: DOMRect } | null>(null);
 
-  function propertyToCard(p: Property): CardProperty {
+  function propertyToCard(p: UserListing): CardProperty {
     return {
       id: p.id,
       title: p.title,
@@ -552,10 +552,10 @@ function ZoomedStageView({
   onDrop,
 }: {
   stage: typeof FUNNEL_STAGES_DISPLAY[number];
-  stageProps: Property[];
+  stageProps: UserListing[];
   isDragOver: boolean;
   cardActions: CardActions;
-  toCard: (p: Property) => CardProperty;
+  toCard: (p: UserListing) => CardProperty;
   onBack: () => void;
   onDragStart: (id: string) => void;
   onDragEnd: () => void;

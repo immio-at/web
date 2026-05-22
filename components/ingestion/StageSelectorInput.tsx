@@ -2,7 +2,7 @@
 
 /**
  * StageSelectorInput — funnel-stage dropdown shared across all three
- * Add Property tabs (ADR-010 I2). Lists every non-terminal stage so the
+ * Add UserListing tabs (ADR-010 I2). Lists every non-terminal stage so the
  * user can decide where the new property lands the moment they create it.
  *
  * Default: investigating. ADR-010 §"Funnel Stage Selector" — `new` is

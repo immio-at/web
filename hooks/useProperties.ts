@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getProperties, Property, updateProperty } from '@/lib/api';
+import { getProperties, UserListing, updateProperty } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { pruneOrphanedModalModes } from '@/hooks/useModalMode';
 import { pruneOrphanedAnalysisDrafts } from '@/hooks/useAnalysisDraft';
@@ -14,7 +14,7 @@ import { pruneOrphanedAnalysisDrafts } from '@/hooks/useAnalysisDraft';
 // - Good enough: single user, single session, data doesn't change between
 //   navigations unless the user or a background email triggers it
 
-let cache: Property[] | null = null;
+let cache: UserListing[] | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL_MS = 120_000; // re-fetch from server after 2 minutes
 
@@ -75,9 +75,9 @@ function markLocalMutation() {
 
 // Listeners allow multiple mounted components to receive cache updates
 // e.g. if Dashboard and Funnel were both mounted simultaneously
-const listeners = new Set<(properties: Property[]) => void>();
+const listeners = new Set<(properties: UserListing[]) => void>();
 
-function notifyListeners(properties: Property[]) {
+function notifyListeners(properties: UserListing[]) {
   listeners.forEach(fn => fn(properties));
 }
 
@@ -107,7 +107,7 @@ export function useProperties() {
   const { session, loading: authLoading } = useAuth();
 
   // Initialise with cache immediately — no loading flash if cache is warm
-  const [properties, setProperties] = useState<Property[]>(cache ?? []);
+  const [properties, setProperties] = useState<UserListing[]>(cache ?? []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -203,7 +203,7 @@ export function useProperties() {
     data: { status?: string; notes?: string; movedToStageAt?: string }
   ) => {
     // Build the optimistic patch — mirrors what the backend will do
-    const patch: Partial<Property> = { ...data };
+    const patch: Partial<UserListing> = { ...data };
 
     if (data.status && !TERMINAL_STAGES.has(data.status)) {
       patch.listingStatus = 'active';
@@ -227,7 +227,7 @@ export function useProperties() {
     }
   }, []);
 
-  // ── Optimistic local-only update (arbitrary Property fields) ───────────────
+  // ── Optimistic local-only update (arbitrary UserListing fields) ───────────────
   // Use this for actions that call their own API function directly
   // (e.g. reportUnavailable, delistProperty) and only need the local cache
   // updated immediately without going through PATCH /properties/:id.
@@ -235,7 +235,7 @@ export function useProperties() {
   // The caller is responsible for firing the API call. If the API call fails,
   // the cache will be corrected on the next TTL refresh (30 seconds).
 
-  const optimisticUpdate = useCallback((id: string, data: Partial<Property>) => {
+  const optimisticUpdate = useCallback((id: string, data: Partial<UserListing>) => {
     if (cache) {
       cache = cache.map(p => p.id === id ? { ...p, ...data } : p);
       notifyListeners(cache);
@@ -258,11 +258,11 @@ export function useProperties() {
 
   // ── Optimistic insert (ADR-010 I6) ────────────────────────────────────────
   // Prepend a brand-new property to the cache and notify all listeners,
-  // so a card created via the Add Property modal appears in the Funnel /
+  // so a card created via the Add UserListing modal appears in the Funnel /
   // Dashboard / Discover lists instantly without waiting for a refetch.
   // Caller is responsible for the API call — this function only touches
   // the local cache.
-  const optimisticInsert = useCallback((property: Property) => {
+  const optimisticInsert = useCallback((property: UserListing) => {
     if (cache) {
       // De-dupe in case the same id was already inserted (e.g. between
       // optimistic insert and a follow-up refresh)

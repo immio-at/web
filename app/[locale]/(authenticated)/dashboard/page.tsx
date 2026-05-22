@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useProperties } from '@/hooks/useProperties';
-import { Property, RecentlyViewedItem } from '@/lib/api';
+import { UserListing, RecentlyViewedItem } from '@/lib/api';
 import { useInteractionTracker } from '@/hooks/useInteractionTracker';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { useAuth } from '@/context/AuthContext';

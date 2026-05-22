@@ -504,7 +504,7 @@ export default function PresetFilters({
     </div>
   );
 
-  // Property source row — its own labelled row, positioned below the
+  // UserListing source row — its own labelled row, positioned below the
   // smart-search bar and above the property-type chips.
   const sourceRow = (
     <div className={`flex flex-wrap items-center ${rowGap} ${justify}`}>
@@ -669,7 +669,7 @@ export default function PresetFilters({
         {showStages && stagesRow}
         {/* Location: State + Postcode dropdowns. */}
         {locationRow}
-        {/* Property source, above the criteria chips. */}
+        {/* UserListing source, above the criteria chips. */}
         {sourceRow}
         {/* The consolidated pill bar (categorisation + ranges groups). */}
         {pillBarRows}
