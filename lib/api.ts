@@ -108,7 +108,7 @@ export interface RehabCostItem {
   abzugsfaehig: number;
 }
 
-export interface PropertyAnalysis {
+export interface Analysis {
   id: string;
   propertyId: string;
   dealId: string;
@@ -174,7 +174,7 @@ export type CreateAnalysisDto = {
   name?: string;
 };
 
-export type UpdateAnalysisDto = Partial<Omit<PropertyAnalysis, 'id' | 'propertyId' | 'createdAt' | 'updatedAt'>>;
+export type UpdateAnalysisDto = Partial<Omit<Analysis, 'id' | 'propertyId' | 'createdAt' | 'updatedAt'>>;
 
 // ─── Property API ─────────────────────────────────────────────────────────────
 
@@ -586,10 +586,10 @@ export async function saveScrapedListing(
 // the modal still does for that mode after Session 44). Caching across
 // modal opens means a close+reopen within the TTL skips the roundtrip
 // entirely. Mutations invalidate the entry for that property.
-const analysesCache = new Map<string, { data: PropertyAnalysis[]; at: number }>();
+const analysesCache = new Map<string, { data: Analysis[]; at: number }>();
 const ANALYSES_CACHE_TTL_MS = 60_000;
 
-function readAnalysesCache(propertyId: string): PropertyAnalysis[] | null {
+function readAnalysesCache(propertyId: string): Analysis[] | null {
   const hit = analysesCache.get(propertyId);
   if (!hit) return null;
   if (Date.now() - hit.at > ANALYSES_CACHE_TTL_MS) {
@@ -604,7 +604,7 @@ export function clearAnalysesCache(propertyId?: string): void {
   else analysesCache.clear();
 }
 
-export async function getAnalyses(propertyId: string): Promise<PropertyAnalysis[]> {
+export async function getAnalyses(propertyId: string): Promise<Analysis[]> {
   const cached = readAnalysesCache(propertyId);
   if (cached) return cached;
   const token = await getAuthToken();
@@ -612,7 +612,7 @@ export async function getAnalyses(propertyId: string): Promise<PropertyAnalysis[
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
-  const raw = await handleResponse(response) as PropertyAnalysis[];
+  const raw = await handleResponse(response) as Analysis[];
   const data = raw.map((a) => normalizeAnalysis(a));
   analysesCache.set(propertyId, { data, at: Date.now() });
   return data;
@@ -620,7 +620,7 @@ export async function getAnalyses(propertyId: string): Promise<PropertyAnalysis[
 
 // ─── ADR-016 — Portfolio analyses (cross-property) ───────────────────────────
 
-export interface PortfolioAnalysis extends PropertyAnalysis {
+export interface PortfolioAnalysis extends Analysis {
   property: {
     id: string;
     title: string | null;
@@ -647,7 +647,7 @@ export function clearPortfolioAnalysesCache(): void {
 // PortfolioAnalysisTable and DashboardAnalysisTile read the raw
 // response and feed it straight to the calculator. Normalising here
 // keeps every caller honest.
-const ANALYSIS_DECIMAL_FIELDS: (keyof PropertyAnalysis)[] = [
+const ANALYSIS_DECIMAL_FIELDS: (keyof Analysis)[] = [
   'listPrice',
   'desiredPrice',
   'maklerPct',
@@ -677,7 +677,7 @@ const ANALYSIS_DECIMAL_FIELDS: (keyof PropertyAnalysis)[] = [
   'flipResalePrice',
 ];
 
-function normalizeAnalysis<T extends PropertyAnalysis>(a: T): T {
+function normalizeAnalysis<T extends Analysis>(a: T): T {
   const out = { ...a } as unknown as Record<string, unknown>;
   for (const f of ANALYSIS_DECIMAL_FIELDS) {
     const v = out[f as string];
@@ -719,7 +719,7 @@ export async function getPortfolioAnalyses(): Promise<PortfolioAnalysis[]> {
 export async function createAnalysis(
   propertyId: string,
   dto: CreateAnalysisDto,
-): Promise<PropertyAnalysis> {
+): Promise<Analysis> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/${propertyId}/analyses`, {
     method: 'POST',
@@ -729,7 +729,7 @@ export async function createAnalysis(
     },
     body: JSON.stringify(dto),
   });
-  const created = await handleResponse(response) as PropertyAnalysis;
+  const created = await handleResponse(response) as Analysis;
   analysesCache.delete(propertyId);
   portfolioAnalysesCache = null;
   return created;
@@ -739,7 +739,7 @@ export async function updateAnalysis(
   propertyId: string,
   analysisId: string,
   dto: UpdateAnalysisDto,
-): Promise<PropertyAnalysis> {
+): Promise<Analysis> {
   const token = await getAuthToken();
   const response = await fetch(`${API_URL}/properties/${propertyId}/analyses/${analysisId}`, {
     method: 'PATCH',
@@ -749,7 +749,7 @@ export async function updateAnalysis(
     },
     body: JSON.stringify(dto),
   });
-  const updated = await handleResponse(response) as PropertyAnalysis;
+  const updated = await handleResponse(response) as Analysis;
   analysesCache.delete(propertyId);
   portfolioAnalysesCache = null;
   return updated;

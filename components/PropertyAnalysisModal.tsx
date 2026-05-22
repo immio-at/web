@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import {
   Property,
-  PropertyAnalysis,
+  Analysis,
   PropertyDetailsApplyableField,
   RehabCostItem,
   UpdateAnalysisDto,
@@ -148,7 +148,7 @@ function MetricCard({ label, value, sub }: { label: string; value: string; sub?:
 
 // ─── Default blank analysis (client-side shell before backend response) ────────
 
-function blankAnalysis(property: Property): Omit<PropertyAnalysis, 'id' | 'propertyId' | 'dealId' | 'createdAt' | 'updatedAt'> {
+function blankAnalysis(property: Property): Omit<Analysis, 'id' | 'propertyId' | 'dealId' | 'createdAt' | 'updatedAt'> {
   return {
     name: null,
     usageType: 'rental',
@@ -194,9 +194,9 @@ function blankAnalysis(property: Property): Omit<PropertyAnalysis, 'id' | 'prope
 
 // ─── Convert backend analysis to draft format ───────────────────────────────
 
-type Draft = Omit<PropertyAnalysis, 'id' | 'propertyId' | 'dealId' | 'createdAt' | 'updatedAt'>;
+type Draft = Omit<Analysis, 'id' | 'propertyId' | 'dealId' | 'createdAt' | 'updatedAt'>;
 
-function analysisToDraft(a: PropertyAnalysis): Draft {
+function analysisToDraft(a: Analysis): Draft {
   return {
     name: a.name,
     usageType: a.usageType as 'owner' | 'rental' | 'flip',
@@ -644,9 +644,9 @@ export default function PropertyAnalysisModal({ property, onClose, initialViewMo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deleteConfirm, closeConfirm, tabs, activeTab, activeIsDirty]);
 
-  // ── Build a full PropertyAnalysis shape for calculators ───────────────────
+  // ── Build a full Analysis shape for calculators ───────────────────
   const currentTab = tabs[activeTab];
-  const calc: PropertyAnalysis = {
+  const calc: Analysis = {
     id: currentTab?.id ?? '',
     propertyId: property.id,
     dealId: currentTab?.dealId ?? '',
