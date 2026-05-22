@@ -33,8 +33,11 @@ setup('authenticate', async ({ page }) => {
   // exact accessible name.
   await page.locator('input[type="password"]').press('Enter');
 
-  // Land on the dashboard (de has no locale prefix, en is /en/...).
-  await page.waitForURL(/dashboard/, { timeout: 20_000 });
+  // Land on the dashboard (de has no locale prefix, en is /en/...). Wait
+  // only for the URL change — `waitUntil: 'commit'` skips the full `load`
+  // event, which on /dashboard is dominated by lazy-loaded images and a
+  // few client-side fetches that can easily exceed 20s on a fresh session.
+  await page.waitForURL(/dashboard/, { timeout: 20_000, waitUntil: 'commit' });
   await expect(page).toHaveURL(/dashboard/);
 
   await page.context().storageState({ path: authFile });
