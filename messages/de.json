@@ -556,6 +556,26 @@
       "usedBy": "Verwendet von {email} · {date}",
       "available": "Verfügbar",
       "empty": "Noch keine Einladungscodes erstellt."
+    },
+    "feedback": {
+      "title": "Berichte",
+      "unacknowledgedToast": "{count, plural, one {# unbestätigter Bericht} other {# unbestätigte Berichte}} — jetzt prüfen",
+      "filters": {
+        "status": "Status",
+        "type": "Art",
+        "user": "User",
+        "all": "Alle",
+        "unacknowledgedOnly": "Nur unbestätigte"
+      },
+      "row": {
+        "acknowledge": "✓ Bestätigen",
+        "acknowledged": "Bestätigt",
+        "context": "Kontext",
+        "teamNotePlaceholder": "Team-Notiz hinzufügen…",
+        "teamNoteSaved": "Gespeichert",
+        "statusUpdated": "Status aktualisiert"
+      },
+      "empty": "Keine Berichte gefunden."
     }
   },
   "filter": {
@@ -1103,28 +1123,6 @@
         "duplicate": "Duplikat"
       },
       "teamNote": { "heading": "Team-Antwort" }
-    }
-  },
-  "admin": {
-    "feedback": {
-      "title": "Berichte",
-      "unacknowledgedToast": "{count, plural, one {# unbestätigter Bericht} other {# unbestätigte Berichte}} — jetzt prüfen",
-      "filters": {
-        "status": "Status",
-        "type": "Art",
-        "user": "User",
-        "all": "Alle",
-        "unacknowledgedOnly": "Nur unbestätigte"
-      },
-      "row": {
-        "acknowledge": "✓ Bestätigen",
-        "acknowledged": "Bestätigt",
-        "context": "Kontext",
-        "teamNotePlaceholder": "Team-Notiz hinzufügen…",
-        "teamNoteSaved": "Gespeichert",
-        "statusUpdated": "Status aktualisiert"
-      },
-      "empty": "Keine Berichte gefunden."
     }
   },
   "propertyFacts": {

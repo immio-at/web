@@ -556,6 +556,26 @@
       "usedBy": "Used by {email} · {date}",
       "available": "Available",
       "empty": "No invite codes created yet."
+    },
+    "feedback": {
+      "title": "Reports",
+      "unacknowledgedToast": "{count, plural, one {# unacknowledged report} other {# unacknowledged reports}} — review now",
+      "filters": {
+        "status": "Status",
+        "type": "Type",
+        "user": "User",
+        "all": "All",
+        "unacknowledgedOnly": "Unacknowledged only"
+      },
+      "row": {
+        "acknowledge": "✓ Acknowledge",
+        "acknowledged": "Acknowledged",
+        "context": "Context",
+        "teamNotePlaceholder": "Add team note…",
+        "teamNoteSaved": "Saved",
+        "statusUpdated": "Status updated"
+      },
+      "empty": "No reports found."
     }
   },
   "filter": {
@@ -1103,28 +1123,6 @@
         "duplicate": "Duplicate"
       },
       "teamNote": { "heading": "Team response" }
-    }
-  },
-  "admin": {
-    "feedback": {
-      "title": "Reports",
-      "unacknowledgedToast": "{count, plural, one {# unacknowledged report} other {# unacknowledged reports}} — review now",
-      "filters": {
-        "status": "Status",
-        "type": "Type",
-        "user": "User",
-        "all": "All",
-        "unacknowledgedOnly": "Unacknowledged only"
-      },
-      "row": {
-        "acknowledge": "✓ Acknowledge",
-        "acknowledged": "Acknowledged",
-        "context": "Context",
-        "teamNotePlaceholder": "Add team note…",
-        "teamNoteSaved": "Saved",
-        "statusUpdated": "Status updated"
-      },
-      "empty": "No reports found."
     }
   },
   "propertyFacts": {
