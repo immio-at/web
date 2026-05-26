@@ -178,9 +178,34 @@ export type UpdateAnalysisDto = Partial<Omit<Analysis, 'id' | 'propertyId' | 'cr
 
 // ─── UserListing API ─────────────────────────────────────────────────────────────
 
-export async function getProperties(): Promise<UserListing[]> {
+// ADR-025 M2b — one page of the user's funnel listings. Returned by
+// GET /user-listings?page=N (perf-sweep #73). `hasMore` lets the hook
+// page-load progressively without a parallel count; `total` is a lower
+// bound, not used for "page X of N" UI.
+export interface UserListingsPage {
+  data: UserListing[];
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+/**
+ * GET /user-listings — the user's funnel listings in legacy shape.
+ *
+ * Called with no argument it returns the full unbounded array (backward-
+ * compatible with the old /properties shim; used by the SSE-refresh and
+ * prefetch paths). Called with a 1-based page it returns one PAGE_SIZE
+ * window — the useUserListings hook page-loads progressively against this so
+ * cold Funnel/Dashboard loads paint the first page fast.
+ */
+export async function getUserListings(): Promise<UserListing[]>;
+export async function getUserListings(page: number): Promise<UserListingsPage>;
+export async function getUserListings(
+  page?: number,
+): Promise<UserListing[] | UserListingsPage> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties`, {
+  const qs = page != null ? `?page=${page}` : '';
+  const response = await fetch(`${API_URL}/user-listings${qs}`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
@@ -230,7 +255,7 @@ export async function getPropertiesFiltered(filter: PropertiesFilter = {}): Prom
   if (filter.sortBy) params.set('sortBy', filter.sortBy);
   if (filter.sortOrder) params.set('sortOrder', filter.sortOrder);
   const qs = params.toString();
-  const response = await fetch(`${API_URL}/properties${qs ? `?${qs}` : ''}`, {
+  const response = await fetch(`${API_URL}/user-listings${qs ? `?${qs}` : ''}`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });

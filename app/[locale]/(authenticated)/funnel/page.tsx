@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
-import { useProperties } from '@/hooks/useProperties';
+import { useUserListings } from '@/hooks/useUserListings';
 import FunnelBoard from '@/components/FunnelBoard';
 import PresetFilters from '@/components/PresetFilters';
 import AddPropertyButton from '@/components/ingestion/AddPropertyButton';
@@ -23,7 +23,7 @@ export default function FunnelPage() {
   const t = useTranslations('funnel');
   const tPortfolio = useTranslations('portfolio');
   const { filters: savedFilters, remove: removeFilter } = useSavedFilters();
-  const { properties } = useProperties();
+  const { properties } = useUserListings();
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(new Set());
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(new Set());
   const [analyseProperty, setAnalyseProperty] = useState<UserListing | null>(null);

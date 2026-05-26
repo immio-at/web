@@ -8,7 +8,7 @@ import { getScrapedListings, getPropertiesFiltered, saveScrapedListing, Listing,
 import { TERMINAL_STAGES } from '@/lib/constants';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
-import { useProperties, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
+import { useUserListings, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useUserListings';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { PILL_BAR_ONLY_FILTERS, SMART_SEARCH_ENABLED } from '@/config/feature-flags';
 import {
@@ -349,8 +349,8 @@ export default function EntdeckenPage() {
   const searchParams = useSearchParams();
   const { session, loading: authLoading } = useAuth();
   const { filters: savedFilters, remove: removeFilter } = useSavedFilters();
-  // Use cached properties from useProperties — avoids a redundant API call on page 1
-  const { properties: cachedProperties, loading: propertiesLoading } = useProperties();
+  // Use cached properties from useUserListings — avoids a redundant API call on page 1
+  const { properties: cachedProperties, loading: propertiesLoading } = useUserListings();
 
   // Lazy initializers — restore from the module-level cache first, fall back
   // to URL params, then defaults. Cache wins so users hopping between Discover
@@ -735,7 +735,7 @@ export default function EntdeckenPage() {
     };
   }
 
-  const { update: updateProp, optimisticUpdate, optimisticInsert } = useProperties();
+  const { update: updateProp, optimisticUpdate, optimisticInsert } = useUserListings();
 
   // Shared instant-hide helper for both ⚠ report-dead and ✕ dismiss.
   // Adds the card to dismissedIds (zero-lag local filter), snapshots

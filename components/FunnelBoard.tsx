@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { UserListing, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
-import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
+import { useUserListings, markMutationStart, markMutationEnd } from '@/hooks/useUserListings';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters, passesFilterValues } from '@/lib/preset-filters';
 import { type FilterValues } from '@/lib/filter-values';
@@ -179,7 +179,7 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
   headerAction?: React.ReactNode;
 }) {
   const t = useTranslations('funnel');
-  const { properties: all, loading, error, update, optimisticUpdate } = useProperties();
+  const { properties: all, loading, error, update, optimisticUpdate } = useUserListings();
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [analyseProperty, setAnalyseProperty] = useState<UserListing | null>(null);
   const [zoomedStage, setZoomedStage] = useState<string | null>(null);
@@ -251,7 +251,7 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
   // Optimistic: update local state immediately, fire API call in background.
   // Bracketed by markMutationStart/End so an SSE refresh racing the PATCH
   // can't overwrite the optimistic patch with stale data — see
-  // useProperties.ts shouldSkipRefresh.
+  // useUserListings.ts shouldSkipRefresh.
   async function handleReportUnavailable(propertyId: string) {
     optimisticUpdate(propertyId, { listingStatus: 'expired' });
     markMutationStart();

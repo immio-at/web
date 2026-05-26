@@ -10,7 +10,7 @@ import {
 } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
-// ─── Module-level cache (same pattern as useProperties) ─────────────────────
+// ─── Module-level cache (same pattern as useUserListings) ─────────────────────
 let filterCache: SavedFilter[] | null = null;
 let filterCacheTimestamp = 0;
 const FILTER_CACHE_TTL_MS = 300_000; // re-fetch after 5 minutes
@@ -87,7 +87,7 @@ export function useSavedFilters() {
       return;
     }
     fetch();
-    // session?.user?.id stable across token refresh — see useProperties.
+    // session?.user?.id stable across token refresh — see useUserListings.
   }, [authLoading, session?.user?.id, fetch]);
 
   const create = useCallback(async (dto: CreateSavedFilterDto) => {

@@ -179,7 +179,7 @@ export function clearAnalysisDraft(propertyId: string, tabKey: string): void {
  *   - `new-*` keys for any active property — these are unsaved local-only
  *     tabs that the server has no view of
  *
- * Runs once per app boot from `useProperties.fetchFromServer` after the
+ * Runs once per app boot from `useUserListings.fetchFromServer` after the
  * first successful fetch.
  */
 export function pruneOrphanedAnalysisDrafts(

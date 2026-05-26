@@ -32,7 +32,7 @@ import {
   type ZipUploadResult,
 } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
+import { useUserListings, markMutationStart, markMutationEnd } from '@/hooks/useUserListings';
 import MrgWarningBanner from './MrgWarningBanner';
 import EditableField, { type FieldKind } from './EditableField';
 import DueDiligencePanel from '@/components/due-diligence/DueDiligencePanel';
@@ -154,7 +154,7 @@ function formatYear(n: number | null): string {
 
 // Maps a Dossier field to the property column it writes. Mirrors
 // FIELD_TO_PROPERTY_COLUMN in property-details.service.ts on the backend.
-// Used to optimistically update the useProperties cache so the analyses
+// Used to optimistically update the useUserListings cache so the analyses
 // tab and any other consumers see the new value without waiting for a
 // network round-trip.
 const APPLY_TARGET: Record<PropertyDetailsApplyableField, keyof UserListing> = {
@@ -221,7 +221,7 @@ function fieldOptions(field: FieldName): { value: string; label: string }[] {
 export default function DossierTab({ property, onPropertyApplied, initialDetails }: Props) {
   const t = useTranslations('dossier');
   const { tier } = useAuth();
-  const { optimisticUpdate } = useProperties();
+  const { optimisticUpdate } = useUserListings();
   const isPro = tier === 'pro';
 
   const [details, setDetails] = useState<PropertyDetails | null>(initialDetails ?? null);
@@ -303,7 +303,7 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
   }
 
   // Optimistic apply — show "Applied ✓" immediately, fire the API in
-  // the background, also patch the useProperties cache so the analyses
+  // the background, also patch the useUserListings cache so the analyses
   // tab and any other consumer of the same property see fresh values
   // without waiting for the backend round-trip.
   function handleApply(field: PropertyDetailsApplyableField) {
@@ -335,7 +335,7 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
     // Fire the backend write in the background. Roll back the optimistic
     // confirmation if it fails. Bracketed by markMutationStart/End so an
     // SSE-driven properties refresh can't clobber the optimistic patch
-    // mid-write — see useProperties shouldSkipRefresh.
+    // mid-write — see useUserListings shouldSkipRefresh.
     setApplyingField(field);
     markMutationStart();
     applyPropertyDetailField(property.id, field)

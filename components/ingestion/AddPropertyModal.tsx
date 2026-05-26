@@ -21,8 +21,8 @@ import {
   createPropertyFromExpose,
   createPropertyFromUrl,
 } from '@/lib/api';
-import { useProperties } from '@/hooks/useProperties';
-// Note: useProperties is consumed for its optimisticInsert + refresh
+import { useUserListings } from '@/hooks/useUserListings';
+// Note: useUserListings is consumed for its optimisticInsert + refresh
 // helpers. We do an instant cache patch first (so the new card shows
 // up in Funnel/Dashboard/Discover with no perceptible delay) and then
 // fire a background refresh to reconcile any server-side defaults.
@@ -49,7 +49,7 @@ interface Props {
 
 export default function AddPropertyModal({ open, onClose, onCreated }: Props) {
   const t = useTranslations('addProperty');
-  const { refresh, optimisticInsert } = useProperties();
+  const { refresh, optimisticInsert } = useUserListings();
 
   const [tab, setTab] = useState<TabKey>('url');
   const [stage, setStage] = useState<StageKey>('investigating');
@@ -152,7 +152,7 @@ export default function AddPropertyModal({ open, onClose, onCreated }: Props) {
 
     if (property) {
       // Optimistic insert — the new card appears in every list view
-      // (Funnel, Dashboard, Discover) instantly via the useProperties
+      // (Funnel, Dashboard, Discover) instantly via the useUserListings
       // listener broadcast. The follow-up refresh reconciles any
       // server-side defaults the optimistic copy might be missing
       // (e.g. pricePerSqm generated column, createdAt server timestamp).

@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { setTokenGetter, clearAnalysesCache, clearPortfolioAnalysesCache } from '@/lib/api';
-import { prefetchProperties, clearPropertiesCache } from '@/hooks/useProperties';
+import { prefetchProperties, clearPropertiesCache } from '@/hooks/useUserListings';
 import { prefetchSavedFilters, clearSavedFiltersCache } from '@/hooks/useSavedFilters';
 import { clearAnalyticsCache } from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
 import { clearRecommendedCache } from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Prefetch core data as soon as the restored session is available —
       // warms the module caches before any page component mounts, so
-      // useProperties/useSavedFilters read warm caches on first render.
+      // useUserListings/useSavedFilters read warm caches on first render.
       // This MUST run inside the getSession() callback: on a cold load the
       // `session` *state* is still null when the effect body runs, so the
       // old check below the listener never fired the prefetch. The resolved

@@ -12,7 +12,7 @@
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
-import { useProperties } from '@/hooks/useProperties';
+import { useUserListings } from '@/hooks/useUserListings';
 import { usePortfolioAnalyses } from '@/hooks/usePortfolioAnalyses';
 import { defaultSortFor } from '@/lib/portfolioAnalyses';
 import PortfolioAnalysisTable from '@/components/portfolio/PortfolioAnalysisTable';
@@ -30,7 +30,7 @@ type UsageType = 'rental' | 'flip' | 'owner';
 export default function DashboardAnalysisTile() {
   const t = useTranslations('portfolio');
   const locale = useLocale() as 'de' | 'en';
-  const { properties } = useProperties();
+  const { properties } = useUserListings();
 
   // ── Active tab ─────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<UsageType>('rental');

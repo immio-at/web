@@ -6,7 +6,7 @@ import { UserListing, getScrapedListings, Listing } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { deriveCriteria, scoreProperty, type DerivedCriteria } from '@/lib/recommendations';
 import PropertyCard, { type ListingCard, type CardActions } from '@/components/PropertyCard';
-import { useProperties } from '@/hooks/useProperties';
+import { useUserListings } from '@/hooks/useUserListings';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { useRef } from 'react';
 

@@ -19,7 +19,7 @@ import {
   runDueDiligence,
   getDueDiligenceResults,
 } from '@/lib/api';
-import { useProperties } from '@/hooks/useProperties';
+import { useUserListings } from '@/hooks/useUserListings';
 import { useAuth } from '@/context/AuthContext';
 
 interface Props {
@@ -58,7 +58,7 @@ const CONFIDENCE_BG: Record<string, string> = {
 export default function DueDiligencePanel({ property, documents }: Props) {
   const t = useTranslations('dueDiligence');
   const { tier } = useAuth();
-  const { update } = useProperties();
+  const { update } = useUserListings();
 
   const [phase, setPhase] = useState<'idle' | 'precheck' | 'running' | 'results'>('idle');
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());

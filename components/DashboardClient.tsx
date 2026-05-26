@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { UserListing, Listing, SavedFilter, RecentlyViewedItem, reportUnavailable, saveScrapedListing, getScrapedListings } from '@/lib/api';
-import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
+import { useUserListings, markMutationStart, markMutationEnd } from '@/hooks/useUserListings';
 import { useAuth } from '@/context/AuthContext';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import DiscoverTile from '@/app/[locale]/(authenticated)/dashboard/components/DiscoverTile';
@@ -100,7 +100,7 @@ export default function DashboardClient({
   savedFilters: SavedFilter[];
 }) {
   const t = useTranslations('dashboard.carousels');
-  const { update, optimisticUpdate, optimisticInsert } = useProperties();
+  const { update, optimisticUpdate, optimisticInsert } = useUserListings();
   const [analyseProperty, setAnalyseProperty] = useState<UserListing | null>(null);
 
   // Card actions — shared across all carousels. Carousels can now mix own +

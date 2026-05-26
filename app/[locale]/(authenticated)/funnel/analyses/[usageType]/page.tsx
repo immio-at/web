@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
-import { useProperties } from '@/hooks/useProperties';
+import { useUserListings } from '@/hooks/useUserListings';
 import { usePortfolioAnalyses } from '@/hooks/usePortfolioAnalyses';
 import {
   defaultSortFor,
@@ -37,7 +37,7 @@ export default function PortfolioAnalysesPage() {
   const router = useRouter();
   const params = useParams<{ usageType: string; locale: string }>();
   const searchParams = useSearchParams();
-  const { properties } = useProperties();
+  const { properties } = useUserListings();
 
   const usageTypeParam = params?.usageType ?? 'rental';
   const usageType: UsageType = VALID_USAGE_TYPES.includes(usageTypeParam as UsageType)

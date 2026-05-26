@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { useProperties } from '@/hooks/useProperties';
+import { useUserListings } from '@/hooks/useUserListings';
 import { UserListing, RecentlyViewedItem } from '@/lib/api';
 import { useInteractionTracker } from '@/hooks/useInteractionTracker';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
@@ -11,7 +11,7 @@ import DashboardClient from '@/components/DashboardClient';
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
-  const { properties, loading, error } = useProperties();
+  const { properties, loading, error } = useUserListings();
   const { getRecentlyViewed } = useInteractionTracker();
   const { filters } = useSavedFilters();
   const { immioEmail, session, loading: authLoading } = useAuth();

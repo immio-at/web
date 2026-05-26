@@ -3,7 +3,7 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { useProperties, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
+import { useUserListings, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useUserListings';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import { UserListing, getScrapedListings, saveScrapedListing, Listing, reportUnavailable } from '@/lib/api';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
@@ -153,7 +153,7 @@ export default function FinderClient({
   const t = useTranslations('finder');
   const tPreset = useTranslations('presetFilters');
   const { session, loading: authLoading } = useAuth();
-  const { properties: allOwn, loading: propsLoading, update, optimisticUpdate, optimisticInsert } = useProperties();
+  const { properties: allOwn, loading: propsLoading, update, optimisticUpdate, optimisticInsert } = useUserListings();
   const { filters: savedFilters, remove: removeFilter } = useSavedFilters();
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(initialPresets ?? new Set());
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(initialSavedFilterIds ?? new Set());

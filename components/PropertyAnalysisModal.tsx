@@ -26,7 +26,7 @@ import {
   clearAnalysisDraft,
 } from '@/hooks/useAnalysisDraft';
 import { PropertyDetails } from '@/lib/api';
-import { useProperties } from '@/hooks/useProperties';
+import { useUserListings } from '@/hooks/useUserListings';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
 import {
   calcOwnerResults,
@@ -279,7 +279,7 @@ const STAGE_I18N_KEY: Record<string, string> = {
 export default function PropertyAnalysisModal({ property, onClose, initialViewMode = 'analyses' }: Props) {
   const t = useTranslations('analysis');
   const tStages = useTranslations('funnel.stages');
-  const { update: updateProperty } = useProperties();
+  const { update: updateProperty } = useUserListings();
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);

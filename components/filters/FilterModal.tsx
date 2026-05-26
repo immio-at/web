@@ -29,7 +29,7 @@ import {
 } from '@/lib/filter-values';
 import { passesFilterValues } from '@/lib/preset-filters';
 import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
-import { useProperties } from '@/hooks/useProperties';
+import { useUserListings } from '@/hooks/useUserListings';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
 import FilterModalForm from './FilterModalForm';
 
@@ -129,7 +129,7 @@ interface Props {
 
 export default function FilterModal({ open, mode, editingFilter, initialValues, onClose, onApply }: Props) {
   const t = useTranslations('presetFilters');
-  const { properties } = useProperties();
+  const { properties } = useUserListings();
   const { create, update } = useSavedFilters();
 
   const [name, setName] = useState('');
@@ -165,7 +165,7 @@ export default function FilterModal({ open, mode, editingFilter, initialValues, 
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // ── Own property count — instant from cached useProperties() ─────────────
+  // ── Own property count — instant from cached useUserListings() ─────────────
   const ownCount = useMemo(() => {
     return properties.filter(p => {
       if (p.status === 'not_relevant' || p.status === 'delisted') return false;

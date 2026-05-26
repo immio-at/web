@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getProperties, UserListing, updateProperty } from '@/lib/api';
+import { getUserListings, UserListing, updateProperty } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { pruneOrphanedModalModes } from '@/hooks/useModalMode';
 import { pruneOrphanedAnalysisDrafts } from '@/hooks/useAnalysisDraft';
 
 // ─── Module-level cache ───────────────────────────────────────────────────────
 // Stored outside the hook so it persists across page navigations.
-// All components that call useProperties share the same cache.
+// All components that call useUserListings share the same cache.
 //
 // Why module-level and not React context?
 // - Simpler: no provider needed, works anywhere in the tree
@@ -81,6 +81,32 @@ function notifyListeners(properties: UserListing[]) {
   listeners.forEach(fn => fn(properties));
 }
 
+// ADR-025 M2b / perf-sweep #73 — progressive page-load against
+// GET /user-listings?page=N. Page 1 lands fast (cold Funnel/Dashboard paint),
+// then the remaining pages stream in and accumulate so the full-set consumers
+// (Funnel kanban, Discover dedup, Recommended scoring, Recently Viewed) still
+// converge on the complete list. Each page updates the module cache + notifies
+// listeners; `onFirstPage` lets the caller drop its loading state after the
+// first window. Returns the fully-accumulated array. (Backend owns the page
+// size; the client just walks pages until hasMore is false.)
+async function loadUserListingsProgressive(
+  onFirstPage?: () => void,
+): Promise<UserListing[]> {
+  let acc: UserListing[] = [];
+  let page = 1;
+  for (;;) {
+    const res = await getUserListings(page);
+    acc = page === 1 ? res.data : acc.concat(res.data);
+    cache = acc;
+    cacheTimestamp = Date.now();
+    notifyListeners(acc);
+    if (page === 1) onFirstPage?.();
+    if (!res.hasMore) break;
+    page++;
+  }
+  return acc;
+}
+
 /**
  * Wipe the properties cache and notify all subscribed components with an
  * empty array. Called by AuthContext on sign-out and on any session userId
@@ -103,7 +129,7 @@ import { TERMINAL_STAGES } from '@/lib/constants';
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useProperties() {
+export function useUserListings() {
   const { session, loading: authLoading } = useAuth();
 
   // Initialise with cache immediately — no loading flash if cache is warm
@@ -116,15 +142,15 @@ export function useProperties() {
       if (showLoading) setLoading(true);
       setError(null);
 
-      const data = await getProperties();
-
-      // Update cache
-      cache = data;
-      cacheTimestamp = Date.now();
-
-      // Update this component + any other mounted components
+      // Progressive page-load: page 1 paints fast (loading off after the
+      // first window), the rest stream into the cache so the full-set
+      // consumers still converge on everything. loadUserListingsProgressive
+      // updates cache + notifies listeners per page.
+      const data = await loadUserListingsProgressive(() => {
+        setProperties(cache ?? []);
+        setLoading(false);
+      });
       setProperties(data);
-      notifyListeners(data);
 
       // PC8 — prune orphaned modal-mode localStorage entries once per
       // app boot. Cheap (no network), runs after we know the full
@@ -311,7 +337,10 @@ export async function refreshPropertiesFromServer(): Promise<void> {
   if (shouldSkipRefresh()) return;
   cacheTimestamp = 0;
   try {
-    const data = await getProperties();
+    // Full unbounded fetch (no page arg) — SSE refresh is a post-mutation
+    // reconcile where correctness beats first-paint speed, and the guard
+    // re-check below relies on a single settled snapshot.
+    const data = await getUserListings();
     // Re-check after the GET resolves — a mutation may have started while
     // we were waiting on the network. Replacing cache now would clobber
     // that fresh optimistic patch and the user would see a hop.
@@ -329,10 +358,9 @@ export async function refreshPropertiesFromServer(): Promise<void> {
 export async function prefetchProperties() {
   if (cache !== null && Date.now() - cacheTimestamp < CACHE_TTL_MS) return;
   try {
-    const data = await getProperties();
-    cache = data;
-    cacheTimestamp = Date.now();
-    notifyListeners(data);
+    // Progressive page-load — warms the cache fast (page 1) and fills in the
+    // rest in the background, same as the hook's own fetch path.
+    await loadUserListingsProgressive();
   } catch {
     // Silently ignore — page-level fetch will retry
   }
