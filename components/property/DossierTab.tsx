@@ -45,7 +45,7 @@ interface Props {
    *  refresh until the user reloads the modal). */
   onPropertyApplied?: (field: PropertyDetailsApplyableField, value: unknown) => void;
   /** Pre-fetched details from the parent modal — when provided, the
-   *  initial GET /properties/:id/details fetch is skipped to avoid the
+   *  initial GET /user-listings/:id/details fetch is skipped to avoid the
    *  duplicate roundtrip (the modal already fetched details for the
    *  MRG banner and the Makler block). Documents are still fetched
    *  here since the modal doesn't need them. */

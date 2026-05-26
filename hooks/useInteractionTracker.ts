@@ -5,10 +5,10 @@
  * the backend API. An "interaction" is any engagement: opening the URL,
  * opening the analysis modal, or changing status (excluding not_relevant).
  *
- * Fires POST /properties/:id/interactions for own records, or
- * POST /scraped-listings/:id/interactions for scraped — fire-and-forget,
- * non-blocking. Recently viewed data is fetched via
- * GET /properties/recently-viewed and includes both kinds.
+ * Fires POST /user-listings/:id/interactions for own records, or
+ * POST /listings/:id/interactions for public (scraped) listings —
+ * fire-and-forget, non-blocking. Recently viewed data is fetched via
+ * GET /user-listings/recently-viewed and includes both kinds.
  */
 
 import { useCallback, useRef } from 'react';

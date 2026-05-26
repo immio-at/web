@@ -267,7 +267,7 @@ export async function updateProperty(
   data: { status?: string; notes?: string; movedToStageAt?: string },
 ) {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${id}`, {
+  const response = await fetch(`${API_URL}/user-listings/${id}`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -283,7 +283,7 @@ export async function updateProperty(
 // The backend sets listingStatus: 'expired' and records listingExpiredAt.
 export async function reportUnavailable(id: string): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${id}/report-unavailable`, {
+  const response = await fetch(`${API_URL}/user-listings/${id}/report-unavailable`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -295,7 +295,7 @@ export async function reportUnavailable(id: string): Promise<void> {
 // Only valid for properties where listingStatus === 'expired'.
 export async function delistProperty(id: string): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${id}/delist`, {
+  const response = await fetch(`${API_URL}/user-listings/${id}/delist`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -307,7 +307,7 @@ export async function delistProperty(id: string): Promise<void> {
 // cascades children (analyses, dossier, documents, interactions, DD runs).
 export async function deleteProperty(id: string): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${id}`, {
+  const response = await fetch(`${API_URL}/user-listings/${id}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -348,7 +348,7 @@ export async function importFromUrl(url: string, status?: string): Promise<{
   suspectedDuplicateOf: string | null;
 }> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/from-url`, {
+  const response = await fetch(`${API_URL}/user-listings/from-url`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -373,7 +373,7 @@ export interface ListingHistoryEvent {
 
 export async function getListingHistory(propertyId: string): Promise<ListingHistoryEvent[]> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/listing-history`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/listing-history`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   return handleResponse(response);
@@ -384,7 +384,7 @@ export async function applyDuplicateDecision(
   decision: 'keep_both' | 'hide_this',
 ): Promise<UserListing> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/duplicate-decision`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/duplicate-decision`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -397,7 +397,7 @@ export async function applyDuplicateDecision(
 
 export async function dismissRelistBadge(propertyId: string): Promise<UserListing> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/dismiss-relist-badge`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/dismiss-relist-badge`, {
     method: 'PATCH',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -413,7 +413,7 @@ export async function trackInteraction(
   type: InteractionType,
 ): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/interactions`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/interactions`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -447,7 +447,7 @@ export async function trackScrapedInteraction(
   type: InteractionType,
 ): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/scraped-listings/${scrapedListingId}/interactions`, {
+  const response = await fetch(`${API_URL}/listings/${scrapedListingId}/interactions`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -464,7 +464,7 @@ export type RecentlyViewedItem =
 
 export async function getRecentlyViewed(limit: number = 20): Promise<RecentlyViewedItem[]> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/recently-viewed?limit=${limit}`, {
+  const response = await fetch(`${API_URL}/user-listings/recently-viewed?limit=${limit}`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
@@ -641,7 +641,7 @@ export async function getAnalyses(propertyId: string): Promise<Analysis[]> {
   const cached = readAnalysesCache(propertyId);
   if (cached) return cached;
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/analyses`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/analyses`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
@@ -754,7 +754,7 @@ export async function createAnalysis(
   dto: CreateAnalysisDto,
 ): Promise<Analysis> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/analyses`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/analyses`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -774,7 +774,7 @@ export async function updateAnalysis(
   dto: UpdateAnalysisDto,
 ): Promise<Analysis> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/analyses/${analysisId}`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/analyses/${analysisId}`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -790,7 +790,7 @@ export async function updateAnalysis(
 
 export async function deleteAnalysis(propertyId: string, analysisId: string): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/analyses/${analysisId}`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/analyses/${analysisId}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -813,7 +813,7 @@ export interface PropertyDocument {
 
 export async function getDocuments(propertyId: string): Promise<PropertyDocument[]> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/documents`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/documents`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
@@ -825,7 +825,7 @@ export async function uploadDocument(propertyId: string, file: File, label: stri
   const formData = new FormData();
   formData.append('file', file);
   formData.append('label', label);
-  const response = await fetch(`${API_URL}/properties/${propertyId}/documents`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/documents`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
     body: formData,
@@ -859,7 +859,7 @@ export async function uploadDocumentZip(
   // Label is ignored on the ZIP path — labels are inferred per file
   // server-side. Pass a dummy so the multipart form has the field.
   formData.append('label', 'Sonstiges');
-  const response = await fetch(`${API_URL}/properties/${propertyId}/documents`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/documents`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
     body: formData,
@@ -869,7 +869,7 @@ export async function uploadDocumentZip(
 
 export async function getDocumentDownloadUrl(propertyId: string, documentId: string): Promise<string> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/documents/${documentId}/download`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/documents/${documentId}/download`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   const data = await handleResponse(response);
@@ -882,7 +882,7 @@ export async function updateDocumentLabel(
   label: string,
 ): Promise<PropertyDocument> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/documents/${documentId}`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/documents/${documentId}`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -895,7 +895,7 @@ export async function updateDocumentLabel(
 
 export async function deleteDocument(propertyId: string, documentId: string): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/documents/${documentId}`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/documents/${documentId}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -1001,7 +1001,7 @@ function normalizePropertyDetails(d: PropertyDetails | null): PropertyDetails | 
 
 export async function getPropertyDetails(propertyId: string): Promise<{ details: PropertyDetails | null }> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/details`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/details`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
@@ -1014,7 +1014,7 @@ export async function updatePropertyDetails(
   dto: UpdatePropertyDetailsDto,
 ): Promise<PropertyDetails> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/details`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/details`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -1028,7 +1028,7 @@ export async function updatePropertyDetails(
 
 export async function extractPropertyDetails(propertyId: string): Promise<PropertyDetails> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/details/extract`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/details/extract`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -1044,7 +1044,7 @@ export async function createPropertyFromExpose(
   const formData = new FormData();
   formData.append('file', file);
   if (status) formData.append('status', status);
-  const response = await fetch(`${API_URL}/properties/from-expose`, {
+  const response = await fetch(`${API_URL}/user-listings/from-expose`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
     body: formData,
@@ -1071,7 +1071,7 @@ export interface CreateManualPropertyDto {
 
 export async function createManualProperty(dto: CreateManualPropertyDto): Promise<UserListing> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties`, {
+  const response = await fetch(`${API_URL}/user-listings`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -1092,7 +1092,7 @@ export async function createPropertyFromUrl(url: string, status?: string): Promi
   suspectedDuplicateOf: string | null;
 }> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/from-url`, {
+  const response = await fetch(`${API_URL}/user-listings/from-url`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -1117,7 +1117,7 @@ export async function applyPropertyDetailField(
   field: PropertyDetailsApplyableField,
 ): Promise<UserListing> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/details/apply-field`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/details/apply-field`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
