@@ -102,7 +102,7 @@ Do not create a `/login` route. Session expiry redirects to `/?signin=true`.
 
 **useInteractionTracker hook — backend-powered interaction tracking**
 - Location: `hooks/useInteractionTracker.ts`
-- Tracks property interactions via `POST /properties/:id/interactions` (fire-and-forget)
+- Tracks interactions via `POST /user-listings/:id/interactions` (own) / `POST /listings/:id/interactions` (public) — fire-and-forget
 - 2-second debounce per property+type to avoid flooding the API
 - Provides: `track(id, type)`, `getRecentlyViewed(limit)` (async, fetches from backend)
 - Interaction types: `view`, `analysis`, `url_click`, `status_change`
@@ -184,8 +184,8 @@ messages/
 
 Public-listing API (in lib/api.ts):
 - `Listing` interface (ADR-025 M2b; was `ScrapedListing`) — id, platform, title, price, sizeSqm, rooms, location, zipCode, imageUrl, `visibility: 'public'|'private'`, savedByUser
-- `getScrapedListings(filter)` — GET /scraped-listings with keyword/postcodes/price/size/rooms/hideNullPrice/sort (endpoint path is renamed in Phase 3)
-- `saveScrapedListing(id)` — POST /scraped-listings/:id/save → creates a UserListing in the user's funnel
+- `getScrapedListings(filter)` — GET /listings (ADR-025 M2b Phase 3; NOT-EXISTS anti-join returning only public listings not in the user's funnel) with keyword/postcodes/price/size/rooms/hideNullPrice/sort. Returns `{ data, total, page, pageSize, totalPages }` (totalPages derived client-side from the exact total).
+- `saveScrapedListing(id)` — POST /me/listings `{ listingId, status }` → creates a UserListing in the user's funnel, returns the legacy `{ property }` envelope
 ```
 
 ---
@@ -280,10 +280,15 @@ and `PropertyAnalysis` → `Analysis`. The shared card view-model is now
 `ListingCard` (was the old own/scraped card type); its origin discriminator is
 gone — funnel membership is signalled by the presence of
 `userListing: UserListing | null` on the card, and `listing.visibility`
-distinguishes a public (scraped) listing from the user's own private one. API
-path strings are unchanged in Phase 2 (the
-`/properties` ↔ `/user-listings` and `/scraped-listings` ↔ `/listings` URL
-swaps land in Phase 3).
+distinguishes a public (scraped) listing from the user's own private one.
+
+**Phase 3 (API path migration) — done:** all funnel-op calls in `lib/api.ts`
+moved to the canonical `/user-listings` prefix; the central hook is
+`useUserListings` (was `useProperties`) and page-loads progressively against
+`GET /user-listings?page=N` (perf-sweep #73 — page 1 paints fast, the rest
+stream into the cache). Discover reads `GET /listings` (anti-join) and saves via
+`POST /me/listings`; scraped interactions hit `/listings/:id/interactions`. The
+legacy route prefixes stay alive on the backend until Phase 5.
 
 The `UserListing` interface includes:
 - `listingStatus: 'active' | 'expired'`
@@ -402,7 +407,7 @@ Recently completed (Session 46, 2026-04-28):
 Recently completed (Session 45, 2026-04-28):
 - **PropertyCard image-button HTML-nesting fix (C127).** PC5's `<button>` wrapper was breaking `group-hover` on the action stack — HTML forbids nested buttons (the heart icon inside is itself a `<button>`) and the browser auto-closed the outer button mid-DOM, splitting the `group` container. Switched the image to `<div role="button" tabIndex={0}>` with Enter/Space `onKeyDown` handlers + `focus-visible:ring-2`. Same commit dropped the v1.0 hover-reveal pattern on the action stack — Tailwind v4 scopes `hover:` variants to `(hover: hover)` by default and the reveal wasn't firing on touch laptops. Action stack (external-link / ⚠ / ✕) is now always visible on every viewport. ADR-012 v1.1 _As Implemented_ note added.
 - **Modal load near-instant (C128).** Three fetches → one for the common dossier-mode open. Dropped a dead `getDocuments` fetch (and dead state / handlers / `docTypes` / imports) — the Documents UI moved to DossierTab in Session 32 but the dead code stayed. Lazy `getAnalyses` — fired only on first entry to Analysen mode, gated by `analysesFetchedRef`. Deduped `getPropertyDetails` — DossierTab gained an `initialDetails` prop so the modal's already-fetched details flow down without a second roundtrip. Render-side: dossier mode no longer waits on any analyses fetch; analyses content has its own loading spinner inside its area.
-- **Backend analyses perf (C129).** `GET /properties/:id/analyses` cut from 3 Prisma queries to 1. `analyses.controller.resolveUser` dropped a redundant `findUserByEmail` (validateToken already returns the cached Prisma user UUID). `analyses.service.findAll` dropped the redundant property-existence check (the `findMany` WHERE clause IS the ownership check).
+- **Backend analyses perf (C129).** The analyses-list endpoint (now `GET /user-listings/:id/analyses`) cut from 3 Prisma queries to 1. `analyses.controller.resolveUser` dropped a redundant `findUserByEmail` (validateToken already returns the cached Prisma user UUID). `analyses.service.findAll` dropped the redundant property-existence check (the `findMany` WHERE clause IS the ownership check).
 - **Frontend analyses cache (C130).** Per-property `Map<propertyId, {data, at}>` in `lib/api.ts`, 60s TTL. `getAnalyses` short-circuits on cache hits. `createAnalysis` / `updateAnalysis` / `deleteAnalysis` invalidate. `clearAnalysesCache(propertyId?)` exported and wired into `clearAllUserCaches` in `AuthContext`. Pairs with C129: first opens faster, repeat opens within 60s instant.
 - **Dockerfile auto-migrate (C131).** Backend `Dockerfile` `CMD` now wraps the start with `npx prisma migrate deploy && node dist/src/main`. Root cause of the Track 13 Makler save 500s — the migration was committed in Session 43 but the team's historical workflow was manual SQL via Supabase Editor, so the columns never existed. Operational change: migrations now self-apply on deploy.
 - **MaklerBlock merged into PropertyInfoStrip card (C132).** Outer chrome dropped — populated state renders inline inside the parent card separated by a `border-t`; empty state is a small dashed-border ghost button in the same card. One unified summary box. Save errors now surface the actual backend message in the toast + `console.error` for devtools.
@@ -576,7 +581,7 @@ Browse scraped listings from all active sources (Raiffeisen, s REAL, ÖRAG, RE/M
   - `normalizePropertyDetails()` coerces all Decimal fields (`exposePrice`, `bk*`, `sizeSqmVerified`, `roomsVerified`, `hwbValue`) from string → number at the API boundary. Prisma serializes Decimals as strings to preserve precision; without this every numeric Dossier field would arrive as a string and break formatters.
   - `getPropertyDetails`, `updatePropertyDetails`, `extractPropertyDetails`, `applyPropertyDetailField`, `createPropertyFromExpose`
   - `createManualProperty(dto)` — POST /properties (ADR-010 I5)
-  - `createPropertyFromUrl(url, status)` — POST /properties/from-url (ADR-010 I3)
+  - `createPropertyFromUrl(url, status)` — POST /user-listings/from-url (ADR-010 I3; ADR-025 M2b Phase 3 path)
 - **`→ Apply` flow (DO5)** — optimistic. The display flips to "Übernommen ✓" instantly, the `useProperties` cache is patched via `optimisticUpdate`, the parent modal's analysis drafts are synced via `onPropertyApplied`, the backend write fires in the background. Rollback only on error.
 - **Manual edit flow (DO7)** — `handleFieldEdit(field, value)` patches local `details` state first, fires `updatePropertyDetails` PATCH in the background, rolls back on error. If no Dossier row exists yet, the first edit creates one (no Exposé required).
 - **Field config** — `FIELD_CONFIG` map at the top of `DossierTab.tsx` lists every field with its `EditableField` kind + enum options. **Enum options must mirror the backend `ENUMS` constant in `extraction.service.ts`** — keep both in sync.
