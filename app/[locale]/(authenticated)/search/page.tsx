@@ -239,9 +239,9 @@ function hasAnyParam(params: URLSearchParams): boolean {
 
 type ViewMode = 'grid' | 'table';
 
-// Fires url_click on the listing the user clicked through to, regardless of
-// source. Own properties hit /properties/:id/interactions; scraped listings
-// hit /scraped-listings/:id/interactions. Both feed Recently Viewed.
+// Fires url_click on the listing the user clicked through to. Own (funnel)
+// listings hit /user-listings/:id/interactions; public listings hit
+// /listings/:id/interactions. Both feed Recently Viewed.
 function trackListingClick(listing: DiscoverListing) {
   if (listing.userListing != null) {
     const propertyId = listing.id.replace('prop-', '');

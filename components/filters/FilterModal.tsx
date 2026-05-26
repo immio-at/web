@@ -9,7 +9,7 @@
  *             and "Save as New + Apply" buttons
  *
  * Live count (debounced 400ms): own properties matching the form +
- * scraped listings total returned by GET /scraped-listings with the
+ * public listings total returned by GET /listings with the
  * same criteria. Updates as the user types.
  *
  * On success, calls `onApply(filter)` with the created/updated record.
@@ -173,7 +173,7 @@ export default function FilterModal({ open, mode, editingFilter, initialValues, 
     }).length;
   }, [properties, values]);
 
-  // ── Scraped count — debounced fetch from GET /scraped-listings ──────────
+  // ── Public-listing count — debounced fetch from GET /listings ──────────
   useEffect(() => {
     if (!open) return;
     setCountLoading(true);

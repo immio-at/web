@@ -256,7 +256,7 @@ export function useUserListings() {
   // ── Optimistic local-only update (arbitrary UserListing fields) ───────────────
   // Use this for actions that call their own API function directly
   // (e.g. reportUnavailable, delistProperty) and only need the local cache
-  // updated immediately without going through PATCH /properties/:id.
+  // updated immediately without going through PATCH /user-listings/:id.
   //
   // The caller is responsible for firing the API call. If the API call fails,
   // the cache will be corrected on the next TTL refresh (30 seconds).
@@ -272,7 +272,7 @@ export function useUserListings() {
   // ── Optimistic remove ─────────────────────────────────────────────────────
   // Drop a property from the cache + notify all listeners. Used by the
   // Discover heart re-click-undo path on a just-saved scraped listing —
-  // the caller still fires DELETE /properties/:id; this just keeps the UI
+  // the caller still fires DELETE /user-listings/:id; this just keeps the UI
   // in sync without waiting for the round-trip.
   const optimisticRemove = useCallback((id: string) => {
     if (cache) {

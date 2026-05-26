@@ -279,7 +279,7 @@ export async function updateProperty(
 }
 
 // Manually flags a property as no longer available.
-// Calls POST /properties/:id/report-unavailable on the backend.
+// Calls POST /user-listings/:id/report-unavailable on the backend.
 // The backend sets listingStatus: 'expired' and records listingExpiredAt.
 export async function reportUnavailable(id: string): Promise<void> {
   const token = await getAuthToken();
@@ -291,7 +291,7 @@ export async function reportUnavailable(id: string): Promise<void> {
 }
 
 // Moves an expired property into the hidden 'delisted' stage.
-// Calls POST /properties/:id/delist on the backend.
+// Calls POST /user-listings/:id/delist on the backend.
 // Only valid for properties where listingStatus === 'expired'.
 export async function delistProperty(id: string): Promise<void> {
   const token = await getAuthToken();
@@ -524,11 +524,13 @@ export interface Listing {
   // (scraped) listing; 'private' = the user's own listing (email-parsed or
   // manually added). The card no longer branches on origin — funnel
   // membership is signalled by the presence of a UserListing instead.
-  // Optional because the legacy /scraped-listings response doesn't carry it
-  // yet; mappers set it explicitly when building a ListingCard.
+  // GET /listings carries it on the row; the ListingCard mappers also set it
+  // explicitly. Optional so older callers stay valid.
   visibility?: 'public' | 'private';
   firstSeenAt: string;
   lastSeenAt: string;
+  // GET /listings is a NOT-EXISTS anti-join (only listings the user hasn't
+  // saved), so the API stamps this false; the old per-row flag is gone.
   savedByUser: boolean;
   // ADR-022 §8.4 — type / regulation. Scraped listings have no Dossier, so
   // there is no heuristic: only a stored value is ever present.
@@ -589,25 +591,47 @@ export async function getScrapedListings(filter: ScrapedListingsFilter = {}): Pr
   if (filter.sortOrder) params.set('sortOrder', filter.sortOrder);
   if (filter.page) params.set('page', String(filter.page));
   const qs = params.toString();
-  const response = await fetch(`${API_URL}/scraped-listings${qs ? `?${qs}` : ''}`, {
+  // ADR-025 M2b — Discover now reads the unified GET /listings (NOT-EXISTS
+  // anti-join: only public listings the user does NOT already have in their
+  // funnel). The backend returns { data, page, pageSize, total, hasMore };
+  // we derive `totalPages` from the exact `total` to keep the existing
+  // page-N/next-prev pager working, and stamp savedByUser:false since the
+  // anti-join guarantees every row is unsaved (Discover re-derives the heart
+  // state from the funnel cache anyway).
+  const response = await fetch(`${API_URL}/listings${qs ? `?${qs}` : ''}`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
-  return handleResponse(response);
+  const body = await handleResponse(response) as {
+    data?: Listing[]; total?: number; page?: number; pageSize?: number;
+  };
+  const pageSize = body.pageSize || 20;
+  const total = body.total ?? 0;
+  return {
+    data: (body.data ?? []).map((l) => ({ ...l, savedByUser: false })),
+    total,
+    page: body.page ?? filter.page ?? 1,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
 }
 
 export async function saveScrapedListing(
   id: string,
   status: 'new' | 'investigating' = 'investigating',
-): Promise<{ message: string; property: UserListing }> {
+): Promise<{ property: UserListing }> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/scraped-listings/${id}/save`, {
+  // ADR-025 M2b — unified save: POST /me/listings targets an existing Listing
+  // by id (Discover heart). The backend re-maps the created UserListing to the
+  // legacy Property shape and returns { property }, so callers' optimisticInsert
+  // + modal-open paths are unchanged.
+  const response = await fetch(`${API_URL}/me/listings`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ listingId: id, status }),
   });
   return handleResponse(response);
 }
