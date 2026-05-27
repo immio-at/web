@@ -231,19 +231,12 @@ export default function DashboardClient({
     : (scrapedFallback ?? []);
 
   const recentlyViewedCards = useMemo<ListingCard[]>(() => {
-    return (recentlyViewed ?? []).map(item => {
-      if (item.kind === 'own') {
-        // Join back to the user's funnel cache so the card renders with
-        // funnel-state info (status colour, analysis/document counts).
-        const ul = properties.find(p => p.sourceUrl === item.listing.sourceUrl);
-        if (ul) return ownPropertyToCard(ul);
-        // Fallback: render as scraped card if the funnel join misses
-        // (rare — e.g. a property just removed from the funnel).
-        return scrapedListingToCard(item.listing);
-      }
-      return scrapedListingToCard(item.listing);
-    });
-  }, [recentlyViewed, properties]);
+    return (recentlyViewed ?? []).map(item =>
+      item.kind === 'own'
+        ? ownPropertyToCard(item.userListing)
+        : scrapedListingToCard(item.listing),
+    );
+  }, [recentlyViewed]);
 
   const tEmpty = useTranslations('dashboard.empty');
   const hasNoOwnProperties = properties.length === 0;
