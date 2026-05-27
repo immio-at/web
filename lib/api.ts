@@ -458,8 +458,12 @@ export async function trackScrapedInteraction(
   await handleResponse(response);
 }
 
+// Both variants carry a public `Listing` row — the backend join only fetches
+// Listing; `kind: 'own'` flags that the user holds a UserListing on it. The
+// dashboard joins an 'own' item back to the funnel cache by sourceUrl to
+// render funnel-state info (status colour, analysis/document counts).
 export type RecentlyViewedItem =
-  | { kind: 'own'; lastAt: string; property: UserListing }
+  | { kind: 'own'; lastAt: string; listing: Listing }
   | { kind: 'scraped'; lastAt: string; listing: Listing };
 
 export async function getRecentlyViewed(limit: number = 20): Promise<RecentlyViewedItem[]> {
