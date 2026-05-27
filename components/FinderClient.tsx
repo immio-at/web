@@ -3,13 +3,13 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { useProperties, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
+import { useUserListings, invalidateCache, markMutationStart, markMutationEnd } from '@/hooks/useUserListings';
 import { useSavedFilters } from '@/hooks/useSavedFilters';
-import { Property, getScrapedListings, saveScrapedListing, ScrapedListing, reportUnavailable } from '@/lib/api';
+import { UserListing, getScrapedListings, saveScrapedListing, Listing, reportUnavailable } from '@/lib/api';
 import { trackInteraction, trackScrapedInteraction } from '@/hooks/useInteractionTracker';
 import { useAuth } from '@/context/AuthContext';
 import PresetFilters from '@/components/PresetFilters';
-import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
+import PropertyCard, { type ListingCard, type CardActions } from '@/components/PropertyCard';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters, passesFilterValues } from '@/lib/preset-filters';
 import { type BundeslandAbbreviation, getPostcodesByBundesland } from '@/lib/austria-plz-bundesland';
 import { EMPTY_FILTERS, type FilterValues } from '@/lib/filter-values';
@@ -34,7 +34,10 @@ interface FinderCard {
   imageUrl: string | null;
   sourceUrl: string;
   platform: string;
-  source: 'own' | 'scraped';
+  // ADR-025 M2b — funnel membership replaces the old source discriminator.
+  // Present ⇒ the listing is in the user's funnel ("own"); null ⇒ a public
+  // (scraped) listing not yet saved.
+  userListing: UserListing | null;
   // For own properties — needed for update/track
   propertyId?: string;
   // For scraped — needed for save
@@ -43,14 +46,14 @@ interface FinderCard {
   emailReceivedAt?: string | null;
   createdAt?: string;
   firstSeenAt?: string;
-  // Per-Property content counters — drives the analyse-button colour on
+  // Per-UserListing content counters — drives the analyse-button colour on
   // PropertyCard. Own rows carry the real counts; scraped rows default
-  // to 0 (no backing Property yet).
+  // to 0 (no backing UserListing yet).
   analysisCount?: number;
   documentCount?: number;
 }
 
-function propertyToCard(p: Property): FinderCard {
+function propertyToCard(p: UserListing): FinderCard {
   // Prisma serializes Decimal columns as strings even though the TS type
   // says number — coerce here so sort/compare ops behave numerically.
   return {
@@ -64,7 +67,7 @@ function propertyToCard(p: Property): FinderCard {
     imageUrl: p.imageUrl,
     sourceUrl: p.sourceUrl,
     platform: p.platform,
-    source: 'own',
+    userListing: p,
     propertyId: p.id,
     emailReceivedAt: p.emailReceivedAt,
     createdAt: p.createdAt,
@@ -118,7 +121,7 @@ function sortFinderCards(cards: FinderCard[], sortBy: string, sortOrder: string)
   });
 }
 
-function scrapedToCard(s: ScrapedListing): FinderCard {
+function scrapedToCard(s: Listing): FinderCard {
   return {
     id: `scraped-${s.id}`,
     title: s.title,
@@ -130,7 +133,7 @@ function scrapedToCard(s: ScrapedListing): FinderCard {
     imageUrl: s.imageUrl,
     sourceUrl: s.sourceUrl,
     platform: s.platform,
-    source: 'scraped',
+    userListing: null,
     scrapedListingId: s.id,
     firstSeenAt: s.firstSeenAt,
   };
@@ -150,7 +153,7 @@ export default function FinderClient({
   const t = useTranslations('finder');
   const tPreset = useTranslations('presetFilters');
   const { session, loading: authLoading } = useAuth();
-  const { properties: allOwn, loading: propsLoading, update, optimisticUpdate, optimisticInsert } = useProperties();
+  const { properties: allOwn, loading: propsLoading, update, optimisticUpdate, optimisticInsert } = useUserListings();
   const { filters: savedFilters, remove: removeFilter } = useSavedFilters();
   const [activePresets, setActivePresets] = useState<Set<PresetFilterKey>>(initialPresets ?? new Set());
   const [activeSavedFilterIds, setActiveSavedFilterIds] = useState<Set<string>>(initialSavedFilterIds ?? new Set());
@@ -270,11 +273,11 @@ export default function FinderClient({
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [lastAction, setLastAction] = useState<string | null>(null);
-  // Holds the Property to render in the analyse modal. Set by image-tap
-  // on either an own card (open on the cached Property) or a scraped card
-  // (auto-save at status 'new' first, then open on the new Property —
+  // Holds the UserListing to render in the analyse modal. Set by image-tap
+  // on either an own card (open on the cached UserListing) or a scraped card
+  // (auto-save at status 'new' first, then open on the new UserListing —
   // matches forwarded-email behaviour).
-  const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
+  const [analyseProperty, setAnalyseProperty] = useState<UserListing | null>(null);
   const dragStart = useRef<{ x: number; y: number } | null>(null);
 
   // Reset card index when filters change
@@ -296,7 +299,7 @@ export default function FinderClient({
     }
 
     if (action === 'analyse') {
-      void openAnalyseFor(card);
+      void openAnalyseFor(finderCardToListingCard(card));
       setDragX(0);
       setDragY(0);
       return;
@@ -308,7 +311,7 @@ export default function FinderClient({
     setDragY(0);
     setTimeout(() => setLastAction(null), 300);
 
-    if (card.source === 'own' && card.propertyId) {
+    if (card.userListing != null && card.propertyId) {
       // Own property — update status
       if (action !== 'not_relevant') trackInteraction(card.propertyId, 'status_change');
       setCurrent(c => c + 1);
@@ -316,7 +319,7 @@ export default function FinderClient({
         status: action === 'interested' ? 'investigating' : action,
         movedToStageAt: new Date().toISOString(),
       });
-    } else if (card.source === 'scraped' && card.scrapedListingId) {
+    } else if (card.userListing == null && card.scrapedListingId) {
       if (action === 'investigating') {
         // Scraped — save to funnel
         setCurrent(c => c + 1);
@@ -369,8 +372,8 @@ export default function FinderClient({
       : dragY < -50 ? 'open' : dragY > 50 ? 'analyse' : null;
 
   const overlayConfig: Record<string, { bg: string; label: string }> = {
-    investigating:  { bg: 'bg-emerald-500', label: card?.source === 'scraped' ? t('overlay.save') : t('overlay.investigating') },
-    not_relevant:   { bg: 'bg-rose-500',    label: card?.source === 'scraped' ? t('overlay.skip') : t('overlay.notRelevant') },
+    investigating:  { bg: 'bg-emerald-500', label: card?.userListing == null ? t('overlay.save') : t('overlay.investigating') },
+    not_relevant:   { bg: 'bg-rose-500',    label: card?.userListing == null ? t('overlay.skip') : t('overlay.notRelevant') },
     open:           { bg: 'bg-blue-500',    label: t('overlay.openListing') },
     analyse:        { bg: 'bg-amber-500',   label: t('overlay.analyse') },
   };
@@ -380,10 +383,10 @@ export default function FinderClient({
     0.85
   );
 
-  // Convert FinderCard to CardProperty for PropertyCard component
-  function finderCardToCardProperty(c: FinderCard): CardProperty {
+  // Convert FinderCard to ListingCard for PropertyCard component
+  function finderCardToListingCard(c: FinderCard): ListingCard {
     return {
-      id: c.source === 'own' && c.propertyId ? c.propertyId : c.id,
+      id: c.userListing != null && c.propertyId ? c.propertyId : c.id,
       title: c.title,
       price: c.price,
       sizeSqm: c.sizeSqm,
@@ -393,7 +396,8 @@ export default function FinderClient({
       imageUrl: c.imageUrl,
       sourceUrl: c.sourceUrl,
       platform: c.platform,
-      source: c.source,
+      userListing: c.userListing,
+      listing: { visibility: c.userListing != null ? 'private' : 'public' },
       scrapedListingId: c.scrapedListingId,
       emailReceivedAt: c.emailReceivedAt,
       analysisCount: c.analysisCount ?? 0,
@@ -403,11 +407,11 @@ export default function FinderClient({
 
   // Resolve "open the analysis modal for this card" — works for both own
   // and scraped. Scraped auto-saves at status 'new' (matches forwarded
-  // landing) and opens on the freshly-created Property. Re-using an
-  // existing Property (saved-then-undone, or saved from another surface)
+  // landing) and opens on the freshly-created UserListing. Re-using an
+  // existing UserListing (saved-then-undone, or saved from another surface)
   // is preferred to a duplicate POST.
-  async function openAnalyseFor(item: CardProperty): Promise<void> {
-    if (item.source === 'own') {
+  async function openAnalyseFor(item: ListingCard): Promise<void> {
+    if (item.userListing != null) {
       const prop = allOwn.find(p => p.id === item.id);
       if (!prop) return;
       trackInteraction(prop.id, 'analysis');
@@ -436,20 +440,20 @@ export default function FinderClient({
 
   // Card actions for the PropertyCard component
   const cardActions: CardActions = useMemo(() => ({
-    onSaveToFunnel: async (item: CardProperty) => {
+    onSaveToFunnel: async (item: ListingCard) => {
       // Own at 'new' → promote to investigating (ADR-012 v1.2). Finder's
       // existing swipe-right behaviour already does this — this path is the
       // heart-icon variant and uses the same update call. We DON'T advance
       // `current` here: the card stays put under the user's pointer like a
       // confirmation, mirroring Discover's "remove only on next page load".
-      if (item.source === 'own' && item.status === 'new') {
+      if (item.userListing != null && item.userListing.status === 'new') {
         update(item.id, {
           status: 'investigating',
           movedToStageAt: new Date().toISOString(),
         });
         return;
       }
-      if (item.source !== 'scraped' || !item.scrapedListingId) return;
+      if (item.userListing != null || !item.scrapedListingId) return;
       setLastAction('investigating');
       setCurrent(c => c + 1);
       setDragX(0); setDragY(0);
@@ -459,12 +463,12 @@ export default function FinderClient({
         optimisticInsert(property);
       } catch { /* 409 */ }
     },
-    onAnalyse: (item: CardProperty) => {
+    onAnalyse: (item: ListingCard) => {
       void openAnalyseFor(item);
       setDragX(0); setDragY(0);
     },
-    onReportDead: (item: CardProperty) => {
-      if (item.source === 'own') {
+    onReportDead: (item: ListingCard) => {
+      if (item.userListing != null) {
         optimisticUpdate(item.id, { listingStatus: 'expired', listingExpiredAt: new Date().toISOString() });
         markMutationStart();
         reportUnavailable(item.id)
@@ -476,20 +480,20 @@ export default function FinderClient({
         setDismissedIds(prev => new Set(prev).add(`scraped-${item.scrapedListingId}`));
       }
     },
-    onDismiss: (item: CardProperty) => {
+    onDismiss: (item: ListingCard) => {
       setLastAction('not_relevant');
       setCurrent(c => c + 1);
       setDragX(0); setDragY(0);
       setTimeout(() => setLastAction(null), 300);
 
-      if (item.source === 'own') {
+      if (item.userListing != null) {
         update(item.id, { status: 'not_relevant', movedToStageAt: new Date().toISOString() });
       } else {
         setDismissedIds(prev => new Set(prev).add(`scraped-${item.scrapedListingId}`));
       }
     },
-    onUrlClick: (item: CardProperty) => {
-      if (item.source === 'own') {
+    onUrlClick: (item: ListingCard) => {
+      if (item.userListing != null) {
         trackInteraction(item.id, 'url_click');
       } else if (item.scrapedListingId) {
         trackScrapedInteraction(item.scrapedListingId, 'url_click');
@@ -617,16 +621,16 @@ export default function FinderClient({
 
         {/* PropertyCard with stage dropdown, analyse, report, dismiss */}
         <div className="pointer-events-auto">
-          <PropertyCard item={finderCardToCardProperty(card)} actions={cardActions} />
+          <PropertyCard item={finderCardToListingCard(card)} actions={cardActions} />
         </div>
       </div>
 
       {/* Swipe directions hint */}
       <div className="flex gap-6 text-xs text-gray-400 text-center mt-3">
-        <span>{card.source === 'scraped' ? t('directions.leftScraped') : t('directions.left')}</span>
+        <span>{card.userListing == null ? t('directions.leftScraped') : t('directions.left')}</span>
         <span>{t('directions.up')}</span>
         <span>{t('directions.down')}</span>
-        <span>{card.source === 'scraped' ? t('directions.rightScraped') : t('directions.right')}</span>
+        <span>{card.userListing == null ? t('directions.rightScraped') : t('directions.right')}</span>
       </div>
 
       {/* Progress count */}

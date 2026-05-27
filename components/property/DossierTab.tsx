@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * DossierTab — Property Dossier (ADR-009 DO4 + DO5 + DO7).
+ * DossierTab — UserListing Dossier (ADR-009 DO4 + DO5 + DO7).
  *
  * Three sections:
  *   1. Documents      — list + upload + download + delete
@@ -14,7 +14,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  Property,
+  UserListing,
   PropertyDetails,
   PropertyDocument,
   PropertyDetailsApplyableField,
@@ -32,20 +32,20 @@ import {
   type ZipUploadResult,
 } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
+import { useUserListings, markMutationStart, markMutationEnd } from '@/hooks/useUserListings';
 import MrgWarningBanner from './MrgWarningBanner';
 import EditableField, { type FieldKind } from './EditableField';
 import DueDiligencePanel from '@/components/due-diligence/DueDiligencePanel';
 
 interface Props {
-  property: Property;
+  property: UserListing;
   /** Called immediately after a → Apply click so the parent can sync
    *  open analysis drafts with the new value (analyses keep their own
    *  per-row copies of price / BK / purchaseDate that don't otherwise
    *  refresh until the user reloads the modal). */
   onPropertyApplied?: (field: PropertyDetailsApplyableField, value: unknown) => void;
   /** Pre-fetched details from the parent modal — when provided, the
-   *  initial GET /properties/:id/details fetch is skipped to avoid the
+   *  initial GET /user-listings/:id/details fetch is skipped to avoid the
    *  duplicate roundtrip (the modal already fetched details for the
    *  MRG banner and the Makler block). Documents are still fetched
    *  here since the modal doesn't need them. */
@@ -154,10 +154,10 @@ function formatYear(n: number | null): string {
 
 // Maps a Dossier field to the property column it writes. Mirrors
 // FIELD_TO_PROPERTY_COLUMN in property-details.service.ts on the backend.
-// Used to optimistically update the useProperties cache so the analyses
+// Used to optimistically update the useUserListings cache so the analyses
 // tab and any other consumers see the new value without waiting for a
 // network round-trip.
-const APPLY_TARGET: Record<PropertyDetailsApplyableField, keyof Property> = {
+const APPLY_TARGET: Record<PropertyDetailsApplyableField, keyof UserListing> = {
   exposePrice: 'price',
   purchaseDate: 'purchaseDate',
   bkUmlagefaehig: 'bkUmlagefaehig',
@@ -221,7 +221,7 @@ function fieldOptions(field: FieldName): { value: string; label: string }[] {
 export default function DossierTab({ property, onPropertyApplied, initialDetails }: Props) {
   const t = useTranslations('dossier');
   const { tier } = useAuth();
-  const { optimisticUpdate } = useProperties();
+  const { optimisticUpdate } = useUserListings();
   const isPro = tier === 'pro';
 
   const [details, setDetails] = useState<PropertyDetails | null>(initialDetails ?? null);
@@ -303,7 +303,7 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
   }
 
   // Optimistic apply — show "Applied ✓" immediately, fire the API in
-  // the background, also patch the useProperties cache so the analyses
+  // the background, also patch the useUserListings cache so the analyses
   // tab and any other consumer of the same property see fresh values
   // without waiting for the backend round-trip.
   function handleApply(field: PropertyDetailsApplyableField) {
@@ -325,7 +325,7 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
     // Optimistic cache update — patch the parent property record so
     // analyses re-derive from fresh values on the next render.
     const propertyColumn = APPLY_TARGET[field];
-    optimisticUpdate(property.id, { [propertyColumn]: value } as Partial<Property>);
+    optimisticUpdate(property.id, { [propertyColumn]: value } as Partial<UserListing>);
 
     // Tell the parent so it can sync open analysis drafts that hold
     // their own per-analysis copies of these fields (BK, list price,
@@ -335,7 +335,7 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
     // Fire the backend write in the background. Roll back the optimistic
     // confirmation if it fails. Bracketed by markMutationStart/End so an
     // SSE-driven properties refresh can't clobber the optimistic patch
-    // mid-write — see useProperties shouldSkipRefresh.
+    // mid-write — see useUserListings shouldSkipRefresh.
     setApplyingField(field);
     markMutationStart();
     applyPropertyDetailField(property.id, field)
@@ -792,7 +792,7 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
       {/* ─── Due Diligence Check Engine (ADR-013) ──────────────────────── */}
       <DueDiligencePanel property={property} documents={documents} />
 
-      {/* ─── Section 3: Structured Property Data ──────────────────────── */}
+      {/* ─── Section 3: Structured UserListing Data ──────────────────────── */}
       <section className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-900">{t('fields.title')}</h3>
@@ -830,7 +830,7 @@ export default function DossierTab({ property, onPropertyApplied, initialDetails
                 <RefField field="addressStreet" label={t('fields.addressStreet')} />
                 <RefField field="addressZip"    label={t('fields.addressZip')} />
                 <RefField field="addressCity"   label={t('fields.addressCity')} />
-                {/* Property */}
+                {/* UserListing */}
                 <RefField field="widmung"       label={t('fields.widmung')} />
                 <RefField field="etage"         label={t('fields.etage')} />
                 <RefField field="baujahr"       label={t('fields.baujahr')} />

@@ -167,7 +167,7 @@ export function clearAnalysisDraft(propertyId: string, tabKey: string): void {
  * Best-effort cleanup of orphaned draft keys (DR6). Pass:
  *   - `activePropertyIds` — every property currently in the user's cache
  *   - `validTabKeysByProperty` — for each property, the set of saved-tab
- *     UUIDs returned by the most recent GET /properties/:id/analyses
+ *     UUIDs returned by the most recent GET /user-listings/:id/analyses
  *
  * Removes:
  *   - keys whose `propertyId` segment is not in `activePropertyIds`
@@ -179,7 +179,7 @@ export function clearAnalysisDraft(propertyId: string, tabKey: string): void {
  *   - `new-*` keys for any active property — these are unsaved local-only
  *     tabs that the server has no view of
  *
- * Runs once per app boot from `useProperties.fetchFromServer` after the
+ * Runs once per app boot from `useUserListings.fetchFromServer` after the
  * first successful fetch.
  */
 export function pruneOrphanedAnalysisDrafts(

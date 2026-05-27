@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * EditableField — generic inline-edit cell for the Property Dossier
+ * EditableField — generic inline-edit cell for the UserListing Dossier
  * (ADR-009 DO7).
  *
  * Supports six kinds: number, integer, text, date, boolean, enum.

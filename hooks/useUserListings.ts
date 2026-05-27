@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getProperties, Property, updateProperty } from '@/lib/api';
+import { getUserListings, UserListing, updateProperty } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { pruneOrphanedModalModes } from '@/hooks/useModalMode';
 import { pruneOrphanedAnalysisDrafts } from '@/hooks/useAnalysisDraft';
 
 // ─── Module-level cache ───────────────────────────────────────────────────────
 // Stored outside the hook so it persists across page navigations.
-// All components that call useProperties share the same cache.
+// All components that call useUserListings share the same cache.
 //
 // Why module-level and not React context?
 // - Simpler: no provider needed, works anywhere in the tree
@@ -14,7 +14,7 @@ import { pruneOrphanedAnalysisDrafts } from '@/hooks/useAnalysisDraft';
 // - Good enough: single user, single session, data doesn't change between
 //   navigations unless the user or a background email triggers it
 
-let cache: Property[] | null = null;
+let cache: UserListing[] | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL_MS = 120_000; // re-fetch from server after 2 minutes
 
@@ -75,10 +75,36 @@ function markLocalMutation() {
 
 // Listeners allow multiple mounted components to receive cache updates
 // e.g. if Dashboard and Funnel were both mounted simultaneously
-const listeners = new Set<(properties: Property[]) => void>();
+const listeners = new Set<(properties: UserListing[]) => void>();
 
-function notifyListeners(properties: Property[]) {
+function notifyListeners(properties: UserListing[]) {
   listeners.forEach(fn => fn(properties));
+}
+
+// ADR-025 M2b / perf-sweep #73 — progressive page-load against
+// GET /user-listings?page=N. Page 1 lands fast (cold Funnel/Dashboard paint),
+// then the remaining pages stream in and accumulate so the full-set consumers
+// (Funnel kanban, Discover dedup, Recommended scoring, Recently Viewed) still
+// converge on the complete list. Each page updates the module cache + notifies
+// listeners; `onFirstPage` lets the caller drop its loading state after the
+// first window. Returns the fully-accumulated array. (Backend owns the page
+// size; the client just walks pages until hasMore is false.)
+async function loadUserListingsProgressive(
+  onFirstPage?: () => void,
+): Promise<UserListing[]> {
+  let acc: UserListing[] = [];
+  let page = 1;
+  for (;;) {
+    const res = await getUserListings(page);
+    acc = page === 1 ? res.data : acc.concat(res.data);
+    cache = acc;
+    cacheTimestamp = Date.now();
+    notifyListeners(acc);
+    if (page === 1) onFirstPage?.();
+    if (!res.hasMore) break;
+    page++;
+  }
+  return acc;
 }
 
 /**
@@ -103,11 +129,11 @@ import { TERMINAL_STAGES } from '@/lib/constants';
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useProperties() {
+export function useUserListings() {
   const { session, loading: authLoading } = useAuth();
 
   // Initialise with cache immediately — no loading flash if cache is warm
-  const [properties, setProperties] = useState<Property[]>(cache ?? []);
+  const [properties, setProperties] = useState<UserListing[]>(cache ?? []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,15 +142,15 @@ export function useProperties() {
       if (showLoading) setLoading(true);
       setError(null);
 
-      const data = await getProperties();
-
-      // Update cache
-      cache = data;
-      cacheTimestamp = Date.now();
-
-      // Update this component + any other mounted components
+      // Progressive page-load: page 1 paints fast (loading off after the
+      // first window), the rest stream into the cache so the full-set
+      // consumers still converge on everything. loadUserListingsProgressive
+      // updates cache + notifies listeners per page.
+      const data = await loadUserListingsProgressive(() => {
+        setProperties(cache ?? []);
+        setLoading(false);
+      });
       setProperties(data);
-      notifyListeners(data);
 
       // PC8 — prune orphaned modal-mode localStorage entries once per
       // app boot. Cheap (no network), runs after we know the full
@@ -203,7 +229,7 @@ export function useProperties() {
     data: { status?: string; notes?: string; movedToStageAt?: string }
   ) => {
     // Build the optimistic patch — mirrors what the backend will do
-    const patch: Partial<Property> = { ...data };
+    const patch: Partial<UserListing> = { ...data };
 
     if (data.status && !TERMINAL_STAGES.has(data.status)) {
       patch.listingStatus = 'active';
@@ -227,15 +253,15 @@ export function useProperties() {
     }
   }, []);
 
-  // ── Optimistic local-only update (arbitrary Property fields) ───────────────
+  // ── Optimistic local-only update (arbitrary UserListing fields) ───────────────
   // Use this for actions that call their own API function directly
   // (e.g. reportUnavailable, delistProperty) and only need the local cache
-  // updated immediately without going through PATCH /properties/:id.
+  // updated immediately without going through PATCH /user-listings/:id.
   //
   // The caller is responsible for firing the API call. If the API call fails,
   // the cache will be corrected on the next TTL refresh (30 seconds).
 
-  const optimisticUpdate = useCallback((id: string, data: Partial<Property>) => {
+  const optimisticUpdate = useCallback((id: string, data: Partial<UserListing>) => {
     if (cache) {
       cache = cache.map(p => p.id === id ? { ...p, ...data } : p);
       notifyListeners(cache);
@@ -246,7 +272,7 @@ export function useProperties() {
   // ── Optimistic remove ─────────────────────────────────────────────────────
   // Drop a property from the cache + notify all listeners. Used by the
   // Discover heart re-click-undo path on a just-saved scraped listing —
-  // the caller still fires DELETE /properties/:id; this just keeps the UI
+  // the caller still fires DELETE /user-listings/:id; this just keeps the UI
   // in sync without waiting for the round-trip.
   const optimisticRemove = useCallback((id: string) => {
     if (cache) {
@@ -258,11 +284,11 @@ export function useProperties() {
 
   // ── Optimistic insert (ADR-010 I6) ────────────────────────────────────────
   // Prepend a brand-new property to the cache and notify all listeners,
-  // so a card created via the Add Property modal appears in the Funnel /
+  // so a card created via the Add UserListing modal appears in the Funnel /
   // Dashboard / Discover lists instantly without waiting for a refetch.
   // Caller is responsible for the API call — this function only touches
   // the local cache.
-  const optimisticInsert = useCallback((property: Property) => {
+  const optimisticInsert = useCallback((property: UserListing) => {
     if (cache) {
       // De-dupe in case the same id was already inserted (e.g. between
       // optimistic insert and a follow-up refresh)
@@ -311,7 +337,10 @@ export async function refreshPropertiesFromServer(): Promise<void> {
   if (shouldSkipRefresh()) return;
   cacheTimestamp = 0;
   try {
-    const data = await getProperties();
+    // Full unbounded fetch (no page arg) — SSE refresh is a post-mutation
+    // reconcile where correctness beats first-paint speed, and the guard
+    // re-check below relies on a single settled snapshot.
+    const data = await getUserListings();
     // Re-check after the GET resolves — a mutation may have started while
     // we were waiting on the network. Replacing cache now would clobber
     // that fresh optimistic patch and the user would see a hop.
@@ -329,10 +358,9 @@ export async function refreshPropertiesFromServer(): Promise<void> {
 export async function prefetchProperties() {
   if (cache !== null && Date.now() - cacheTimestamp < CACHE_TTL_MS) return;
   try {
-    const data = await getProperties();
-    cache = data;
-    cacheTimestamp = Date.now();
-    notifyListeners(data);
+    // Progressive page-load — warms the cache fast (page 1) and fills in the
+    // rest in the background, same as the hook's own fetch path.
+    await loadUserListingsProgressive();
   } catch {
     // Silently ignore — page-level fetch will retry
   }

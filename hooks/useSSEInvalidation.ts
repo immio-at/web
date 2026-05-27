@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { refreshPropertiesFromServer } from './useProperties';
+import { refreshPropertiesFromServer } from './useUserListings';
 import { refreshSavedFiltersFromServer } from './useSavedFilters';
 import { refreshAnalyticsFromServer } from '@/app/[locale]/(authenticated)/dashboard/components/AnalyticsSnapshotTile';
 import { clearRecommendedCache } from '@/app/[locale]/(authenticated)/dashboard/components/RecommendedCarousel';

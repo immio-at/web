@@ -83,7 +83,7 @@ export function useModalMode(
  * Best-effort cleanup of orphaned localStorage entries (PC8). Pass the
  * set of currently-known propertyIds; any `immio.modalMode.{id}` key
  * whose id is absent from the set is removed. Fire-and-forget — runs
- * once per app boot from `useProperties` after the first successful
+ * once per app boot from `useUserListings` after the first successful
  * fetch.
  */
 export function pruneOrphanedModalModes(activePropertyIds: Set<string>): void {

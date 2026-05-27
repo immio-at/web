@@ -57,7 +57,7 @@ function captureContext(): {
     propertyId: null as string | null,
     propertyTitle: null as string | null,
   };
-  // Property modal context — the modal sets data-property-id /
+  // UserListing modal context — the modal sets data-property-id /
   // data-property-title on its outer element so we can scrape it without
   // plumbing a context provider just for this. If no modal is open,
   // we fall back to nulls and the description text remains the source

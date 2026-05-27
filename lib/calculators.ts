@@ -1,14 +1,14 @@
 /**
  * calculators.ts
  *
- * Pure calculation functions for the IMMIO Property Analysis Calculator.
+ * Pure calculation functions for the IMMIO UserListing Analysis Calculator.
  * No side effects, no UI dependencies, no API calls.
  * All inputs are plain numbers. All outputs are plain numbers.
  *
  * Follows ADR-003 v1.2 calculation logic exactly.
  */
 
-import { PropertyAnalysis, RehabCostItem } from './api';
+import { Analysis, RehabCostItem } from './api';
 
 // ─── Shared Types ─────────────────────────────────────────────────────────────
 
@@ -39,18 +39,18 @@ export interface LoanResult {
  * Resolves the effective loan1 amount.
  * Manual override (loan1Amount) always wins over the percentage suggestion.
  */
-export function resolveL1Amount(a: PropertyAnalysis): number {
+export function resolveL1Amount(a: Analysis): number {
   if (!a.financing) return 0;
   if (a.loan1Amount !== null && a.loan1Amount !== undefined) return a.loan1Amount;
   return (a.desiredPrice ?? 0) * a.loan1AmountPct;
 }
 
-export function resolveL2Amount(a: PropertyAnalysis): number {
+export function resolveL2Amount(a: Analysis): number {
   if (!a.financing || !a.loan2Enabled) return 0;
   return a.loan2Amount ?? 0;
 }
 
-export function calcKaufnebenkosten(a: PropertyAnalysis): number {
+export function calcKaufnebenkosten(a: Analysis): number {
   const price = a.desiredPrice ?? 0;
   return (
     price * (a.maklerPct + a.notarPct + a.grundbuchPct + a.grunderwerbsteuerPct) +
@@ -66,11 +66,11 @@ export function calcTotalAbzugsfaehig(rehabCosts: RehabCostItem[]): number {
   return rehabCosts.reduce((sum, item) => sum + item.abzugsfaehig, 0);
 }
 
-export function calcTotalInvestment(a: PropertyAnalysis): number {
+export function calcTotalInvestment(a: Analysis): number {
   return (a.desiredPrice ?? 0) + calcKaufnebenkosten(a) + calcTotalRehab(a.rehabCosts);
 }
 
-export function calcEigenkapital(a: PropertyAnalysis): number {
+export function calcEigenkapital(a: Analysis): number {
   return calcTotalInvestment(a) - resolveL1Amount(a) - resolveL2Amount(a);
 }
 
@@ -116,18 +116,18 @@ export function calcRemainingBalance(
   return balance;
 }
 
-export function calcLoan1Monthly(a: PropertyAnalysis): number {
+export function calcLoan1Monthly(a: Analysis): number {
   if (!a.financing) return 0;
   const amount = resolveL1Amount(a);
   return calcMonthlyPayment(amount, a.loan1Rate ?? 0, a.loan1TermYears ?? 0);
 }
 
-export function calcLoan2Monthly(a: PropertyAnalysis): number {
+export function calcLoan2Monthly(a: Analysis): number {
   if (!a.financing || !a.loan2Enabled) return 0;
   return calcMonthlyPayment(a.loan2Amount ?? 0, a.loan2Rate ?? 0, a.loan2TermYears ?? 0);
 }
 
-export function calcTotalMonthlyLoan(a: PropertyAnalysis): number {
+export function calcTotalMonthlyLoan(a: Analysis): number {
   return calcLoan1Monthly(a) + calcLoan2Monthly(a);
 }
 
@@ -141,7 +141,7 @@ export interface OwnerResults {
   yearlyData: YearlyDataPoint[];
 }
 
-export function calcOwnerResults(a: PropertyAnalysis): OwnerResults {
+export function calcOwnerResults(a: Analysis): OwnerResults {
   const desiredPrice = a.desiredPrice ?? 0;
   const monthlyLoan = calcTotalMonthlyLoan(a);
   const monthlyBetriebskosten = a.ooBetriebskostenMonthly ?? 0;
@@ -185,7 +185,7 @@ export interface RentalResults {
   yearlyData: RentalYearlyDataPoint[];
 }
 
-export function calcRentalResults(a: PropertyAnalysis): RentalResults {
+export function calcRentalResults(a: Analysis): RentalResults {
   const desiredPrice = a.desiredPrice ?? 0;
 
   // Derive Kaltmiete
@@ -368,7 +368,7 @@ export interface RentalTaxPrivateResult {
   eigenkapitalrendite_total_aftertax: number;
 }
 
-export function calcRentalTaxPrivate(a: PropertyAnalysis, rentalResults: RentalResults): RentalTaxPrivateResult {
+export function calcRentalTaxPrivate(a: Analysis, rentalResults: RentalResults): RentalTaxPrivateResult {
   const grenzsteuersatz = a.grenzsteuersatzPct ?? 0;
   const acquisitionBasis = (a.desiredPrice ?? 0) + calcKaufnebenkosten(a);
   const afa = calcAfA(acquisitionBasis, a.gebaeudeAnteilPct, a.purchaseDate, 'private');
@@ -428,7 +428,7 @@ export interface RentalTaxGmbHResult {
   effectiveRateDistributed: number;
 }
 
-export function calcRentalTaxGmbH(a: PropertyAnalysis, rentalResults: RentalResults): RentalTaxGmbHResult {
+export function calcRentalTaxGmbH(a: Analysis, rentalResults: RentalResults): RentalTaxGmbHResult {
   const acquisitionBasis = (a.desiredPrice ?? 0) + calcKaufnebenkosten(a);
   const afa = calcAfA(acquisitionBasis, a.gebaeudeAnteilPct, a.purchaseDate, 'gmbh');
 
@@ -523,7 +523,7 @@ function annualiseCompound(roi: number, holdingMonths: number): number | null {
 }
 
 export function calcFlipPrivate(
-  a: PropertyAnalysis,
+  a: Analysis,
   hauptwohnsitzBefreiung = false,
 ): FlipResults {
   const desiredPrice = a.desiredPrice ?? 0;
@@ -620,7 +620,7 @@ export interface FlipGmbHResults {
 
 const COMBINED_GMBH_RATE = 1 - (1 - KOEST_RATE) * (1 - KEST_RATE);
 
-export function calcFlipGmbH(a: PropertyAnalysis): FlipGmbHResults {
+export function calcFlipGmbH(a: Analysis): FlipGmbHResults {
   const desiredPrice = a.desiredPrice ?? 0;
   const flipResalePrice = a.flipResalePrice ?? 0;
   const holdingMonths = a.flipDurationMonths ?? 0;
@@ -724,7 +724,7 @@ export interface RentalYearlyTaxDataPoint extends RentalYearlyDataPoint {
 }
 
 export function calcYearlyRentalProjection(
-  a: PropertyAnalysis,
+  a: Analysis,
   rentalResults: RentalResults,
   years?: number,
 ): RentalYearlyTaxDataPoint[] {
@@ -772,7 +772,7 @@ export function calcYearlyRentalProjection(
 
 // ─── Legacy compatibility — calcFlipResults wraps calcFlipPrivate ────────────
 
-export function calcFlipResults(a: PropertyAnalysis): FlipResults {
+export function calcFlipResults(a: Analysis): FlipResults {
   return calcFlipPrivate(a);
 }
 

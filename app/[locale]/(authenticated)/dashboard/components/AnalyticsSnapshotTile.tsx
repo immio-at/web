@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { Property, getAnalyticsSummary, AnalyticsSummary } from '@/lib/api';
+import { UserListing, getAnalyticsSummary, AnalyticsSummary } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 const INTERACTION_TYPE_KEY: Record<string, string> = {
@@ -50,7 +50,7 @@ export async function refreshAnalyticsFromServer(): Promise<void> {
   }
 }
 
-export default function AnalyticsSnapshotTile({ properties }: { properties: Property[] }) {
+export default function AnalyticsSnapshotTile({ properties }: { properties: UserListing[] }) {
   const t = useTranslations('dashboard.analyticsTile');
   const ta = useTranslations('analytics');
   const { session, loading: authLoading } = useAuth();

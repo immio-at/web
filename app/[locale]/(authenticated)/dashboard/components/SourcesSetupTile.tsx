@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { Property, getInboxUnreadCount } from '@/lib/api';
+import { UserListing, getInboxUnreadCount } from '@/lib/api';
 import { Link } from '@/i18n/navigation';
 import { useAuth } from '@/context/AuthContext';
 
@@ -20,7 +20,7 @@ export default function SourcesSetupTile({
   properties,
   immioEmail,
 }: {
-  properties: Property[];
+  properties: UserListing[];
   immioEmail: string | null;
 }) {
   const t = useTranslations('dashboard.sourcesTile');

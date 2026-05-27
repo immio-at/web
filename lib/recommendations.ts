@@ -5,7 +5,7 @@
  * Weights: postcode/state = 10, price = 8, price/m² = 5, size = 4
  */
 
-import { Property } from './api';
+import { UserListing } from './api';
 import { getBundeslandByPostcode } from './austria-plz-bundesland';
 
 // ─── Criteria derivation ─────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ const FUNNEL_STATUSES = new Set([
   'offer_made', 'parked', 'won',
 ]);
 
-export function deriveCriteria(properties: Property[]): DerivedCriteria | null {
+export function deriveCriteria(properties: UserListing[]): DerivedCriteria | null {
   const funnel = properties.filter(p => FUNNEL_STATUSES.has(p.status));
   if (funnel.length < 5) return null;
 
@@ -76,7 +76,7 @@ const WEIGHT_SIZE = 4;
  * Scores a candidate property against derived criteria.
  * Returns 0–27 (sum of weights). Higher = better match.
  */
-export function scoreProperty(p: Property, criteria: DerivedCriteria): number {
+export function scoreProperty(p: UserListing, criteria: DerivedCriteria): number {
   let score = 0;
 
   // Location: exact postcode match = full weight, same state = half weight
@@ -137,10 +137,10 @@ export function scoreProperty(p: Property, criteria: DerivedCriteria): number {
  * Filters to status='new', scores against criteria, returns top N.
  */
 export function getRecommendedOwn(
-  properties: Property[],
+  properties: UserListing[],
   criteria: DerivedCriteria,
   limit = 20,
-): Property[] {
+): UserListing[] {
   return properties
     .filter(p => p.status === 'new')
     .map(p => ({ property: p, score: scoreProperty(p, criteria) }))

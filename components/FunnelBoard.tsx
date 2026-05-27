@@ -4,14 +4,14 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { Property, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
-import { useProperties, markMutationStart, markMutationEnd } from '@/hooks/useProperties';
+import { UserListing, SavedFilter, reportUnavailable, delistProperty } from '@/lib/api';
+import { useUserListings, markMutationStart, markMutationEnd } from '@/hooks/useUserListings';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { type PresetFilterKey, passesPresetFilters, passesSavedFilters, passesFilterValues } from '@/lib/preset-filters';
 import { type FilterValues } from '@/lib/filter-values';
 import { PILL_BAR_ONLY_FILTERS } from '@/config/feature-flags';
 import { FUNNEL_STAGES_DISPLAY } from '@/lib/constants';
-import PropertyCard, { type CardActions, type CardProperty } from '@/components/PropertyCard';
+import PropertyCard, { type CardActions, type ListingCard } from '@/components/PropertyCard';
 
 const PropertyAnalysisModal = dynamic(
   () => import('@/components/PropertyAnalysisModal'),
@@ -179,9 +179,9 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
   headerAction?: React.ReactNode;
 }) {
   const t = useTranslations('funnel');
-  const { properties: all, loading, error, update, optimisticUpdate } = useProperties();
+  const { properties: all, loading, error, update, optimisticUpdate } = useUserListings();
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
-  const [analyseProperty, setAnalyseProperty] = useState<Property | null>(null);
+  const [analyseProperty, setAnalyseProperty] = useState<UserListing | null>(null);
   const [zoomedStage, setZoomedStage] = useState<string | null>(null);
   const draggedId = useRef<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
@@ -251,7 +251,7 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
   // Optimistic: update local state immediately, fire API call in background.
   // Bracketed by markMutationStart/End so an SSE refresh racing the PATCH
   // can't overwrite the optimistic patch with stale data — see
-  // useProperties.ts shouldSkipRefresh.
+  // useUserListings.ts shouldSkipRefresh.
   async function handleReportUnavailable(propertyId: string) {
     optimisticUpdate(propertyId, { listingStatus: 'expired' });
     markMutationStart();
@@ -283,7 +283,7 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
   // we render a DropdownPortal anchored there with the available stages.
   const [heartMenu, setHeartMenu] = useState<{ propertyId: string; anchor: DOMRect } | null>(null);
 
-  function propertyToCard(p: Property): CardProperty {
+  function propertyToCard(p: UserListing): ListingCard {
     return {
       id: p.id,
       title: p.title,
@@ -295,9 +295,10 @@ export default function FunnelBoard({ activePresets, activeSavedFilterIds, saved
       imageUrl: p.imageUrl,
       sourceUrl: p.sourceUrl,
       platform: p.platform,
-      status: p.status,
-      listingStatus: p.listingStatus,
-      source: 'own',
+      // Funnel cards are always in the funnel — the UserListing carries the
+      // stage + listing-availability the card reads. Own listings are private.
+      userListing: p,
+      listing: { visibility: 'private' },
       emailReceivedAt: p.emailReceivedAt,
       analysisCount: p.analysisCount ?? 0,
       documentCount: p.documentCount ?? 0,
@@ -552,10 +553,10 @@ function ZoomedStageView({
   onDrop,
 }: {
   stage: typeof FUNNEL_STAGES_DISPLAY[number];
-  stageProps: Property[];
+  stageProps: UserListing[];
   isDragOver: boolean;
   cardActions: CardActions;
-  toCard: (p: Property) => CardProperty;
+  toCard: (p: UserListing) => ListingCard;
   onBack: () => void;
   onDragStart: (id: string) => void;
   onDragEnd: () => void;

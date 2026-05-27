@@ -2,7 +2,7 @@
 
 /**
  * PropertyTypeChips — ADR-023 R4. Six multi-select chips wired to the
- * `propertyType` filter (ADR-022 `Property.propertyType`). Replaces the
+ * `propertyType` filter (ADR-022 `UserListing.propertyType`). Replaces the
  * inert `ComingSoonRow` for the type row.
  *
  * Controlled: `value` is the selected canonical type array; `onChange`

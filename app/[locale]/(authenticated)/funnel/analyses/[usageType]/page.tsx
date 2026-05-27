@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
-import { useProperties } from '@/hooks/useProperties';
+import { useUserListings } from '@/hooks/useUserListings';
 import { usePortfolioAnalyses } from '@/hooks/usePortfolioAnalyses';
 import {
   defaultSortFor,
@@ -21,7 +21,7 @@ import {
 } from '@/lib/portfolioAnalyses';
 import PortfolioAnalysisTable from '@/components/portfolio/PortfolioAnalysisTable';
 import { Link } from '@/i18n/navigation';
-import type { Property } from '@/lib/api';
+import type { UserListing } from '@/lib/api';
 
 const PropertyAnalysisModal = dynamic(
   () => import('@/components/PropertyAnalysisModal'),
@@ -37,7 +37,7 @@ export default function PortfolioAnalysesPage() {
   const router = useRouter();
   const params = useParams<{ usageType: string; locale: string }>();
   const searchParams = useSearchParams();
-  const { properties } = useProperties();
+  const { properties } = useUserListings();
 
   const usageTypeParam = params?.usageType ?? 'rental';
   const usageType: UsageType = VALID_USAGE_TYPES.includes(usageTypeParam as UsageType)
@@ -85,7 +85,7 @@ export default function PortfolioAnalysesPage() {
   }
 
   // ── Resolve modal property + initial analysis ──────────────────
-  const modalProperty: Property | null = useMemo(() => {
+  const modalProperty: UserListing | null = useMemo(() => {
     if (!modalAnalysisId) return null;
     const row = rows.find((r) => r.analysis.id === modalAnalysisId);
     if (!row) return null;

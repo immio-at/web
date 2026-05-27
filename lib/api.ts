@@ -41,9 +41,9 @@ async function handleResponse(response: Response): Promise<any> {
   return response.json();
 }
 
-// ─── Property ─────────────────────────────────────────────────────────────────
+// ─── UserListing ─────────────────────────────────────────────────────────────────
 
-export interface Property {
+export interface UserListing {
   id: string;
   title: string;
   price: number | null;
@@ -100,7 +100,7 @@ export interface Property {
   baujahr?: number | null;
 }
 
-// ─── Property Analysis ────────────────────────────────────────────────────────
+// ─── Analysis ────────────────────────────────────────────────────────
 
 export interface RehabCostItem {
   label: string;
@@ -108,7 +108,7 @@ export interface RehabCostItem {
   abzugsfaehig: number;
 }
 
-export interface PropertyAnalysis {
+export interface Analysis {
   id: string;
   propertyId: string;
   dealId: string;
@@ -174,13 +174,38 @@ export type CreateAnalysisDto = {
   name?: string;
 };
 
-export type UpdateAnalysisDto = Partial<Omit<PropertyAnalysis, 'id' | 'propertyId' | 'createdAt' | 'updatedAt'>>;
+export type UpdateAnalysisDto = Partial<Omit<Analysis, 'id' | 'propertyId' | 'createdAt' | 'updatedAt'>>;
 
-// ─── Property API ─────────────────────────────────────────────────────────────
+// ─── UserListing API ─────────────────────────────────────────────────────────────
 
-export async function getProperties(): Promise<Property[]> {
+// ADR-025 M2b — one page of the user's funnel listings. Returned by
+// GET /user-listings?page=N (perf-sweep #73). `hasMore` lets the hook
+// page-load progressively without a parallel count; `total` is a lower
+// bound, not used for "page X of N" UI.
+export interface UserListingsPage {
+  data: UserListing[];
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+/**
+ * GET /user-listings — the user's funnel listings in legacy shape.
+ *
+ * Called with no argument it returns the full unbounded array (backward-
+ * compatible with the old /properties shim; used by the SSE-refresh and
+ * prefetch paths). Called with a 1-based page it returns one PAGE_SIZE
+ * window — the useUserListings hook page-loads progressively against this so
+ * cold Funnel/Dashboard loads paint the first page fast.
+ */
+export async function getUserListings(): Promise<UserListing[]>;
+export async function getUserListings(page: number): Promise<UserListingsPage>;
+export async function getUserListings(
+  page?: number,
+): Promise<UserListing[] | UserListingsPage> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties`, {
+  const qs = page != null ? `?page=${page}` : '';
+  const response = await fetch(`${API_URL}/user-listings${qs}`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
@@ -208,7 +233,7 @@ export interface PropertiesFilter {
   sortOrder?: string;
 }
 
-export async function getPropertiesFiltered(filter: PropertiesFilter = {}): Promise<Property[]> {
+export async function getPropertiesFiltered(filter: PropertiesFilter = {}): Promise<UserListing[]> {
   const token = await getAuthToken();
   const params = new URLSearchParams();
   if (filter.keyword) params.set('keyword', filter.keyword);
@@ -230,7 +255,7 @@ export async function getPropertiesFiltered(filter: PropertiesFilter = {}): Prom
   if (filter.sortBy) params.set('sortBy', filter.sortBy);
   if (filter.sortOrder) params.set('sortOrder', filter.sortOrder);
   const qs = params.toString();
-  const response = await fetch(`${API_URL}/properties${qs ? `?${qs}` : ''}`, {
+  const response = await fetch(`${API_URL}/user-listings${qs ? `?${qs}` : ''}`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
@@ -242,7 +267,7 @@ export async function updateProperty(
   data: { status?: string; notes?: string; movedToStageAt?: string },
 ) {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${id}`, {
+  const response = await fetch(`${API_URL}/user-listings/${id}`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -254,11 +279,11 @@ export async function updateProperty(
 }
 
 // Manually flags a property as no longer available.
-// Calls POST /properties/:id/report-unavailable on the backend.
+// Calls POST /user-listings/:id/report-unavailable on the backend.
 // The backend sets listingStatus: 'expired' and records listingExpiredAt.
 export async function reportUnavailable(id: string): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${id}/report-unavailable`, {
+  const response = await fetch(`${API_URL}/user-listings/${id}/report-unavailable`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -266,11 +291,11 @@ export async function reportUnavailable(id: string): Promise<void> {
 }
 
 // Moves an expired property into the hidden 'delisted' stage.
-// Calls POST /properties/:id/delist on the backend.
+// Calls POST /user-listings/:id/delist on the backend.
 // Only valid for properties where listingStatus === 'expired'.
 export async function delistProperty(id: string): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${id}/delist`, {
+  const response = await fetch(`${API_URL}/user-listings/${id}/delist`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -282,7 +307,7 @@ export async function delistProperty(id: string): Promise<void> {
 // cascades children (analyses, dossier, documents, interactions, DD runs).
 export async function deleteProperty(id: string): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${id}`, {
+  const response = await fetch(`${API_URL}/user-listings/${id}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -318,12 +343,12 @@ export type IngestAction =
 
 export async function importFromUrl(url: string, status?: string): Promise<{
   message: string;
-  property: Property;
+  property: UserListing;
   action: IngestAction;
   suspectedDuplicateOf: string | null;
 }> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/from-url`, {
+  const response = await fetch(`${API_URL}/user-listings/from-url`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -348,7 +373,7 @@ export interface ListingHistoryEvent {
 
 export async function getListingHistory(propertyId: string): Promise<ListingHistoryEvent[]> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/listing-history`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/listing-history`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   return handleResponse(response);
@@ -357,9 +382,9 @@ export async function getListingHistory(propertyId: string): Promise<ListingHist
 export async function applyDuplicateDecision(
   propertyId: string,
   decision: 'keep_both' | 'hide_this',
-): Promise<Property> {
+): Promise<UserListing> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/duplicate-decision`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/duplicate-decision`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -370,9 +395,9 @@ export async function applyDuplicateDecision(
   return handleResponse(response);
 }
 
-export async function dismissRelistBadge(propertyId: string): Promise<Property> {
+export async function dismissRelistBadge(propertyId: string): Promise<UserListing> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/dismiss-relist-badge`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/dismiss-relist-badge`, {
     method: 'PATCH',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -388,7 +413,7 @@ export async function trackInteraction(
   type: InteractionType,
 ): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/interactions`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/interactions`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -422,7 +447,7 @@ export async function trackScrapedInteraction(
   type: InteractionType,
 ): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/scraped-listings/${scrapedListingId}/interactions`, {
+  const response = await fetch(`${API_URL}/listings/${scrapedListingId}/interactions`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -434,12 +459,12 @@ export async function trackScrapedInteraction(
 }
 
 export type RecentlyViewedItem =
-  | { kind: 'own'; lastAt: string; property: Property }
-  | { kind: 'scraped'; lastAt: string; listing: ScrapedListing };
+  | { kind: 'own'; lastAt: string; property: UserListing }
+  | { kind: 'scraped'; lastAt: string; listing: Listing };
 
 export async function getRecentlyViewed(limit: number = 20): Promise<RecentlyViewedItem[]> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/recently-viewed?limit=${limit}`, {
+  const response = await fetch(`${API_URL}/user-listings/recently-viewed?limit=${limit}`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
@@ -482,7 +507,7 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
 
 // ─── Scraped Listings ─────────────────────────────────────────────────────────
 
-export interface ScrapedListing {
+export interface Listing {
   id: string;
   adId: string;
   platform: string;
@@ -494,8 +519,18 @@ export interface ScrapedListing {
   location: string | null;
   zipCode: string | null;
   imageUrl: string | null;
+  // ADR-025 M2b — unified-schema discriminator replacing the old
+  // ListingCard own-vs-scraped `source` field. 'public' = a discoverable
+  // (scraped) listing; 'private' = the user's own listing (email-parsed or
+  // manually added). The card no longer branches on origin — funnel
+  // membership is signalled by the presence of a UserListing instead.
+  // GET /listings carries it on the row; the ListingCard mappers also set it
+  // explicitly. Optional so older callers stay valid.
+  visibility?: 'public' | 'private';
   firstSeenAt: string;
   lastSeenAt: string;
+  // GET /listings is a NOT-EXISTS anti-join (only listings the user hasn't
+  // saved), so the API stamps this false; the old per-row flag is gone.
   savedByUser: boolean;
   // ADR-022 §8.4 — type / regulation. Scraped listings have no Dossier, so
   // there is no heuristic: only a stored value is ever present.
@@ -504,7 +539,7 @@ export interface ScrapedListing {
 }
 
 export interface ScrapedListingsResponse {
-  data: ScrapedListing[];
+  data: Listing[];
   total: number;
   page: number;
   pageSize: number;
@@ -556,25 +591,47 @@ export async function getScrapedListings(filter: ScrapedListingsFilter = {}): Pr
   if (filter.sortOrder) params.set('sortOrder', filter.sortOrder);
   if (filter.page) params.set('page', String(filter.page));
   const qs = params.toString();
-  const response = await fetch(`${API_URL}/scraped-listings${qs ? `?${qs}` : ''}`, {
+  // ADR-025 M2b — Discover now reads the unified GET /listings (NOT-EXISTS
+  // anti-join: only public listings the user does NOT already have in their
+  // funnel). The backend returns { data, page, pageSize, total, hasMore };
+  // we derive `totalPages` from the exact `total` to keep the existing
+  // page-N/next-prev pager working, and stamp savedByUser:false since the
+  // anti-join guarantees every row is unsaved (Discover re-derives the heart
+  // state from the funnel cache anyway).
+  const response = await fetch(`${API_URL}/listings${qs ? `?${qs}` : ''}`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
-  return handleResponse(response);
+  const body = await handleResponse(response) as {
+    data?: Listing[]; total?: number; page?: number; pageSize?: number;
+  };
+  const pageSize = body.pageSize || 20;
+  const total = body.total ?? 0;
+  return {
+    data: (body.data ?? []).map((l) => ({ ...l, savedByUser: false })),
+    total,
+    page: body.page ?? filter.page ?? 1,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
 }
 
 export async function saveScrapedListing(
   id: string,
   status: 'new' | 'investigating' = 'investigating',
-): Promise<{ message: string; property: Property }> {
+): Promise<{ property: UserListing }> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/scraped-listings/${id}/save`, {
+  // ADR-025 M2b — unified save: POST /me/listings targets an existing Listing
+  // by id (Discover heart). The backend re-maps the created UserListing to the
+  // legacy Property shape and returns { property }, so callers' optimisticInsert
+  // + modal-open paths are unchanged.
+  const response = await fetch(`${API_URL}/me/listings`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ listingId: id, status }),
   });
   return handleResponse(response);
 }
@@ -586,10 +643,10 @@ export async function saveScrapedListing(
 // the modal still does for that mode after Session 44). Caching across
 // modal opens means a close+reopen within the TTL skips the roundtrip
 // entirely. Mutations invalidate the entry for that property.
-const analysesCache = new Map<string, { data: PropertyAnalysis[]; at: number }>();
+const analysesCache = new Map<string, { data: Analysis[]; at: number }>();
 const ANALYSES_CACHE_TTL_MS = 60_000;
 
-function readAnalysesCache(propertyId: string): PropertyAnalysis[] | null {
+function readAnalysesCache(propertyId: string): Analysis[] | null {
   const hit = analysesCache.get(propertyId);
   if (!hit) return null;
   if (Date.now() - hit.at > ANALYSES_CACHE_TTL_MS) {
@@ -604,15 +661,15 @@ export function clearAnalysesCache(propertyId?: string): void {
   else analysesCache.clear();
 }
 
-export async function getAnalyses(propertyId: string): Promise<PropertyAnalysis[]> {
+export async function getAnalyses(propertyId: string): Promise<Analysis[]> {
   const cached = readAnalysesCache(propertyId);
   if (cached) return cached;
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/analyses`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/analyses`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
-  const raw = await handleResponse(response) as PropertyAnalysis[];
+  const raw = await handleResponse(response) as Analysis[];
   const data = raw.map((a) => normalizeAnalysis(a));
   analysesCache.set(propertyId, { data, at: Date.now() });
   return data;
@@ -620,7 +677,7 @@ export async function getAnalyses(propertyId: string): Promise<PropertyAnalysis[
 
 // ─── ADR-016 — Portfolio analyses (cross-property) ───────────────────────────
 
-export interface PortfolioAnalysis extends PropertyAnalysis {
+export interface PortfolioAnalysis extends Analysis {
   property: {
     id: string;
     title: string | null;
@@ -647,7 +704,7 @@ export function clearPortfolioAnalysesCache(): void {
 // PortfolioAnalysisTable and DashboardAnalysisTile read the raw
 // response and feed it straight to the calculator. Normalising here
 // keeps every caller honest.
-const ANALYSIS_DECIMAL_FIELDS: (keyof PropertyAnalysis)[] = [
+const ANALYSIS_DECIMAL_FIELDS: (keyof Analysis)[] = [
   'listPrice',
   'desiredPrice',
   'maklerPct',
@@ -677,7 +734,7 @@ const ANALYSIS_DECIMAL_FIELDS: (keyof PropertyAnalysis)[] = [
   'flipResalePrice',
 ];
 
-function normalizeAnalysis<T extends PropertyAnalysis>(a: T): T {
+function normalizeAnalysis<T extends Analysis>(a: T): T {
   const out = { ...a } as unknown as Record<string, unknown>;
   for (const f of ANALYSIS_DECIMAL_FIELDS) {
     const v = out[f as string];
@@ -719,9 +776,9 @@ export async function getPortfolioAnalyses(): Promise<PortfolioAnalysis[]> {
 export async function createAnalysis(
   propertyId: string,
   dto: CreateAnalysisDto,
-): Promise<PropertyAnalysis> {
+): Promise<Analysis> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/analyses`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/analyses`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -729,7 +786,7 @@ export async function createAnalysis(
     },
     body: JSON.stringify(dto),
   });
-  const created = await handleResponse(response) as PropertyAnalysis;
+  const created = await handleResponse(response) as Analysis;
   analysesCache.delete(propertyId);
   portfolioAnalysesCache = null;
   return created;
@@ -739,9 +796,9 @@ export async function updateAnalysis(
   propertyId: string,
   analysisId: string,
   dto: UpdateAnalysisDto,
-): Promise<PropertyAnalysis> {
+): Promise<Analysis> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/analyses/${analysisId}`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/analyses/${analysisId}`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -749,7 +806,7 @@ export async function updateAnalysis(
     },
     body: JSON.stringify(dto),
   });
-  const updated = await handleResponse(response) as PropertyAnalysis;
+  const updated = await handleResponse(response) as Analysis;
   analysesCache.delete(propertyId);
   portfolioAnalysesCache = null;
   return updated;
@@ -757,7 +814,7 @@ export async function updateAnalysis(
 
 export async function deleteAnalysis(propertyId: string, analysisId: string): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/analyses/${analysisId}`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/analyses/${analysisId}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -766,7 +823,7 @@ export async function deleteAnalysis(propertyId: string, analysisId: string): Pr
   portfolioAnalysesCache = null;
 }
 
-// ─── Property Documents ─────────────────────────────────────────────────────
+// ─── UserListing Documents ─────────────────────────────────────────────────────
 
 export interface PropertyDocument {
   id: string;
@@ -780,7 +837,7 @@ export interface PropertyDocument {
 
 export async function getDocuments(propertyId: string): Promise<PropertyDocument[]> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/documents`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/documents`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
@@ -792,7 +849,7 @@ export async function uploadDocument(propertyId: string, file: File, label: stri
   const formData = new FormData();
   formData.append('file', file);
   formData.append('label', label);
-  const response = await fetch(`${API_URL}/properties/${propertyId}/documents`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/documents`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
     body: formData,
@@ -826,7 +883,7 @@ export async function uploadDocumentZip(
   // Label is ignored on the ZIP path — labels are inferred per file
   // server-side. Pass a dummy so the multipart form has the field.
   formData.append('label', 'Sonstiges');
-  const response = await fetch(`${API_URL}/properties/${propertyId}/documents`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/documents`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
     body: formData,
@@ -836,7 +893,7 @@ export async function uploadDocumentZip(
 
 export async function getDocumentDownloadUrl(propertyId: string, documentId: string): Promise<string> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/documents/${documentId}/download`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/documents/${documentId}/download`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   const data = await handleResponse(response);
@@ -849,7 +906,7 @@ export async function updateDocumentLabel(
   label: string,
 ): Promise<PropertyDocument> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/documents/${documentId}`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/documents/${documentId}`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -862,7 +919,7 @@ export async function updateDocumentLabel(
 
 export async function deleteDocument(propertyId: string, documentId: string): Promise<void> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/documents/${documentId}`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/documents/${documentId}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -870,7 +927,7 @@ export async function deleteDocument(propertyId: string, documentId: string): Pr
   return handleResponse(response);
 }
 
-// ─── Property Details (Dossier — ADR-009) ───────────────────────────────────
+// ─── UserListing Details (Dossier — ADR-009) ───────────────────────────────────
 
 export type PropertyDetailsApplyableField =
   | 'exposePrice'
@@ -899,7 +956,7 @@ export interface PropertyDetails {
   addressZip: string | null;
   addressCity: string | null;
 
-  // Property
+  // UserListing
   etage: number | null;
   aufzug: boolean | null;
   keller: boolean | null;
@@ -968,7 +1025,7 @@ function normalizePropertyDetails(d: PropertyDetails | null): PropertyDetails | 
 
 export async function getPropertyDetails(propertyId: string): Promise<{ details: PropertyDetails | null }> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/details`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/details`, {
     headers: { 'Authorization': `Bearer ${token}` },
     cache: 'no-store',
   });
@@ -981,7 +1038,7 @@ export async function updatePropertyDetails(
   dto: UpdatePropertyDetailsDto,
 ): Promise<PropertyDetails> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/details`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/details`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -995,7 +1052,7 @@ export async function updatePropertyDetails(
 
 export async function extractPropertyDetails(propertyId: string): Promise<PropertyDetails> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/details/extract`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/details/extract`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -1006,12 +1063,12 @@ export async function extractPropertyDetails(propertyId: string): Promise<Proper
 export async function createPropertyFromExpose(
   file: File,
   status?: string,
-): Promise<{ property: Property; details: PropertyDetails }> {
+): Promise<{ property: UserListing; details: PropertyDetails }> {
   const token = await getAuthToken();
   const formData = new FormData();
   formData.append('file', file);
   if (status) formData.append('status', status);
-  const response = await fetch(`${API_URL}/properties/from-expose`, {
+  const response = await fetch(`${API_URL}/user-listings/from-expose`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
     body: formData,
@@ -1023,7 +1080,7 @@ export async function createPropertyFromExpose(
   };
 }
 
-// ── ADR-010 unified Add Property modal ───────────────────────────────────────
+// ── ADR-010 unified Add UserListing modal ───────────────────────────────────────
 
 export interface CreateManualPropertyDto {
   title?: string | null;
@@ -1036,9 +1093,9 @@ export interface CreateManualPropertyDto {
   status?: string;
 }
 
-export async function createManualProperty(dto: CreateManualPropertyDto): Promise<Property> {
+export async function createManualProperty(dto: CreateManualPropertyDto): Promise<UserListing> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties`, {
+  const response = await fetch(`${API_URL}/user-listings`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -1051,15 +1108,15 @@ export async function createManualProperty(dto: CreateManualPropertyDto): Promis
 
 // Returns the full ingest envelope (action discriminator + property + suspect ref)
 // so callers can render different toasts for new vs relisted vs soft-suspect
-// per ADR-015 §7.2. Older callers reading just the Property still work because
+// per ADR-015 §7.2. Older callers reading just the UserListing still work because
 // `result.property` carries the same shape.
 export async function createPropertyFromUrl(url: string, status?: string): Promise<{
-  property: Property;
+  property: UserListing;
   action: IngestAction;
   suspectedDuplicateOf: string | null;
 }> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/from-url`, {
+  const response = await fetch(`${API_URL}/user-listings/from-url`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -1068,7 +1125,7 @@ export async function createPropertyFromUrl(url: string, status?: string): Promi
     body: JSON.stringify({ url, status }),
   });
   const data = await handleResponse(response) as {
-    property: Property;
+    property: UserListing;
     action?: IngestAction;
     suspectedDuplicateOf?: string | null;
   };
@@ -1082,9 +1139,9 @@ export async function createPropertyFromUrl(url: string, status?: string): Promi
 export async function applyPropertyDetailField(
   propertyId: string,
   field: PropertyDetailsApplyableField,
-): Promise<Property> {
+): Promise<UserListing> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/properties/${propertyId}/details/apply-field`, {
+  const response = await fetch(`${API_URL}/user-listings/${propertyId}/details/apply-field`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,

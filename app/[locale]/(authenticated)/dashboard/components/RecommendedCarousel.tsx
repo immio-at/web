@@ -2,23 +2,23 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { Property, getScrapedListings, ScrapedListing } from '@/lib/api';
+import { UserListing, getScrapedListings, Listing } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { deriveCriteria, scoreProperty, type DerivedCriteria } from '@/lib/recommendations';
-import PropertyCard, { type CardProperty, type CardActions } from '@/components/PropertyCard';
-import { useProperties } from '@/hooks/useProperties';
+import PropertyCard, { type ListingCard, type CardActions } from '@/components/PropertyCard';
+import { useUserListings } from '@/hooks/useUserListings';
 import { trackInteraction } from '@/hooks/useInteractionTracker';
 import { useRef } from 'react';
 
 // ─── Module-level cache ──────────────────────────────────────────────────────
-type ScoredCard = { card: CardProperty; score: number; sourceUrl: string };
+type ScoredCard = { card: ListingCard; score: number; sourceUrl: string };
 let recommendedCache: ScoredCard[] | null = null;
 
 export function clearRecommendedCache(): void {
   recommendedCache = null;
 }
 
-function propertyToCard(p: Property): CardProperty {
+function propertyToCard(p: UserListing): ListingCard {
   // Prisma serializes Decimal columns as strings — coerce so any downstream
   // sort/compare op behaves numerically.
   return {
@@ -32,16 +32,15 @@ function propertyToCard(p: Property): CardProperty {
     imageUrl: p.imageUrl,
     sourceUrl: p.sourceUrl,
     platform: p.platform,
-    status: p.status,
-    listingStatus: p.listingStatus,
-    source: 'own',
+    userListing: p,
+    listing: { visibility: 'private' },
     emailReceivedAt: p.emailReceivedAt,
     analysisCount: p.analysisCount ?? 0,
     documentCount: p.documentCount ?? 0,
   };
 }
 
-function scrapedToCard(s: ScrapedListing): CardProperty {
+function scrapedToCard(s: Listing): ListingCard {
   return {
     id: s.id,
     title: s.title,
@@ -53,14 +52,15 @@ function scrapedToCard(s: ScrapedListing): CardProperty {
     imageUrl: s.imageUrl,
     sourceUrl: s.sourceUrl,
     platform: s.platform,
-    source: 'scraped',
+    userListing: null,
+    listing: { visibility: 'public' },
     scrapedListingId: s.id,
   };
 }
 
-// Score a scraped listing using a Property-like shape
-function scoreScraped(s: ScrapedListing, criteria: DerivedCriteria): number {
-  // Build a minimal Property-like shape for the scorer
+// Score a scraped listing using a UserListing-like shape
+function scoreScraped(s: Listing, criteria: DerivedCriteria): number {
+  // Build a minimal UserListing-like shape for the scorer
   const proxy = {
     price: s.price ? parseFloat(String(s.price)) : null,
     pricePerSqm: s.price && s.sizeSqm && parseFloat(String(s.sizeSqm)) > 0
@@ -68,7 +68,7 @@ function scoreScraped(s: ScrapedListing, criteria: DerivedCriteria): number {
       : null,
     sizeSqm: s.sizeSqm ? Math.round(parseFloat(String(s.sizeSqm))) : null,
     zipCode: s.zipCode,
-  } as Property;
+  } as UserListing;
   return scoreProperty(proxy, criteria);
 }
 
@@ -77,7 +77,7 @@ export default function RecommendedCarousel({
   actions,
   firstCardTourId,
 }: {
-  properties: Property[];
+  properties: UserListing[];
   actions: CardActions;
   /** ADR-021 HH8 — `data-tour-id` for the first rendered card. */
   firstCardTourId?: string;

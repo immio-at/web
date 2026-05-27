@@ -12,12 +12,12 @@
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
-import { useProperties } from '@/hooks/useProperties';
+import { useUserListings } from '@/hooks/useUserListings';
 import { usePortfolioAnalyses } from '@/hooks/usePortfolioAnalyses';
 import { defaultSortFor } from '@/lib/portfolioAnalyses';
 import PortfolioAnalysisTable from '@/components/portfolio/PortfolioAnalysisTable';
 import { Link } from '@/i18n/navigation';
-import type { Property } from '@/lib/api';
+import type { UserListing } from '@/lib/api';
 
 const PropertyAnalysisModal = dynamic(
   () => import('@/components/PropertyAnalysisModal'),
@@ -30,7 +30,7 @@ type UsageType = 'rental' | 'flip' | 'owner';
 export default function DashboardAnalysisTile() {
   const t = useTranslations('portfolio');
   const locale = useLocale() as 'de' | 'en';
-  const { properties } = useProperties();
+  const { properties } = useUserListings();
 
   // ── Active tab ─────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<UsageType>('rental');
@@ -64,7 +64,7 @@ export default function DashboardAnalysisTile() {
     });
 
   // ── Click-through to modal ─────────────────────────────────────
-  const [modalProperty, setModalProperty] = useState<Property | null>(null);
+  const [modalProperty, setModalProperty] = useState<UserListing | null>(null);
   function handleOpen(propertyId: string, _analysisId: string) {
     void _analysisId;
     const prop = properties.find((p) => p.id === propertyId);
