@@ -170,6 +170,8 @@
       "titleTask": "Aufgabe bearbeiten",
       "titlePhase": "Phase bearbeiten",
       "name": "Name",
+      "notes": "Notizen / Quelle",
+      "notesPlaceholder": "z. B. P3 / TD2",
       "duration": "Dauer (Arbeitstage)",
       "slack": "Puffer",
       "days": "Tage",

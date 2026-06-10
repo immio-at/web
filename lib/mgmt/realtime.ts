@@ -43,6 +43,7 @@ function normTask(r: Raw): MgmtTaskRow {
     phase: !!r.phase,
     done: !!r.done,
     critical: !!r.critical,
+    notes: (r.notes as string) ?? null,
     sortOrder: num(r.sort_order),
     createdAt: (r.created_at as string) ?? '',
     updatedAt: (r.updated_at as string) ?? '',

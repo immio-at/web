@@ -88,6 +88,19 @@ export default function TaskEditorModal({
             />
           </label>
 
+          {/* Notes / source tag (e.g. "P3 / TD2") */}
+          <label className="block">
+            <span className="text-xs font-mono uppercase tracking-widest text-gray-400">
+              {t('editor.notes')}
+            </span>
+            <input
+              value={task.notes ?? ''}
+              onChange={(e) => onPatch({ notes: e.target.value })}
+              placeholder={t('editor.notesPlaceholder')}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </label>
+
           {!task.phase && (
             <>
               {/* Duration */}

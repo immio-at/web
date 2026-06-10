@@ -9,7 +9,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as api from '@/lib/mgmt/api';
 import { useMgmtRealtime, type MgmtChange } from '@/lib/mgmt/realtime';
 import { nextMonday } from '@/lib/mgmt/workdays';
-import { buildSeedBudgetItems, buildSeedTasks } from '@/lib/mgmt/seed';
 import type {
   BudgetItem,
   MgmtSettings,
@@ -46,6 +45,7 @@ function blankTask(id: string, phase: boolean, sortOrder: number): MgmtTaskRow {
     phase,
     done: false,
     critical: false,
+    notes: null,
     sortOrder,
     createdAt: '',
     updatedAt: '',
@@ -126,28 +126,18 @@ export function useMgmt(enabled: boolean) {
     setError(null);
     try {
       const state: MgmtState = await api.getState();
-      let nextTasks = state.tasks;
-      let nextBudget = state.budgetItems;
       let nextSettings = state.settings;
 
-      // Seed a thin placeholder scaffold once (§9) so the tool isn't empty.
-      if (state.tasks.length === 0 && state.budgetItems.length === 0) {
-        const createdTasks = await Promise.all(buildSeedTasks().map((t) => api.createTask(t)));
-        const createdBudget = await Promise.all(
-          buildSeedBudgetItems().map((b) => api.createBudgetItem(b)),
-        );
-        nextTasks = createdTasks;
-        nextBudget = createdBudget;
-      }
-
-      // Bootstrap projectStart to next Monday if unset (§8.1).
+      // The mgmt_* tables are seeded server-side by the migration (§9), so there
+      // is no client-side seeding here. Bootstrap projectStart to next Monday if
+      // it's still unset (§8.1).
       if (nextSettings && !nextSettings.projectStart) {
         const ps = nextMonday(new Date());
         nextSettings = await api.updateSettings({ projectStart: ps });
       }
 
-      setTasks([...nextTasks].sort((a, b) => a.sortOrder - b.sortOrder));
-      setBudgetItems([...nextBudget].sort((a, b) => a.sortOrder - b.sortOrder));
+      setTasks([...state.tasks].sort((a, b) => a.sortOrder - b.sortOrder));
+      setBudgetItems([...state.budgetItems].sort((a, b) => a.sortOrder - b.sortOrder));
       setSpending([...state.spending].sort((a, b) => a.sortOrder - b.sortOrder));
       setSettings(nextSettings);
     } catch (e) {

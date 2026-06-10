@@ -63,20 +63,45 @@ export default function GanttTab({ mgmt }: { mgmt: UseMgmt }) {
     gridlines.push({ x: d * DAYPX, date: iso(dt).slice(5) }); // MM-DD
   }
 
-  // ── Drag-reorder ────────────────────────────────────────────────────────────
+  // ── Drag-reorder (§8.2) ──────────────────────────────────────────────────────
+  // A task drags freely to any position (including into another phase — its phase
+  // membership is positional). A phase drags its WHOLE block (header + tasks up
+  // to the next header) and snaps to a section boundary so it never splits
+  // another phase. Labels (A1/B2…) recompute from row order in render; CPM is
+  // unaffected (it keys on deps, not order). On drop we renumber sortOrder across
+  // all rows via reorderTasks → POST /mgmt/tasks/reorder.
   function onDrop(targetId: string) {
-    if (!dragId || dragId === targetId) {
-      setDragId(null);
-      return;
-    }
-    const arr = [...tasks];
-    const from = arr.findIndex((x) => x.id === dragId);
-    const to = arr.findIndex((x) => x.id === targetId);
-    if (from < 0 || to < 0) return;
-    const [moved] = arr.splice(from, 1);
-    arr.splice(to, 0, moved);
-    mgmt.reorderTasks(arr);
+    const src = dragId;
     setDragId(null);
+    if (!src || src === targetId) return;
+
+    const arr = [...tasks];
+    const di = arr.findIndex((x) => x.id === src);
+    if (di < 0) return;
+    const dragRow = arr[di];
+
+    // Build the moving block.
+    let blockLen = 1;
+    if (dragRow.phase) {
+      let end = di + 1;
+      while (end < arr.length && !arr[end].phase) end++;
+      blockLen = end - di;
+    }
+    const block = arr.slice(di, di + blockLen);
+    const blockIds = new Set(block.map((b) => b.id));
+    if (blockIds.has(targetId)) return; // dropping within the moving block — no-op
+
+    const remainder = arr.filter((r) => !blockIds.has(r.id));
+    let ti = remainder.findIndex((r) => r.id === targetId);
+    if (ti < 0) return;
+
+    // Phase blocks snap to the governing section header so a section is never
+    // split by inserting another phase mid-run.
+    if (dragRow.phase) {
+      while (ti > 0 && !remainder[ti].phase) ti--;
+    }
+    remainder.splice(ti, 0, ...block);
+    mgmt.reorderTasks(remainder);
   }
 
   function toggleDone(row: MgmtTaskRow) {
@@ -163,6 +188,7 @@ export default function GanttTab({ mgmt }: { mgmt: UseMgmt }) {
                         value={row.name}
                         onChange={(e) => mgmt.patchTask(row.id, { name: e.target.value })}
                         placeholder={t('gantt.taskNamePlaceholder')}
+                        title={row.notes ?? undefined}
                         className={`flex-1 min-w-0 text-xs bg-transparent outline-none ${
                           row.done ? 'line-through text-gray-400' : 'text-gray-700'
                         }`}

@@ -170,6 +170,8 @@
       "titleTask": "Edit task",
       "titlePhase": "Edit phase",
       "name": "Name",
+      "notes": "Notes / source",
+      "notesPlaceholder": "e.g. P3 / TD2",
       "duration": "Duration (working days)",
       "slack": "Slack",
       "days": "days",

@@ -59,6 +59,7 @@ export interface MgmtSettings {
 // shape (a superset of the CPM Task — extra audit fields are ignored by the
 // engine).
 export interface MgmtTaskRow extends Task {
+  notes: string | null; // free text; seed carries the source tag (e.g. "P3/TD2")
   createdAt: string;
   updatedAt: string;
   updatedBy: string | null;

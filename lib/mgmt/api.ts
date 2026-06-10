@@ -56,7 +56,7 @@ export function getState(): Promise<MgmtState> {
 // ── Tasks ──────────────────────────────────────────────────────────────────────
 
 export type TaskWrite = Partial<
-  Pick<MgmtTaskRow, 'id' | 'name' | 'dur' | 'deps' | 'phase' | 'done' | 'critical' | 'sortOrder'>
+  Pick<MgmtTaskRow, 'id' | 'name' | 'dur' | 'deps' | 'phase' | 'done' | 'critical' | 'notes' | 'sortOrder'>
 >;
 
 export function createTask(dto: TaskWrite): Promise<MgmtTaskRow> {
