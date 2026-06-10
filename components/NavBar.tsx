@@ -129,6 +129,16 @@ export default function NavBar() {
                 >
                   {t('reports')}
                 </Link>
+                <Link
+                  href="/mgmt"
+                  className={`text-sm border rounded-lg px-3 py-1.5 font-medium transition-colors ${
+                    pathname === '/mgmt'
+                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                      : 'text-gray-400 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200 border-gray-200'
+                  }`}
+                >
+                  {t('mgmt')}
+                </Link>
               </>
             )}
 
@@ -176,6 +186,12 @@ export default function NavBar() {
                 className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors"
               >
                 📨 {t('reports')}
+              </Link>
+              <Link
+                href="/mgmt"
+                className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors"
+              >
+                🗂 {t('mgmt')}
               </Link>
             </>
           )}
